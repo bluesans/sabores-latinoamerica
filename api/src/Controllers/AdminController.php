@@ -5,9 +5,11 @@ namespace App\Controllers;
 
 use App\Support\Database;
 use App\Support\JsonResponder;
+use App\Support\Validation;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Throwable;
 
 final class AdminController
 {
@@ -50,39 +52,113 @@ final class AdminController
     {
         $b    = (array) $request->getParsedBody();
         $name = trim((string) ($b['name'] ?? ''));
-        $cid  = (int) ($b['country_id'] ?? 0);
-        if ($name === '' || $cid <= 0) {
-            return $this->json($response, ['ok' => false, 'error' => 'Nombre y país son obligatorios.'], 422);
+        $errors = [];
+
+        // --- Validation happens BEFORE any transaction is opened. ---
+        if ($name === '') {
+            $errors['name'] = 'El nombre es obligatorio.';
+        } elseif (mb_strlen($name) > 200) {
+            $errors['name'] = 'El nombre no puede superar los 200 caracteres.';
+        }
+
+        $cid = Validation::positiveInt($b['country_id'] ?? null);
+        if ($cid === null) {
+            $errors['country_id'] = 'País inválido.';
+        } else {
+            $st = Database::connection()->prepare('SELECT 1 FROM countries WHERE id = ?');
+            $st->execute([$cid]);
+            if ($st->fetchColumn() === false) {
+                $errors['country_id'] = 'País inválido.';
+            }
+        }
+
+        $rawDifficulty = $b['difficulty'] ?? null;
+        $difficulty = null;
+        if ($rawDifficulty !== null && (string) $rawDifficulty !== '') {
+            $difficulty = (string) $rawDifficulty;
+            if (!Validation::difficulty($difficulty)) {
+                $errors['difficulty'] = 'Dificultad inválida.';
+            }
+        }
+
+        $rawTime = $b['time_minutes'] ?? null;
+        $timeMinutes = null;
+        if ($rawTime !== null && (string) $rawTime !== '') {
+            $timeVal = is_int($rawTime)
+                ? $rawTime
+                : (is_string($rawTime) && preg_match('/^-?\d+$/', trim($rawTime)) === 1 ? (int) $rawTime : false);
+            if ($timeVal === false || $timeVal < 0 || $timeVal > 100000) {
+                $errors['time_minutes'] = 'Tiempo inválido.';
+            } else {
+                $timeMinutes = $timeVal;
+            }
+        }
+
+        $rawYoutube = $b['youtube_id'] ?? null;
+        $youtubeId = null;
+        if ($rawYoutube !== null && (string) $rawYoutube !== '') {
+            $trimmedInput = trim((string) $rawYoutube);
+            $normalized = Validation::youtubeId((string) $rawYoutube);
+            if ($normalized === '' || $normalized !== $trimmedInput) {
+                $errors['youtube_id'] = 'ID de YouTube inválido (11 caracteres).';
+            } else {
+                $youtubeId = $normalized;
+            }
+        }
+
+        $rawDescription = $b['description'] ?? null;
+        $description = '';
+        if ($rawDescription !== null && (string) $rawDescription !== '') {
+            $description = (string) $rawDescription;
+            if (mb_strlen($description) > 10000) {
+                $errors['description'] = 'La descripción no puede superar los 10000 caracteres.';
+            }
+        }
+
+        if ($errors !== []) {
+            // Top-level `error` mirrors the first field message so the existing
+            // toast path (api.js throws Error(data.error)) keeps working.
+            return $this->json($response, [
+                'ok' => false,
+                'error' => reset($errors),
+                'errors' => $errors,
+            ], 422);
         }
 
         $pdo = Database::connection();
-        $pdo->beginTransaction();
+        try {
+            $pdo->beginTransaction();
 
-        $id = (int) ($b['id'] ?? 0);
-        if ($id > 0) {
-            $pdo->prepare('UPDATE recipes SET country_id=?, name=?, description=?, difficulty=?, time_minutes=?, youtube_id=? WHERE id=?')
-                ->execute([$cid, $name, (string) ($b['description'] ?? ''), $b['difficulty'] ?? null,
-                           (int) ($b['time_minutes'] ?? 0), (string) ($b['youtube_id'] ?? '') ?: null, $id]);
-        } else {
-            $pdo->prepare('INSERT INTO recipes (country_id, name, description, difficulty, time_minutes, youtube_id) VALUES (?,?,?,?,?,?)')
-                ->execute([$cid, $name, (string) ($b['description'] ?? ''), $b['difficulty'] ?? null,
-                           (int) ($b['time_minutes'] ?? 0), (string) ($b['youtube_id'] ?? '') ?: null]);
-            $id = (int) $pdo->lastInsertId();
-        }
-
-        $pdo->prepare('DELETE FROM recipe_ingredient WHERE recipe_id = ?')->execute([$id]);
-        foreach ((array) ($b['ingredients'] ?? []) as $nm) {
-            $nm = trim((string) $nm);
-            if ($nm === '') continue;
-            $pdo->prepare('INSERT IGNORE INTO ingredients (name) VALUES (?)')->execute([$nm]);
-            $st = $pdo->prepare('SELECT id FROM ingredients WHERE name = ?');
-            $st->execute([$nm]);
-            $iid = (int) $st->fetchColumn();
-            if ($iid) {
-                $pdo->prepare('INSERT IGNORE INTO recipe_ingredient (recipe_id, ingredient_id) VALUES (?, ?)')->execute([$id, $iid]);
+            $id = (int) ($b['id'] ?? 0);
+            if ($id > 0) {
+                $pdo->prepare('UPDATE recipes SET country_id=?, name=?, description=?, difficulty=?, time_minutes=?, youtube_id=? WHERE id=?')
+                    ->execute([$cid, $name, $description, $difficulty, $timeMinutes, $youtubeId, $id]);
+            } else {
+                $pdo->prepare('INSERT INTO recipes (country_id, name, description, difficulty, time_minutes, youtube_id) VALUES (?,?,?,?,?,?)')
+                    ->execute([$cid, $name, $description, $difficulty, $timeMinutes, $youtubeId]);
+                $id = (int) $pdo->lastInsertId();
             }
+
+            $pdo->prepare('DELETE FROM recipe_ingredient WHERE recipe_id = ?')->execute([$id]);
+            foreach ((array) ($b['ingredients'] ?? []) as $nm) {
+                $nm = trim((string) $nm);
+                if ($nm === '') continue;
+                $pdo->prepare('INSERT IGNORE INTO ingredients (name) VALUES (?)')->execute([$nm]);
+                $st = $pdo->prepare('SELECT id FROM ingredients WHERE name = ?');
+                $st->execute([$nm]);
+                $iid = (int) $st->fetchColumn();
+                if ($iid) {
+                    $pdo->prepare('INSERT IGNORE INTO recipe_ingredient (recipe_id, ingredient_id) VALUES (?, ?)')->execute([$id, $iid]);
+                }
+            }
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('[AdminController::saveRecipe] ' . $e);
+            return $this->json($response, ['ok' => false, 'error' => 'Error interno del servidor.'], 500);
         }
-        $pdo->commit();
 
         return $this->json($response, ['ok' => true, 'id' => $id]);
     }
