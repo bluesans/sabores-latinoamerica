@@ -12,6 +12,21 @@ const panel = document.getElementById('panel');
     const mq = matchMedia('(max-width:720px)');
     let activeG = null, currentFavs = new Set();
 
+    /* Elemento que abrió el panel: closePanel le devuelve el foco. Los puntos
+       de entrada (mapa, nav:country, botón sorpresa, buscador) lo fijan con
+       setOpener antes de abrir; openFavorites captura él mismo. */
+    let openerEl = null;
+
+    function setOpener(el) { openerEl = el instanceof Element ? el : null; }
+
+    function restoreFocus() {
+        const t = openerEl;
+        openerEl = null;
+        if (t && t.isConnected) { t.focus({ preventScroll: true }); return; }
+        const shellEl = document.getElementById('mapShell');
+        if (shellEl) shellEl.focus({ preventScroll: true });
+    }
+
     /* Reintentos: cada superficie que falla guarda acá la llamada que debe
        repetirse, indexada por el token que viaja en data-retry. Un único
        handler delegado por contenedor la resuelve, sin listeners por botón. */
@@ -118,6 +133,7 @@ const panel = document.getElementById('panel');
         backdrop.classList.remove('show');
         svg.classList.remove('has-active');
         if (activeG) { activeG.classList.remove('active'); activeG = null; }
+        restoreFocus();
     }
 
     document.getElementById('panelClose').addEventListener('click', closePanel);
@@ -135,6 +151,7 @@ const panel = document.getElementById('panel');
 
     async function openFavorites() {
         unmountAdmin();
+        setOpener(document.activeElement);
         if (activeG) activeG.classList.remove('active');
         activeG = null;
         svg.classList.remove('has-active');
@@ -153,6 +170,25 @@ const panel = document.getElementById('panel');
        resuelve con AbortController en api.js. */
     let ingSeq = 0;
 
+    /* Foco previo al modal: Escape/cierre lo restaura. El trap de Tab cicla
+       dentro de .modal-card para que el teclado no escape al fondo tapado. */
+    let modalOpener = null;
+
+    function modalFocusables() {
+        return [...ingModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+            .filter(el => !el.disabled && el.offsetParent !== null);
+    }
+
+    ingModal.addEventListener('keydown', e => {
+        if (e.key !== 'Tab') return;
+        const f = modalFocusables();
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (!ingModal.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+        else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
     async function loadIngredient(id) {
         const seq = ++ingSeq;
         try {
@@ -167,12 +203,22 @@ const panel = document.getElementById('panel');
     }
 
     async function openIngredientModal(id) {
-        ingModal.hidden = false;
+        if (ingModal.hidden) {
+            modalOpener = document.activeElement instanceof Element ? document.activeElement : null;
+            ingModal.hidden = false;
+            document.getElementById('ingClose').focus({ preventScroll: true });
+        }
         ingBody.innerHTML = '<p class="ing-sub">Buscando recetas…</p>';
         await loadIngredient(id);
     }
 
-    function closeIngredientModal() { ingModal.hidden = true; }
+    function closeIngredientModal() {
+        if (ingModal.hidden) return;
+        ingModal.hidden = true;
+        const t = modalOpener;
+        modalOpener = null;
+        if (t && t.isConnected) t.focus({ preventScroll: true });
+    }
 
     document.getElementById('ingClose').addEventListener('click', closeIngredientModal);
     ingModal.addEventListener('click', e => { if (e.target === ingModal) closeIngredientModal(); });
@@ -200,4 +246,4 @@ const panel = document.getElementById('panel');
         if (panel.classList.contains('open')) closePanel();
     });
 
-export { openPanel, closePanel, closeIngredientModal, openIngredientModal, openFavorites };
+export { openPanel, closePanel, closeIngredientModal, openIngredientModal, openFavorites, setOpener };

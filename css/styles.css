@@ -29,6 +29,7 @@
     --cream:#f4ead6; --muted:#9db3a6;
     --yellow:#f2b134; --aji:#e4572e; --jade:#31c98e; --rosa:#e8709a;
     --ocean1:#10303c; --ocean2:#081820;
+    --focus-ring:2px solid var(--yellow);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -42,7 +43,18 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
     background-image:radial-gradient(rgba(244,234,214,.05) 1px, transparent 1.4px);background-size:26px 26px}
 ::selection{background:var(--yellow);color:#241a05}
 button{font-family:inherit;cursor:pointer}
-:focus-visible{outline:2px solid var(--yellow);outline-offset:2px;border-radius:4px}
+/* Anillo de foco por teclado: un único token para toda la app (botones,
+   .chip, .poster, inputs, .tab, .s-res, zoom, fav/admin lo heredan al ser
+   focusables). Nunca se quita el outline sin reemplazo visible. */
+:focus-visible{outline:var(--focus-ring);outline-offset:2px;border-radius:4px}
+/* Los <g> SVG no siempre pintan outline según el motor: refuerzo con trazo
+   del path en el mismo acento, así el país enfocado por teclado se ve igual. */
+.country:focus-visible{outline:var(--focus-ring);outline-offset:2px}
+.country:focus-visible path{stroke:var(--yellow);stroke-width:2.4}
+/* Contenedor no interactivo: sólo recibe foco programático como destino de
+   retorno tras cerrar el panel; el anillo visual corresponde a los controles
+   reales dentro de él, no a la caja del mapa. */
+.map-shell:focus{outline:none}
 .screen{display:none}
 .screen.on{display:block}
 /* ---------- AUTH ---------- */
@@ -246,7 +258,7 @@ button{font-family:inherit;cursor:pointer}
 @keyframes flash{0%,60%{border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,177,52,.25)}}
 .search-box{position:relative}
 #searchInp{width:230px;background:#0d1611;border:1px solid #2c3b33;color:var(--cream);padding:.5rem .8rem;border-radius:999px;font-family:inherit;font-size:.9rem}
-#searchInp:focus{outline:none;border-color:var(--yellow)}
+#searchInp:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px rgba(242,177,52,.18)}
 .search-res{position:absolute;top:115%;right:0;width:330px;max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;z-index:45;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:.4rem}
 .s-res{display:flex;gap:.6rem;align-items:center;width:100%;text-align:left;background:none;border:0;color:var(--cream);padding:.55rem .6rem;border-radius:8px;font-family:inherit;font-size:.92rem;cursor:pointer}
 .s-res:hover{background:var(--panel2)}

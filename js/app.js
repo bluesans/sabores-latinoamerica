@@ -1,7 +1,7 @@
 import { API } from './api.js';
 import { toast } from './ui/toast.js';
 import { buildMap } from './map.js';
-import { openFavorites, openIngredientModal } from './panel.js';
+import { openFavorites, openIngredientModal, setOpener } from './panel.js';
 import { initAuth } from './auth.js';
 import { openAdmin } from './admin.js';
 import { searchResultsHTML, topChipsHTML } from './util/dom.js';
@@ -50,7 +50,7 @@ function makeHeaderControls() {
     document.querySelector('.user-zone').insertAdjacentHTML('afterbegin', `
         <div class="search-box">
             <input id="searchInp" placeholder="🔎 Plato, país o ingrediente…" autocomplete="off" aria-label="Buscar">
-            <div id="searchRes" class="search-res" hidden></div>
+            <div id="searchRes" class="search-res" role="region" aria-live="polite" aria-label="Resultados de búsqueda" hidden></div>
         </div>
         <button id="favBtn" class="btn-ghost" type="button" title="Mis favoritos">⭐ <span id="favCount">0</span></button>
         <button id="adminBtn" class="btn-ghost" type="button" hidden>🛠️ Admin</button>
@@ -85,6 +85,7 @@ function makeHeaderControls() {
         res.hidden = true;
         inp.value = '';
         if (b.dataset.k === 'i') return openIngredientModal(b.dataset.id);
+        setOpener(b);
         document.dispatchEvent(new CustomEvent('nav:country', {
             detail: {
                 cid: Number(b.dataset.k === 'c' ? b.dataset.id : b.dataset.cid),

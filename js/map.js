@@ -1,6 +1,6 @@
 /* ============ Mapa HD sin dependencias externas ============ */
 import { MAP_SHAPES, FILLS } from './data.js';
-import { openPanel } from './panel.js';
+import { openPanel, setOpener } from './panel.js';
 import { toast } from './ui/toast.js';
 import { tipHTML } from './util/dom.js';
 
@@ -180,9 +180,22 @@ const svg = document.getElementById('mapSvg');
     }
 
     function addCountryGroup(info, d, fillColor) {
-        const g = el('g', { class: 'country ' + (info.recipe_count > 0 ? 'has-data' : 'no-data') });
+        const hasData = info.recipe_count > 0;
+        const g = el('g', {
+            class: 'country ' + (hasData ? 'has-data' : 'no-data'),
+            tabindex: '0',
+            role: 'button',
+            'aria-label': `${info.name} — ${hasData ? `${info.recipe_count} recetas` : 'sin recetas'}`
+        });
         g.appendChild(el('path', { d, fill: fillColor }));
         g.__info = info;
+        /* Teclado: Enter/Space recorren el mismo camino que el clic
+           (selectCountry), sin pasar por la lógica de arrastre del puntero. */
+        g.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+            e.preventDefault();
+            selectCountry(g);
+        });
         g.addEventListener('pointerenter', e => { if (!dragging) showTip(info, e); });
         g.addEventListener('pointermove', moveTip);
         g.addEventListener('pointerleave', hideTip);
@@ -300,6 +313,11 @@ const svg = document.getElementById('mapSvg');
     function selectCountry(g) {
         const info = g && g.__info;
         if (!info) return;
+        /* Opener para devolver el foco al cerrar el panel: si la entrada fue
+           por teclado, activeElement ya es el propio grupo; por clic cae en
+           body y usamos el grupo como ancla de retorno. */
+        const ae = document.activeElement;
+        setOpener(ae instanceof Element && ae !== document.body ? ae : g);
         if (info.recipe_count > 0) {
             document.getElementById('coach').classList.add('done');
             focusCountry(g);
@@ -320,6 +338,7 @@ const svg = document.getElementById('mapSvg');
             const opts = Object.values(countriesByIso).filter(c => c.recipe_count > 0 && c._g);
             if (!opts.length) return;
             const c = opts[Math.floor(Math.random() * opts.length)];
+            setOpener(b);
             document.getElementById('coach').classList.add('done');
             focusCountry(c._g);
             openPanel(c, c._g);
@@ -331,6 +350,8 @@ const svg = document.getElementById('mapSvg');
     document.addEventListener('nav:country', e => {
         const c = getCountryById(e.detail.cid);
         if (!c || !c._g) return;
+        const ae = document.activeElement;
+        setOpener(ae instanceof Element && ae !== document.body ? ae : null);
         document.getElementById('coach').classList.add('done');
         focusCountry(c._g);
         if (e.detail.rid) openPanel(c, c._g, e.detail.rid);
