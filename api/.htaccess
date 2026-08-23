@@ -2,3 +2,15 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]
+
+# --- Rework hardening: never serve sensitive files or listings ---
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+<FilesMatch "\.(phar|lock|neon|xml|sql|md|example)$">
+  Require all denied
+</FilesMatch>
+<Files "routes.php">
+  Require all denied
+</Files>
+Options -Indexes
