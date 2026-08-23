@@ -1,0 +1,200 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Support;
+
+use PDO;
+use Psr\Http\Message\ServerRequestInterface as Request;
+
+final class Auth
+{
+    private const LOGIN_MAX_ATTEMPTS = 10;
+    private const LOGIN_WINDOW_MINUTES = 5;
+
+    private const REGISTER_MAX_ATTEMPTS = 5;
+    private const REGISTER_WINDOW_MINUTES = 15;
+
+    public static function bearerToken(Request $request): ?string
+    {
+        $auth = $request->getHeaderLine('Authorization');
+
+        return preg_match('/^Bearer\s+([\w\-.]+)$/', $auth, $m) ? $m[1] : null;
+    }
+
+    public static function userFromRequest(Request $request): ?array
+    {
+        $user = $request->getAttribute('auth_user');
+
+        return is_array($user) ? $user : null;
+    }
+
+    public static function checkLoginRate(PDO $pdo, string $ip): bool
+    {
+        return self::checkRate(
+            $pdo,
+            $ip,
+            'login',
+            self::LOGIN_MAX_ATTEMPTS,
+            self::LOGIN_WINDOW_MINUTES
+        );
+    }
+
+    public static function checkRegisterRate(PDO $pdo, string $ip): bool
+    {
+        return self::checkRate(
+            $pdo,
+            $ip,
+            'register',
+            self::REGISTER_MAX_ATTEMPTS,
+            self::REGISTER_WINDOW_MINUTES
+        );
+    }
+
+    public static function recordFailedLogin(PDO $pdo, string $ip, string $username): void
+    {
+        self::recordAttempt($pdo, $ip, $username, 'login');
+    }
+
+    public static function recordRegisterAttempt(PDO $pdo, string $ip, string $username): void
+    {
+        self::recordAttempt($pdo, $ip, $username, 'register');
+    }
+
+    public static function createRefreshToken(PDO $pdo, int $userId): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $tokenHash = self::hashToken($token);
+        $days = Env::int('SESSION_DAYS', 7);
+
+        $pdo->prepare(
+            "INSERT INTO sessions (user_id, token, expires_at, revoked_at)
+             VALUES (?, ?, DATE_ADD(NOW(), INTERVAL $days DAY), NULL)"
+        )->execute([$userId, $tokenHash]);
+
+        return $token;
+    }
+
+    public static function purgeExpiredSessions(PDO $pdo): void
+    {
+        $pdo->exec('DELETE FROM sessions WHERE expires_at < NOW()');
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     user_id: int,
+     *     expires_at: string,
+     *     revoked_at: string|null,
+     *     username: string,
+     *     role: string
+     * }|null
+     */
+    public static function findRefreshTokenForUpdate(PDO $pdo, string $token): ?array
+    {
+        return self::fetchSessionRow($pdo, self::hashToken($token), true);
+    }
+
+    public static function revokeRefreshToken(PDO $pdo, string $token): void
+    {
+        $pdo->prepare(
+            'UPDATE sessions
+             SET revoked_at = NOW()
+             WHERE token = ? AND revoked_at IS NULL'
+        )->execute([self::hashToken($token)]);
+    }
+
+    public static function revokeAllUserSessions(PDO $pdo, int $userId): void
+    {
+        $pdo->prepare('DELETE FROM sessions WHERE user_id = ?')->execute([$userId]);
+    }
+
+    private static function hashToken(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     user_id: int,
+     *     expires_at: string,
+     *     revoked_at: string|null,
+     *     username: string,
+     *     role: string
+     * }|null
+     */
+    private static function fetchSessionRow(PDO $pdo, string $tokenHash, bool $forUpdate): ?array
+    {
+        $sql = 'SELECT s.id, s.user_id, s.expires_at, s.revoked_at, u.username, u.role
+                FROM sessions s
+                JOIN users u ON u.id = s.user_id
+                WHERE s.token = ?';
+
+        if ($forUpdate) {
+            $sql .= ' FOR UPDATE';
+        }
+
+        $st = $pdo->prepare($sql);
+        $st->execute([$tokenHash]);
+
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+
+        if (!is_array($row)) {
+            return null;
+        }
+
+        return [
+            'id' => (int) ($row['id'] ?? 0),
+            'user_id' => (int) ($row['user_id'] ?? 0),
+            'expires_at' => (string) ($row['expires_at'] ?? ''),
+            'revoked_at' => $row['revoked_at'] === null ? null : (string) $row['revoked_at'],
+            'username' => (string) ($row['username'] ?? ''),
+            'role' => (string) ($row['role'] ?? 'user'),
+        ];
+    }
+
+    private static function purgeOldAttempts(PDO $pdo): void
+    {
+        $pdo->exec('DELETE FROM login_attempts WHERE attempted_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)');
+    }
+
+    private static function checkRate(
+        PDO $pdo,
+        string $ip,
+        string $action,
+        int $maxAttempts,
+        int $minutes
+    ): bool {
+        self::purgeOldAttempts($pdo);
+
+        $st = $pdo->prepare(
+            "SELECT COUNT(*)
+             FROM login_attempts
+             WHERE ip = ?
+               AND action = ?
+               AND attempted_at > DATE_SUB(NOW(), INTERVAL $minutes MINUTE)"
+        );
+
+        $st->execute([$ip, $action]);
+
+        return ((int) $st->fetchColumn()) < $maxAttempts;
+    }
+
+    private static function recordAttempt(
+        PDO $pdo,
+        string $ip,
+        string $username,
+        string $action
+    ): void {
+        $username = trim($username);
+
+        if (function_exists('mb_substr')) {
+            $username = mb_substr($username, 0, 30);
+        } else {
+            $username = substr($username, 0, 30);
+        }
+
+        $pdo->prepare('INSERT INTO login_attempts (ip, username, action) VALUES (?, ?, ?)')
+            ->execute([$ip, $username, $action]);
+    }
+}

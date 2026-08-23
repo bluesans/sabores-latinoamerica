@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Enciclopedia gastronómica interactiva de Latinoamérica: mapa, recetas, ingredientes y videos.">
+<meta name="theme-color" content="#0c1310">
+<title>Sabores de Latinoamérica — Atlas gastronómico interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Sofia+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<section id="authScreen" class="screen auth on">
+  <div class="auth-left">
+    <div class="pennants" id="pennants" aria-hidden="true"></div>
+    <div class="kicker">🌶️ Atlas interactivo de gastronomía</div>
+    <h1 class="brand-title">Sabores de<em>Latinoamérica</em></h1>
+    <p class="brand-lead">Una enciclopedia gastronómica para recorrer el continente plato por plato.
+      Elegí un país en el mapa y descubrí sus recetas emblemáticas: ingredientes, dificultad, tiempos y video paso a paso.</p>
+    <ul class="brand-points">
+      <li><span>🗺️</span><div><b>Mapa interactivo</b> con zoom: viajá país por país.</div></li>
+      <li><span>🍲</span><div><b>Recetas icónicas</b> por cada destino.</div></li>
+      <li><span>🏷️</span><div><b>Ingredientes, dificultad</b> y tiempo estimado.</div></li>
+      <li><span>🎬</span><div><b>Video paso a paso</b> para cocinarlas en casa.</div></li>
+    </ul>
+    <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee"></div></div>
+  </div>
+  <div class="auth-right">
+    <form id="authForm" class="auth-card" novalidate>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab on" data-mode="login">Iniciar sesión</button>
+        <button type="button" class="tab" data-mode="register">Crear cuenta</button>
+      </div>
+      <h2 id="authTitle">¡Hola otra vez!</h2>
+      <p class="auth-sub" id="authSub">Entrá para seguir tu recorrido gastronómico.</p>
+      <div class="field">
+        <label for="username">Usuario</label>
+        <div class="inp-wrap"><input id="username" maxlength="30" autocomplete="username" placeholder="p. ej. chef_querubin"></div>
+        <div class="hint" id="userHint">3–30 caracteres: letras, números o guión bajo.</div>
+      </div>
+      <div class="field">
+        <label for="pass1">Contraseña</label>
+        <div class="inp-wrap"><input id="pass1" type="password" autocomplete="current-password" placeholder="••••••">
+          <button type="button" class="eye" data-for="pass1" aria-label="Mostrar contraseña">👁</button></div>
+      </div>
+      <div class="field" id="pass2row" hidden>
+        <label for="pass2">Repetí la contraseña</label>
+        <div class="inp-wrap"><input id="pass2" type="password" autocomplete="new-password" placeholder="••••••">
+          <button type="button" class="eye" data-for="pass2" aria-label="Mostrar contraseña">👁</button></div>
+      </div>
+      <div class="form-error" id="formError" role="alert"></div>
+      <button class="btn-primary" id="authSubmit" type="submit">Entrar</button>
+      <p class="auth-note">Las cuentas se validan contra la base de datos local.</p>
+    </form>
+  </div>
+</section>
+
+<section id="appScreen" class="screen app">
+  <header class="appbar">
+    <div class="logo">
+      <span class="logo-ico">🌽</span>
+      <div class="logo-txt"><span class="logo-small">sabores de</span><span class="logo-big">LATINOAMÉRICA</span></div>
+    </div>
+    <div class="user-zone">
+      <div class="user-chip"><span class="avatar" id="avatar">?</span><span>Hola, <b id="userName"></b></span></div>
+      <button id="logoutBtn" class="btn-ghost">Salir ↩</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="map-head">
+      <div>
+        <h2 class="map-title">El mapa del sabor <span class="count" id="headCount"></span></h2>
+        <p class="map-sub">Arrastrá para moverte y usá la rueda o los botones para hacer zoom.
+          Los países encendidos guardan recetas; los apagados esperan su turno.</p>
+      </div>
+      <div class="legend"><span><span class="lg-dot on"></span>Con recetas</span><span><span class="lg-dot off"></span>Próximamente</span></div>
+    </div>
+
+    <div class="map-shell" id="mapShell">
+      <svg id="mapSvg" viewBox="0 0 1000 1110" preserveAspectRatio="xMidYMid meet" aria-label="Mapa de Latinoamérica">
+        <defs>
+          <pattern id="waves" width="90" height="26" patternUnits="userSpaceOnUse">
+            <path d="M0 13 Q22 4 45 13 T90 13" fill="none" stroke="rgba(150,200,215,.06)" stroke-width="1.5"/>
+          </pattern>
+          <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="7" height="7" fill="#1b2620"/>
+            <line x1="0" y1="0" x2="0" y2="7" stroke="rgba(244,234,214,.05)" stroke-width="2"/>
+          </pattern>
+        </defs>
+        <g id="world"></g>
+      </svg>
+      <div class="zoom-ctl">
+        <button id="zin" aria-label="Acercar">+</button>
+        <button id="zout" aria-label="Alejar">−</button>
+        <button id="zreset" aria-label="Reiniciar vista" title="Reiniciar vista">⌂</button>
+      </div>
+      <div class="coach" id="coach">👆 Hacé clic en un país para descubrir su cocina</div>
+      <div class="tip" id="tip"></div>
+    </div>
+
+    <section class="stats" id="statsBar" aria-label="Datos generales">
+      <div class="stat"><span class="stat-num" id="stCountries">0</span><span class="stat-label">Países documentados</span></div>
+      <div class="stat"><span class="stat-num" id="stRecipes">0</span><span class="stat-label">Recetas típicas</span></div>
+      <div class="stat"><span class="stat-num" id="stIngs">0</span><span class="stat-label">Ingredientes relevados</span></div>
+      <div class="stat"><span class="stat-num" id="stVideos">0</span><span class="stat-label">Recetas con video</span></div>
+    </section>
+  </main>
+  <footer class="foot">Sabores de Latinoamérica — hecho con maíz, ají y JavaScript 🌽</footer>
+</section>
+
+<aside id="panel" class="panel" aria-hidden="true">
+  <button class="panel-close" id="panelClose" aria-label="Cerrar panel">✕</button>
+  <div id="panelBody"></div>
+</aside>
+
+<div id="ingModal" class="modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="ingClose" aria-label="Cerrar">✕</button>
+    <div id="ingBody"></div>
+  </div>
+</div>
+
+<div id="backdrop"></div>
+<div id="toast" role="status"></div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/map.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/admin.js"></script> 
+<script src="js/app.js"></script>
+</body>
+</html>

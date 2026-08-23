@@ -1,0 +1,6 @@
+# Orchestration state (not part of the product)
+/.omo/
+
+# Misc
+.DS_Store
+Thumbs.db
