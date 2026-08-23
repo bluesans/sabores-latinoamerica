@@ -7,6 +7,7 @@ use App\Support\Auth;
 use App\Support\Jwt;
 use App\Support\Validation;
 use PDO;
+use PDOException;
 
 final class AuthService
 {
@@ -37,24 +38,27 @@ final class AuthService
             return self::failure($passwordError, 422);
         }
 
-        $st = $this->pdo->prepare('SELECT id FROM users WHERE username = ?');
-        $st->execute([$username]);
+        // Web registration always creates a plain user; the admin role is
+        // granted exclusively by bin/create-admin.php. Username uniqueness is
+        // enforced atomically by the UNIQUE uq_username index (no TOCTOU
+        // check-then-insert race): a duplicate INSERT surfaces as SQLSTATE
+        // 23000 / driver code 1062 and maps to HTTP 409.
+        try {
+            $this->pdo->prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)')
+                ->execute([
+                    $username,
+                    password_hash($password, PASSWORD_DEFAULT),
+                    'user',
+                ]);
+        } catch (PDOException $e) {
+            [$sqlState, $driverCode] = $e->errorInfo;
 
-        if ($st->fetch(PDO::FETCH_ASSOC)) {
-            return self::failure('Ese usuario ya existe. Probá con otro.', 409);
+            if ($sqlState === '23000' || (int) $driverCode === 1062) {
+                return self::failure('Ese usuario ya existe. Probá con otro.', 409);
+            }
+
+            throw $e;
         }
-
-        $countStatement = $this->pdo->query('SELECT COUNT(*) FROM users');
-        $userCount = $countStatement === false ? 0 : (int) $countStatement->fetchColumn();
-
-        $role = $userCount === 0 ? 'admin' : 'user';
-
-        $this->pdo->prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)')
-            ->execute([
-                $username,
-                password_hash($password, PASSWORD_DEFAULT),
-                $role,
-            ]);
 
         $userId = (int) ($this->pdo->lastInsertId() ?: 0);
 
@@ -64,12 +68,12 @@ final class AuthService
 
         return self::success([
             'username' => $username,
-            'role' => $role,
+            'role' => 'user',
             'refresh' => Auth::createRefreshToken($this->pdo, $userId),
             'access' => Jwt::issueAccess([
                 'id' => $userId,
                 'username' => $username,
-                'role' => $role,
+                'role' => 'user',
             ]),
         ]);
     }
