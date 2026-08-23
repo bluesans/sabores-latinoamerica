@@ -15,6 +15,7 @@
 9. [Recorrido de uso de punta a punta (ejemplo real)](#9-recorrido-de-uso-de-punta-a-punta-ejemplo-real)
 10. [Cómo levantar el proyecto localmente](#10-cómo-levantar-el-proyecto-localmente)
 11. [Cosas importantes a tener en cuenta](#11-cosas-importantes-a-tener-en-cuenta)
+12. [Registro del rework (2026-08)](#12-registro-del-rework-2026-08)
 
 ---
 
@@ -25,9 +26,9 @@
 - Ve un **mapa interactivo en SVG** de Latinoamérica, con zoom, paneo (arrastrar) y geografía real de los países.
 - Hace clic en un país y se abre un **panel lateral** con sus recetas típicas: nombre, dificultad, tiempo de preparación, ingredientes y un video de YouTube.
 - Puede **buscar** platos/países/ingredientes en tiempo real, marcar **recetas favoritas**, y tocar un ingrediente para ver en qué otras recetas del continente aparece.
-- Si es el usuario **administrador** (automáticamente, el primero en registrarse en el sistema), tiene un botón extra que abre un **panel de administración** (alta/baja/modificación de recetas, países e ingredientes) construido como un componente de Vue 3.
+- Si es el usuario **administrador** (cuenta sembrada por el CLI `api/bin/create-admin.php`; el registro web nunca crea admins), tiene un botón extra que abre un **panel de administración** (alta/baja/modificación de recetas, países e ingredientes) construido como un componente de Vue 3.
 
-Es el tipo de proyecto típico de portfolio o trabajo de curso: **backend propio en PHP** con un micro-framework (Slim 4) hablando **JSON puro** por una API REST, **base de datos MySQL propia** con datos reales de 19 países y 57 recetas, y un **frontend sin frameworks pesados ni paso de build** (JS vanilla + un único componente Vue 3 cargado por CDN). Está pensado para correr en un entorno **XAMPP** local (Apache + PHP + MySQL en `localhost`).
+Es el tipo de proyecto típico de portfolio o trabajo de curso: **backend propio en PHP** con un micro-framework (Slim 4) hablando **JSON puro** por una API REST, **base de datos MySQL propia** con datos reales de 19 países y 57 recetas, y un **frontend sin frameworks pesados ni paso de build** (JS vanilla en módulos ES + un único componente Vue 3 versionado localmente). Está pensado para correr en un entorno **XAMPP** local (Apache + PHP + MySQL en `localhost`).
 
 ## 2. Stack tecnológico
 
@@ -39,12 +40,14 @@ Es el tipo de proyecto típico de portfolio o trabajo de curso: **backend propio
 | Config | `vlucas/phpdotenv ^5.6` | Carga `api/.env` como variables de entorno |
 | Base de datos | MySQL/MariaDB, charset `utf8mb4`, motor InnoDB | Acceso vía **PDO nativo** (sin ORM), 100% consultas preparadas |
 | Autenticación | **JWT artesanal** (HS256, sin librerías) de vida corta, en memoria + refresh token rotativo en cookie `HttpOnly`, hasheado en tabla `sessions` | Ver sección 8 |
-| Frontend | HTML5 + CSS3 + JavaScript vanilla (ES6+) | Sin bundler, sin framework de routing, scripts cargados directo en `<script>` |
-| Panel admin | Vue 3 (`vue.global.prod.js` vía CDN de unpkg) | Sin build step: el `template` vive como string dentro del `.js` |
+| Frontend | HTML5 + CSS3 + JavaScript vanilla (ES6+, módulos ES) | Sin bundler, sin framework de routing; `js/app.js` es el único `<script type="module">` e importa el resto del grafo |
+| Panel admin | Vue 3 (`js/vendor/vue.global.prod.js`, versión fijada localmente) | Sin build step: el `template` vive como string dentro del `.js` |
 | Mapa | SVG generado por JS + datos TopoJSON | Geografía real vía CDN, con **fallback** dibujado a mano si no hay conexión |
-| Tipografías | Google Fonts: "Alfa Slab One" (títulos) + "Sofia Sans" (texto) | |
+| Tipografías | Alfa Slab One (títulos) + Sofia Sans (texto), **autoalojadas** en `css/fonts/` como `.woff2` | Sin dependencia de Google Fonts: funcionan offline |
+| Runner de tests JS | Node ≥ 18 (`node --test`) | Suites en `js/__tests__/` (`npm run test:js`) y linter de plantillas (`npm run lint:templates`) |
+| QA de interfaz | Playwright (solo desarrollo) | Automatización de navegador para verificación visual y recorridos E2E manuales; no es dependencia de runtime |
 
-No hay TypeScript, ni Docker, ni CI/CD. El esquema de base ya no vive en un dump suelto: `db/migrations/000_install.sql` es el baseline canónico y los cambios futuros son migraciones numeradas (convención en `db/migrations/README.md`; los dumps y patches históricos quedaron archivados en `db/legacy/`). Sí hay tests automatizados: PHPUnit en `api/tests/` (`composer test`) y JS nativo en `js/__tests__/` (`npm run test:js`).
+No hay TypeScript, ni Docker, ni CI/CD. El esquema de base ya no vive en un dump suelto: `db/migrations/000_install.sql` es el baseline canónico y los cambios futuros son migraciones numeradas (convención en `db/migrations/README.md`; los dumps y patches históricos quedaron archivados en `db/legacy/`). Sí hay tests automatizados: PHPUnit en `api/tests/` (`composer test`, o invocando `vendor\phpunit\phpunit\phpunit` directamente si no hay Composer) y JS nativo en `js/__tests__/` (`npm run test:js`). El análisis estático del backend corre limpio en PHPStan nivel 8.
 
 ## 3. Estructura de carpetas
 
@@ -52,34 +55,52 @@ No hay TypeScript, ni Docker, ni CI/CD. El esquema de base ya no vive en un dump
 htdocs/                          ← raíz servida por Apache (carpeta típica de XAMPP)
 ├── index.html                   ← única página HTML de todo el frontend
 ├── README.md
+├── package.json                 ← scripts npm del front: test:js y lint:templates
+├── scripts/
+│   └── lint-templates.mjs       ← linter de sinks innerHTML (prohíbe interpolar datos sin escape)
 ├── css/
-│   └── styles.css                ← todo el CSS del proyecto (~260 líneas, con variables :root)
-├── js/
-│   ├── config.js                 ← URL base de la API (1 constante)
-│   ├── data.js                   ← geometría de respaldo del mapa + paleta de colores + labels de dificultad
-│   ├── api.js                    ← cliente HTTP hacia la API (fetch + manejo de JWT)
-│   ├── auth.js                   ← lógica de la pantalla de login/registro
-│   ├── map.js                    ← mapa interactivo SVG (el módulo más complejo del proyecto)
-│   ├── panel.js                  ← panel lateral de recetas + modal de ingredientes + favoritos
-│   ├── admin.js                  ← panel de administración, componente Vue 3
-│   └── app.js                    ← orquestador general: buscador, stats, auto-login, utilidades
+│   ├── styles.css               ← todo el CSS del proyecto, con variables :root y @font-face
+│   └── fonts/                   ← tipografías autoalojadas (.woff2: Alfa Slab One + Sofia Sans)
+├── js/                          ← módulos ES; app.js importa todo el grafo
+│   ├── config.js                ← URL base de la API (1 constante)
+│   ├── data.js                  ← geometría de respaldo del mapa + paleta de colores + labels de dificultad
+│   ├── util/
+│   │   └── dom.js               ← builders puros de HTML (esc/safeUrl/buscador); sin DOM, testeables con node --test
+│   ├── ui/
+│   │   └── toast.js             ← aviso flotante compartido por auth/panel/mapa/admin
+│   ├── vendor/
+│   │   └── vue.global.prod.js   ← Vue 3 fijado localmente (sin CDN)
+│   ├── __tests__/               ← suites con el runner nativo de Node (api/dom/smoke .test.mjs)
+│   ├── api.js                   ← cliente HTTP hacia la API (fetch + timeouts + JWT en memoria)
+│   ├── auth.js                  ← lógica de la pantalla de login/registro
+│   ├── map.js                   ← mapa interactivo SVG (el módulo más complejo del proyecto)
+│   ├── panel.js                 ← panel lateral de recetas + modal de ingredientes + favoritos
+│   ├── admin.js                 ← panel de administración, componente Vue 3
+│   └── app.js                   ← orquestador general: buscador, stats, auto-login, utilidades
 ├── db/
 │   ├── migrations/
-│   │   ├── 000_install.sql        ← baseline canónico: crea la BD, tablas, vista y datos semilla
-│   │   └── README.md              ← convención de migraciones numeradas
-│   └── legacy/                    ← dumps y patches históricos (solo lectura, no aplicar)
-└── api/                           ← backend completo, subcarpeta con su propio front controller
-    ├── index.php                  ← front controller (arranca Slim)
-    ├── routes.php                 ← definición de todas las rutas
+│   │   ├── 000_install.sql      ← baseline canónico: crea la BD, tablas, vista y datos semilla
+│   │   └── README.md            ← convención de migraciones numeradas
+│   └── legacy/                  ← dumps y patches históricos (solo lectura, no aplicar)
+└── api/                         ← backend completo, subcarpeta con su propio front controller
+    ├── index.php                ← front controller (arranca Slim)
+    ├── routes.php               ← definición de todas las rutas
     ├── bin/
-    │   └── create-admin.php       ← CLI que siembra la cuenta admin inicial (lee ADMIN_USER/ADMIN_PASS del .env)
-    ├── composer.json / .lock      ← dependencias PHP
-    ├── .env.example                ← plantilla de variables de entorno (copiar a .env)
-    ├── .htaccess                   ← reescribe toda request hacia index.php
-    ├── .gitignore                  ← ignora /vendor y .env
-    ├── vendor/                     ← dependencias instaladas por Composer (Slim, PSR-7, phpdotenv)
+    │   └── create-admin.php     ← CLI que siembra la cuenta admin inicial (lee ADMIN_USER/ADMIN_PASS del .env)
+    ├── tests/
+    │   ├── bootstrap.php        ← bootstrap común (env de prueba) + enganche del harness de integración
+    │   ├── Unit/                ← tests unitarios (Jwt, Validation), sin base de datos
+    │   └── Integration/         ← tests contra MySQL real (base descartable sabores_latinoamerica_test,
+    │                              reconstruida desde 000_install.sql en cada corrida)
+    ├── composer.json / .lock    ← dependencias PHP
+    ├── phpunit.xml              ← suites Unit e Integration
+    ├── phpstan.neon             ← análisis estático, nivel 8
+    ├── .env.example             ← plantilla de variables de entorno (copiar a .env)
+    ├── .htaccess                ← reescribe toda request hacia index.php
+    ├── .gitignore               ← ignora /vendor y .env
+    ├── vendor/                  ← dependencias instaladas por Composer (Slim, PSR-7, phpdotenv, PHPUnit, PHPStan)
     └── src/
-        ├── Controllers/            ← 8 controladores, uno por recurso
+        ├── Controllers/         ← 9 controladores, uno por recurso
         │   ├── AuthController.php
         │   ├── CountryController.php
         │   ├── RecipeController.php
@@ -87,16 +108,22 @@ htdocs/                          ← raíz servida por Apache (carpeta típica d
         │   ├── SearchController.php
         │   ├── StatsController.php
         │   ├── FavoriteController.php
-        │   └── AdminController.php
+        │   ├── AdminController.php
+        │   └── HealthController.php   ← GET /health (chequeo de API y base de datos)
         ├── Middleware/
         │   ├── AuthMiddleware.php
         │   ├── AdminMiddleware.php
-        │   └── CorsMiddleware.php
-        └── Support/                 ← helpers/servicios compartidos
+        │   ├── CorsMiddleware.php
+        │   └── JsonErrorHandler.php   ← errores siempre en JSON, con id rastreable
+        ├── Services/
+        │   └── AuthService.php        ← lógica de register/login/refresh/logout, inyectable con un PDO
+        └── Support/             ← helpers/servicios compartidos
             ├── Env.php
             ├── Database.php
             ├── Jwt.php
             ├── Auth.php
+            ├── Cookies.php
+            ├── Validation.php
             └── JsonResponder.php
 ```
 
@@ -108,7 +135,7 @@ Hay **dos capas independientes conviviendo en la misma carpeta servida por Apach
 flowchart LR
     subgraph CLIENTE["Navegador"]
         HTML["index.html"]
-        JSF["JS vanilla<br/>+ Vue 3 (CDN)"]
+        JSF["JS vanilla (módulos ES)<br/>+ Vue 3 (vendor local)"]
     end
 
     subgraph SERVIDOR["Apache + PHP 8.1+ (XAMPP)"]
@@ -129,7 +156,7 @@ flowchart LR
 
 Puntos clave:
 
-- El **frontend no tiene paso de build**: los `<script>` se cargan uno por uno en `index.html`, en un orden que **importa**, porque cada archivo depende de variables/funciones globales que define el anterior (detalle exacto en la sección 7).
+- El **frontend no tiene paso de build**: `index.html` carga Vue desde `js/vendor/` y un único `<script type="module">` (`js/app.js`), que importa explícitamente al resto del grafo (`api.js`, `auth.js`, `map.js`, `panel.js`, `admin.js`, `util/dom.js`, `ui/toast.js`). Al ser módulos ES, ya no hay que mantener un orden global de scripts: cada archivo declara lo que usa (detalle exacto en la sección 7).
 - El **backend sigue el patrón "front controller"**: toda request a `api/*` que no sea un archivo físico pasa por `api/index.php` (gracias al `.htaccess`), que arma la app de Slim, registra middlewares y rutas, y despacha al controlador correspondiente.
 - **No hay vistas del lado del servidor.** El backend es una API REST pura que solo devuelve JSON. Todo el HTML lo genera el JS del cliente manipulando el DOM directamente (salvo el panel de admin, que usa Vue 3).
 - La sesión **no usa sesiones PHP ni `localStorage`**: el access JWT vive solo en memoria del navegador y viaja en el header `Authorization: Bearer <token>`; el refresh token viaja en una cookie `HttpOnly` (`sdl_refresh`) que JavaScript no puede leer. Detalle completo en la sección 8.
@@ -341,7 +368,11 @@ $app->setBasePath(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])));
 
 $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
-$app->addErrorMiddleware(App\Support\Env::get('APP_DEBUG', '0') === '1', true, true);
+
+// Errores convertidos a JSON.
+$errorMiddleware = $app->addErrorMiddleware(Env::get('APP_DEBUG', '0') === '1', true, true);
+$errorMiddleware->setDefaultErrorHandler(new JsonErrorHandler());
+
 $app->add(CorsMiddleware::class); // agregado último => envuelve todo, incluidos errores
 
 $app->options('/{routes:.+}', function ($request, $response) {
@@ -356,11 +387,13 @@ Detalles importantes:
 - `setBasePath()` calcula automáticamente la subcarpeta donde corre (por ejemplo `/sabores-latinoamerica/api` si XAMPP lo sirve así), así el proyecto funciona sin importar en qué carpeta de `htdocs` se lo copie.
 - **El orden de los `->add()` importa.** Slim apila los middlewares como "capas de una cebolla": el último agregado es el que se ejecuta **primero** al llegar la request (y último al salir la respuesta). Por eso `CorsMiddleware` se agrega al final: así envuelve absolutamente todo, incluso las respuestas de error, garantizando que los headers CORS estén siempre presentes.
 - Hay una ruta comodín `OPTIONS /{routes:.+}` que responde vacío para no romper el *preflight* CORS de los navegadores antes de que el ruteo normal exija una coincidencia exacta.
+- **Los errores siempre salen en JSON** gracias a `JsonErrorHandler` (el manejador por defecto del error middleware): mapea 404/405 y excepciones HTTP a mensajes amigables, genera un **`id` de error** de 8 caracteres hexa que incluye en el body (`{"ok":false,"error":"...","id":"a1b2c3d4"}`) y escribe una línea en el log de PHP con ese mismo id (`[api-error a1b2c3d4] Clase: mensaje in archivo:línea`) para poder rastrear el incidente completo desde el log. En modo debug (`APP_DEBUG=1`) el body agrega además `exception`, `message`, `file` y `line`.
 
 ### 6.2 Rutas: `api/routes.php`
 
 | Método | Ruta | Controlador → método | Protección | Qué hace |
 |---|---|---|---|---|
+| GET | `/health` | HealthController → index | Pública | Chequeo de vida: responde `200` si API y MySQL responden, `503` si la base falla |
 | POST | `/auth/register` | AuthController → register | Pública | Crea cuenta (bcrypt, siempre `role=user`); responde `access` y deja el refresh en cookie |
 | POST | `/auth/login` | AuthController → login | Pública | Verifica credenciales, responde `access` y deja el refresh en cookie `sdl_refresh` |
 | POST | `/auth/logout` | AuthController → logout | Pública | Revoca en `sessions` el refresh de la cookie y expira la cookie |
@@ -438,7 +471,7 @@ public static function issueAccess(array $user): string
 
 #### `AuthController` — el más importante
 
-- **`register`**: valida usuario (regex `^[\p{L}\p{N}_]{3,30}$`, o sea letras/números/guión bajo, 3 a 30 caracteres) y contraseña (mínimo 6 caracteres), y crea la cuenta con `password_hash()`. Si el username ya existe, el índice `UNIQUE` corta el `INSERT` y responde `409` con un mensaje amigable. **Siempre crea `role=user`**: el rol admin solo lo otorga el CLI `bin/create-admin.php`. Responde con el `access` para loguear directo tras registrarse; el refresh sale como cookie.
+- **`register`**: valida usuario (regex `^[\p{L}\p{N}_]{3,30}$`, o sea letras/números/guión bajo, 3 a 30 caracteres) y contraseña (mínimo 8 caracteres, máximo 72), y crea la cuenta con `password_hash()`. Si el username ya existe, el índice `UNIQUE` corta el `INSERT` y responde `409` con un mensaje amigable. **Siempre crea `role=user`**: el rol admin solo lo otorga el CLI `bin/create-admin.php`. Responde con el `access` para loguear directo tras registrarse; el refresh sale como cookie.
 - **`login`**: chequea rate limit por IP (con `Retry-After` en el `429`), busca el usuario y valida con `password_verify()`. Si todo está bien devuelve el `access` nuevo y deja el refresh en la cookie.
 - **`refresh`**: lee el token de la cookie `sdl_refresh` (el header `Authorization: Bearer` queda solo como fallback de transición), lo busca hasheado en `sessions` con `FOR UPDATE`, y si es válido **rota**: revoca el viejo, crea uno nuevo y emite un `access` nuevo. Si el token que llega ya estaba revocado, asume credencial robada y borra todas las sesiones del usuario.
 - **`check`**: confirma que el `access` todavía es válido y que el usuario sigue existiendo en la base (usado al abrir la app para restaurar la sesión en silencio).
@@ -463,11 +496,11 @@ El `access` decodificado (la parte del medio, el *payload*) es:
 ```
 
 #### `CountryController`
-Un solo endpoint: `GET /countries`. Trae todos los países con la cantidad de recetas de cada uno usando `LEFT JOIN` + `COUNT` (así los países sin recetas también aparecen, con `recipe_count: 0`):
+Un solo endpoint: `GET /countries`. Trae todos los países con la cantidad de recetas de cada uno usando `LEFT JOIN` + `COUNT` (así los países sin recetas también aparecen, con `recipe_count: 0`). El `GROUP BY` lista **todas** las columnas seleccionadas (`c.id, c.iso_code, c.name, c.emoji, c.tagline`) para ser compatible con `ONLY_FULL_GROUP_BY` en MySQL y también en MariaDB, que a diferencia de MySQL no infiere dependencia funcional desde la primary key:
 ```sql
 SELECT c.id, c.iso_code, c.name, c.emoji, c.tagline, COUNT(r.id) AS recipe_count
 FROM countries c LEFT JOIN recipes r ON r.country_id = c.id
-GROUP BY c.id ORDER BY c.id
+GROUP BY c.id, c.iso_code, c.name, c.emoji, c.tagline ORDER BY c.id
 ```
 
 #### `RecipeController`
@@ -499,10 +532,13 @@ GROUP BY c.id ORDER BY c.id
 `GET /ingredients/{id}`. Dado un ingrediente, devuelve todas las recetas (de cualquier país) que lo usan, ordenadas por país y receta. Es lo que alimenta el modal de "¿en qué otras recetas aparece este ingrediente?".
 
 #### `SearchController`
-`GET /search?q=`. Requiere mínimo 2 caracteres. Hace **tres búsquedas `LIKE` en paralelo** (países, recetas por nombre o descripción, ingredientes) y devuelve hasta 4/6/4 resultados de cada tipo respectivamente, en un solo JSON.
+`GET /search?q=`. Requiere mínimo 2 caracteres. Hace **tres búsquedas `LIKE` en paralelo** (países, recetas por nombre o descripción, ingredientes) y devuelve hasta 4/6/4 resultados de cada tipo respectivamente, en un solo JSON. Antes de armar los patrones, escapa los comodines de `LIKE` (`%`, `_` y la propia `\`) con `addcslashes()`, así el usuario busca texto literal y no patrones.
 
 #### `StatsController`
-`GET /stats`. Lee la vista `v_estadisticas` (los 4 contadores globales) más el top 8 de ingredientes más usados en todo el sitio (`GROUP BY` + `COUNT` + `ORDER BY uses DESC`).
+`GET /stats`. Calcula los 4 contadores globales con **subconsultas propias e inline** (misma matemática que la vista `v_estadisticas`, pero sin leerla): así `/stats` sigue funcionando aunque la vista no exista y el endpoint queda portable entre instalaciones. Además devuelve el top 8 de ingredientes más usados en todo el sitio (`GROUP BY i.id, i.name` + `COUNT` + `ORDER BY uses DESC, i.name LIMIT 8`).
+
+#### `HealthController`
+`GET /health`, público. Ejecuta un `SELECT 1` contra la base y responde `200` con `{ ok, api, db, time }` si todo responde, o `503` si la base falla; útil para monitoreo y para que el front verifique la API. Como casi todos los controladores del proyecto, acepta un tercer parámetro opcional `PDO|array|null`: si le inyectan un PDO (los tests de integración lo hacen) lo usa, y si Slim le pasa el array de argumentos de ruta (su estrategia de invocación por defecto siempre pasa un tercer argumento posicional) o `null`, cae al `Database::connection()` compartido.
 
 #### `FavoriteController`
 - `GET /favorites`: recetas favoritas del usuario logueado (join `favorites` → `recipes` → `countries`).
@@ -538,18 +574,12 @@ Todo vive en un único HTML con tres bloques principales que se muestran/ocultan
 - `#panel` (`<aside>`) — panel lateral deslizante, reutilizado para tres cosas distintas según el momento: recetas de un país, favoritos, o el panel de admin.
 - `#ingModal` — modal centrado para "recetas que usan este ingrediente".
 
-Los scripts se cargan en este orden exacto (importa, porque son variables/funciones globales sin módulos ES):
+Solo hay dos etiquetas de script en el HTML: Vue versionado localmente (clásico, para que `admin.js` lo encuentre en `window.Vue`) y un único módulo ES que importa todo el grafo:
 ```html
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="js/config.js"></script>
-<script src="js/data.js"></script>
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/map.js"></script>
-<script src="js/panel.js"></script>
-<script src="js/admin.js"></script>
-<script src="js/app.js"></script>
+<script src="js/vendor/vue.global.prod.js"></script>
+<script type="module" src="js/app.js"></script>
 ```
+`app.js` declara sus imports explícitos (`./api.js`, `./auth.js`, `./map.js`, `./panel.js`, `./admin.js`, `./ui/toast.js`, `./util/dom.js`), y cada uno de esos módulos hace lo propio con sus dependencias. Al ser módulos ES no hay variables globales compartidas: el orden de carga lo resuelve el grafo de imports, no la posición de las etiquetas.
 
 ### 7.2 Sistema de diseño (`css/styles.css`)
 
@@ -563,11 +593,12 @@ Define `MAP_SHAPES` (un arreglo de 22 países con su `iso_code`, nombre, emoji y
 
 ### 7.5 `js/api.js` — el cliente HTTP
 
-Es un objeto único `API` que centraliza **todas** las llamadas al backend y resuelve tres problemas transversales:
+Es un módulo ES que exporta un objeto único `API` y centraliza **todas** las llamadas al backend. Resuelve cuatro problemas transversales:
 
 1. **Inyectar el JWT automáticamente** en cada request (`Authorization: Bearer <access>`).
 2. **Mantener el access solo en memoria**: `API.access` es una propiedad del objeto, nada se escribe en `localStorage`. Al cargarse, el módulo además borra las claves `sdl_access`/`sdl_refresh` que pudieran quedar de versiones anteriores, para no dejar restos legibles por JS de sesiones viejas.
-3. **Refrescar el token solo cuando hace falta**: si una request da `401` (y no es una ruta de `/auth/`), pide un `access` nuevo contra `/auth/refresh` enviando la cookie (`credentials: 'include'`) y **reintenta la request original una sola vez** (parámetro `retried` para no entrar en loop infinito). Varias requests que fallan juntas comparten una misma promesa de refresh (`_refreshPromise`) para no disparar refreshes en paralelo:
+3. **Cortar requests colgadas con `fetchWithTimeout()`**: cada llamada pasa por un wrapper con `AbortController` y `setTimeout`, con timeout de 15 segundos para los endpoints normales (`REQUEST_TIMEOUT_MS`) y 5 segundos para el chequeo de `/health` (`HEALTH_TIMEOUT_MS`). Si el abort dispara, la promesa rechaza con un error claro en vez de dejar al usuario mirando una pantalla congelada.
+4. **Refrescar el token solo cuando hace falta**: si una request da `401` (y no es una ruta de `/auth/`), pide un `access` nuevo contra `/auth/refresh` enviando la cookie (`credentials: 'include'`) y **reintenta la request original una sola vez** (parámetro `retried` para no entrar en loop infinito). Varias requests que fallan juntas comparten una misma promesa de refresh (`_refreshPromise`) para no disparar refreshes en paralelo:
 ```javascript
 async _req(url, opts = {}, retried = false) {
   // ...agrega Authorization si hay access...
@@ -729,6 +760,28 @@ Variables de entorno (`api/.env`):
 | `ADMIN_USER` / `ADMIN_PASS` | *(vacíos)* | Cuenta admin inicial que siembra `api/bin/create-admin.php` |
 | `APP_DEBUG` | `0` | `1` para ver errores detallados de Slim (solo desarrollo) |
 
+### 10.1 Verificación (tests y análisis estático)
+
+Comandos exactos tal como se corren en la máquina de desarrollo actual. **Nota: Composer no está instalado en esta máquina**, así que en vez de `composer test`/`composer stan` se invocan los binarios por su ruta directa dentro de `api/vendor/`:
+
+```bat
+cd api
+php vendor\phpunit\phpunit\phpunit --testsuite Unit
+php vendor\phpunit\phpunit\phpunit --testsuite Integration
+php vendor\phpstan\phpstan\phpstan analyse
+```
+
+Los tests de integración reconstruyen la base descartable `sabores_latinoamerica_test` desde `db/migrations/000_install.sql` al arrancar la suite (harness en `api/tests/Integration/bootstrap.php`), así que necesitan MySQL corriendo pero no tocan la base real.
+
+Para el frontend (Node ≥ 18, desde la raíz del proyecto):
+
+```bat
+node --test "js/__tests__/*.test.mjs"
+npm run lint:templates
+```
+
+`npm run test:js` es el atajo equivalente al `node --test` anterior; el linter revisa que ninguna interpolación sin escape llegue a un sink `innerHTML`.
+
 ## 11. Cosas importantes a tener en cuenta
 
 ### 11.1 ✅ El código y el `.sql` coinciden (resuelto)
@@ -742,14 +795,38 @@ Eso quedó **resuelto** con la reorganización de la capa de datos:
 - Los cambios futuros de esquema son **migraciones numeradas nuevas** (`001_*.sql`, `002_*.sql`, ...) siguiendo la convención de `db/migrations/README.md`: nunca se edita el baseline ni una migración ya aplicada, se escribe una nueva.
 
 ### 11.2 Buenas prácticas que el proyecto ya aplica
-- **100% consultas preparadas** (PDO con `?`), en ningún lado se concatena input del usuario directo en SQL.
-- Contraseñas con `password_hash`/`password_verify` (bcrypt), nunca texto plano.
+- **100% consultas preparadas** (PDO con `?`), en ningún lado se concatena input del usuario directo en SQL; los patrones `LIKE` además escapan `%`, `_` y `\` para que la búsqueda sea literal.
+- Contraseñas con `password_hash`/`password_verify` (bcrypt), nunca texto plano, con mínimo de 8 caracteres.
+- El refresh token nunca se guarda crudo: viaja como cookie `HttpOnly`/`SameSite=Strict` y en la base solo está su **hash SHA-256**.
+- Cada refresh **rota** el token (revoca el viejo, emite uno nuevo) y si un token ya revocado reaparece se asume robo de credencial y se revocan todas las sesiones del usuario.
+- Rate limiting por IP en login y registro, respondiendo `429` con header `Retry-After`.
+- Todo dato dinámico que entra a una plantilla HTML pasa por los builders escapadores de `js/util/dom.js` (`esc()`/`safeUrl()`), y `scripts/lint-templates.mjs` corta el paso si alguna interpolación sin escape apunta a un sink `innerHTML`.
 - Comparación de firma JWT con `hash_equals()` (a tiempo constante, evita timing attacks).
 - Validación duplicada cliente/servidor (UX inmediata + seguridad real).
 - `RecipeController` evita el problema N+1 trayendo los ingredientes de varias recetas en una sola consulta con `IN (...)`.
+- El backend corre limpio en **PHPStan nivel 8** (máximo rigor de análisis estático).
 
 ### 11.3 Otras notas útiles
 - `Access-Control-Allow-Origin: *` es permisivo a propósito (pensado para desarrollo local); en producción normalmente se restringiría a un origen concreto.
 - Todavía no hay CI/CD ni Docker. Sí hay tests automatizados: PHPUnit en `api/tests/` (unit + integración contra una base MySQL descartable `sabores_latinoamerica_test`, reconstruida desde el baseline) y JS nativo en `js/__tests__/` (`npm run test:js`). El esquema ya no se reimporta a ciegas: evoluciona con migraciones numeradas en `db/migrations/` (baseline `000_install.sql`), y los dumps históricos quedaron archivados en `db/legacy/`.
+- **Herramientas de calidad del frontend**:
+  - `js/util/dom.js` concentra builders puros de HTML (`esc()` para escapar los cinco caracteres peligrosos, `safeUrl()` para validar IDs de YouTube, armadores de tarjetas y filas de búsqueda). No tocan `document`, solo devuelven strings, así se testean con `node --test` sin DOM. Regla del proyecto: ningún sink `innerHTML` arma marcado con interpolaciones sueltas; consume estos builders.
+  - `scripts/lint-templates.mjs` (atajo `npm run lint:templates`) es el guardián de esa regla: recorre los `.js` del front y corta con error si encuentra una interpolación `${...}` dentro de una asignación a `.innerHTML` que no empiece por `esc(`, `safeUrl(`, `iframeHTML(` o lleve el marcador de estático.
 - El texto de la interfaz usa **voseo rioplatense** ("Entrá", "Creá tu cuenta", "Necesitás iniciar sesión") — útil de saber si se le pide a una IA que agregue textos nuevos y deban sonar consistentes con el resto.
 - El módulo de mapa (`map.js`) es, con diferencia, el código más denso del proyecto: mezcla decodificación de TopoJSON, proyección cartográfica, geometría computacional (centroide, point-in-polygon) e interacción táctil/mouse unificada, todo sin dependencias externas.
+
+## 12. Registro del rework (2026-08)
+
+El proyecto pasó por un rework completo por olas, cada una con objetivo único y verificable. Resumen de las siete olas sobre un total de **36 commits**:
+
+| Ola | Tema | Commits | Resultado |
+|---|---|---|---|
+| A | Higiene del baseline | 3 | Import limpio del proyecto original, fuera el `composer.phar` del web root y bloqueado el acceso HTTP a dotfiles y archivos sensibles |
+| B | Capa de datos + bootstrap admin | 3 | `db/migrations/000_install.sql` como baseline canónico (pliega los patches legacy), CLI `bin/create-admin.php` que siembra la cuenta admin, y harness de integración contra MySQL real más runner JS con Node |
+| C | Frontend modular y XSS fuera | 7 | Grafo explícito de módulos ES reemplaza la cadena de scripts globales, Vue versionado local y fuentes autoalojadas, builders escapadores en `util/dom.js`, todos los sinks `innerHTML` escapados y linter de plantillas como guardián |
+| D | Endurecimiento de la API | 5 | Validación server-side completa en escrituras de recetas, checks de límites y existencia en mutaciones admin, contraseñas de mínimo 8 caracteres, búsqueda `LIKE` literal-safe, estadísticas desacopladas de la vista con `GROUP BY` estricto |
+| E | Rework de autenticación | 6 | Refresh token como cookie `HttpOnly`/`SameSite=Strict` con rotación y detección de reutilización, access JWT solo en memoria, `429` con `Retry-After`, errores JSON con id rastreable, mapeo contenido de fallos SQL en escrituras admin y documentación del flujo |
+| F | Resiliencia y accesibilidad de UI | 8 | Estados de carga/error/vacío en todas las superficies asíncronas, timeouts de request con abort limpio, manejo defensivo de inputs de borde, teclado y lectores de pantalla, correcciones de layout mobile, shimmer más visible y favicon/toast pulidos |
+| G | Portones de calidad | 4 | PHPStan limpio en nivel 8, suites unitarias exhaustivas (Jwt, Validation), tests JS de funciones puras y lógica de reintento, cobertura de integración de controladores y ciclo de vida de auth |
+
+Cada ola dejó la app funcional: nada quedó a medio migrar entre olas.

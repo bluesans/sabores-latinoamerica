@@ -36,9 +36,11 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
 
 ## Arquitectura
 
-- **Frontend**: HTML + CSS + JS vanilla (`js/app.js`, `js/map.js`, `js/panel.js`, `js/auth.js`)
-  más un componente **Vue 3** (vía CDN, sin build step) para el panel de administración
-  (`js/admin.js`). Toda la comunicación con el backend pasa por `js/api.js`.
+- **Frontend**: HTML + CSS + JS vanilla como módulos ES (`js/app.js` importa el resto:
+  `js/map.js`, `js/panel.js`, `js/auth.js`, `js/util/dom.js`, `js/ui/toast.js`)
+  más un componente **Vue 3** versionado localmente en `js/vendor/` (sin build step)
+  para el panel de administración (`js/admin.js`). Toda la comunicación con el
+  backend pasa por `js/api.js`.
 - **Backend**: API REST construida con **Slim 4** (`api/index.php` es el front controller,
   las rutas están en `api/routes.php`, los controladores en `api/src/Controllers`).
   Requiere `composer install` para traer las dependencias (`slim/slim`, `slim/psr7`,
@@ -54,7 +56,8 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
   El flujo completo está en la sección 8 de `documentacion-tecnica-sabores-latinoamerica.md`.
 - Los países "apagados" del mapa son los que no tienen recetas en la BD
   (Belice, Haití, Puerto Rico). Agregá recetas y se encienden solos.
-- Las estadísticas salen de la vista `v_estadisticas`.
+- Las estadísticas las calcula `StatsController` con consultas propias (misma matemática
+  que la vista `v_estadisticas`, pero sin depender de que la vista exista).
 - Los cambios de esquema van como migraciones numeradas en `db/migrations/`
   (convención en `db/migrations/README.md`); los dumps y patches históricos
   quedaron archivados, solo lectura, en `db/legacy/`.
