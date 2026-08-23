@@ -102,9 +102,78 @@ function makeHeaderControls() {
 async function reloadFavCount() {
     const el = document.getElementById('favCount');
     if (!el) return;
-    try { const d = await API.getFavoritos(); el.textContent = d.favorites.length; } catch (e) {}
+    try {
+        const d = await API.getFavoritos();
+        el.textContent = d.favorites.length;
+        const btn = document.getElementById('favBtn');
+        if (btn) btn.title = 'Mis favoritos';
+    } catch (e) {
+        /* Sin toast a propósito: el contador es secundario y se reintenta
+           solo con el próximo evento fav:changed. Se avisa por consola y
+           en el tooltip del botón, que queda marcado como degradado. */
+        console.warn('favCount:', e.message);
+        const btn = document.getElementById('favBtn');
+        if (btn) btn.title = 'No se pudieron cargar los favoritos';
+    }
 }
 document.addEventListener('fav:changed', reloadFavCount);
+
+/* ---------- Carga inicial del app: mapa y stats son independientes ---------- */
+function removeLoadRetry() {
+    const chip = document.getElementById('loadRetry');
+    if (chip) chip.remove();
+}
+
+function insertLoadRetry(label) {
+    removeLoadRetry();
+    const chip = document.createElement('div');
+    chip.id = 'loadRetry';
+    chip.className = 'load-retry';
+    const span = document.createElement('span');
+    span.textContent = `⚠️ No se pudo cargar ${label}.`;
+    const btn = document.createElement('button');
+    btn.className = 'btn-retry';
+    btn.type = 'button';
+    btn.textContent = '↻ Reintentar';
+    btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        await enterAppData();
+    });
+    chip.append(span, btn);
+    document.getElementById('statsBar').after(chip);
+}
+
+async function loadMapData() {
+    const pd = await API.getPaises();
+    buildMap(pd.countries);
+}
+
+async function loadStats() {
+    const sd = await API.getStats();
+    const s = sd.stats;
+    $('#headCount').textContent = `${s.paises_con_recetas} países · ${s.total_recetas} recetas`;
+    countUp($('#stCountries'), Number(s.paises_con_recetas));
+    countUp($('#stRecipes'), Number(s.total_recetas));
+    countUp($('#stIngs'), Number(s.ingredientes_distintos));
+    countUp($('#stVideos'), Number(s.recetas_con_video));
+    renderTopIngredients(sd.top_ingredients);
+}
+
+/* Intenta mapa y estadísticas por separado: si una falla, la otra igual
+   se muestra. Devuelve true sólo si ambas llegaron. */
+async function enterAppData() {
+    const [mapR, statsR] = await Promise.allSettled([loadMapData(), loadStats()]);
+    if (mapR.status === 'fulfilled' && statsR.status === 'fulfilled') {
+        removeLoadRetry();
+        return true;
+    }
+    const failed = [];
+    if (mapR.status === 'rejected') { console.error('map:', mapR.reason); failed.push('el mapa'); }
+    if (statsR.status === 'rejected') { console.error('stats:', statsR.reason); failed.push('las estadísticas'); }
+    toast(`No se pudo cargar ${failed.join(' ni ')}.`);
+    insertLoadRetry(failed.join(' ni '));
+    return false;
+}
 
 async function enterApp(name, isNew, role) {
     authScreen.classList.remove('on');
@@ -116,17 +185,7 @@ async function enterApp(name, isNew, role) {
     makeHeaderControls();
     document.getElementById('adminBtn').hidden = (role || 'user') !== 'admin';
     reloadFavCount();
-    try {
-        const [pd, sd] = await Promise.all([API.getPaises(), API.getStats()]);
-        buildMap(pd.countries);
-        const s = sd.stats;
-        $('#headCount').textContent = `${s.paises_con_recetas} países · ${s.total_recetas} recetas`;
-        countUp($('#stCountries'), Number(s.paises_con_recetas));
-        countUp($('#stRecipes'), Number(s.total_recetas));
-        countUp($('#stIngs'), Number(s.ingredientes_distintos));
-        countUp($('#stVideos'), Number(s.recetas_con_video));
-        renderTopIngredients(sd.top_ingredients);
-    } catch (err) { toast(err.message); console.error(err); return; }
+    await enterAppData();
     toast(isNew ? `¡Cuenta creada! Bienvenido, ${name} 🌶️` : `Hola de nuevo, ${name} 👋`);
     scrollTo({ top: 0 });
 }
@@ -136,5 +195,7 @@ initAuth(enterApp);
 (async () => {
     // Sin access en memoria igual se intenta: puede haber cookie sdl_refresh
     // de una sesión previa y checkSession la restaura en silencio.
-    try { const r = await API.checkSession(); await enterApp(r.username, false, r.role); } catch (e) {}
+    // ALLOWLIST (captura vacía intencional): es un sondeo opcional de sesión;
+    // si falla lo correcto es quedarse en el login, no mostrar un error.
+    try { const r = await API.checkSession(); await enterApp(r.username, false, r.role); } catch (e) { /* sondeo silencioso */ }
 })();

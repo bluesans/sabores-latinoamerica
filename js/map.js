@@ -110,7 +110,7 @@ const svg = document.getElementById('mapSvg');
                     const res = await fetch(url);
                     if (!res.ok) continue;
                     json = await res.json();
-                    if (url === GEO_SOURCES[0]) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(json)); } catch (e) { } }
+                    if (url === GEO_SOURCES[0]) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(json)); } catch (e) { /* cuota llena o storage bloqueado: se sigue sin caché */ } }
                 }
                 feats = decodeTopo(json);
                 if (feats && feats.length) break;
@@ -236,6 +236,8 @@ const svg = document.getElementById('mapSvg');
         shell.appendChild(loading);
         try {
             let geo = null;
+            /* Sin geometría remota se cae al trazado básico embebido y el
+               badge lo explica: el mapa nunca queda vacío por un CDN caído. */
             try { geo = await buildGeoLayers(); } catch (e) { geo = null; }
             let di = 0;
             if (geo) {
