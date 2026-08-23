@@ -126,6 +126,7 @@ async function enterApp(name, isNew, role) {
 initAuth(enterApp);
 
 (async () => {
-    if (!API.access && !API.refresh) return;
+    // Sin access en memoria igual se intenta: puede haber cookie sdl_refresh
+    // de una sesión previa y checkSession la restaura en silencio.
     try { const r = await API.checkSession(); await enterApp(r.username, false, r.role); } catch (e) {}
 })();

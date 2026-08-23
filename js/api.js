@@ -2,26 +2,25 @@ import { API_URL } from './config.js';
 
 const AUTH_URL_PATTERN = /\/auth\//;
 
+/* Migración desde el esquema viejo (tokens en localStorage): esas claves
+   ya no se usan — el access vive sólo en memoria y el refresh viaja como
+   cookie HttpOnly (sdl_refresh). Se borran para que no queden restos
+   legibles por JS de una sesión anterior. */
+try {
+    localStorage.removeItem('sdl_access');
+    localStorage.removeItem('sdl_refresh');
+} catch {
+    /* Sin storage disponible (tests / navegadores restrictivos): nada que limpiar. */
+}
+
 export const API = {
-    access: localStorage.getItem('sdl_access'),
-    refresh: localStorage.getItem('sdl_refresh'),
+    /* Access token en memoria: muere con la página. El silencioso
+       /auth/refresh lo repone desde la cookie al volver a entrar. */
+    access: null,
     _refreshPromise: null,
 
-    setTokens(a, r) {
-        this.access = a;
-        this.refresh = r;
-
-        if (a) {
-            localStorage.setItem('sdl_access', a);
-        } else {
-            localStorage.removeItem('sdl_access');
-        }
-
-        if (r) {
-            localStorage.setItem('sdl_refresh', r);
-        } else {
-            localStorage.removeItem('sdl_refresh');
-        }
+    setTokens(a) {
+        this.access = a || null;
     },
 
     async _req(url, opts = {}, retried = false) {
@@ -46,7 +45,7 @@ export const API = {
             throw new Error('No se pudo conectar con la API. Revisá Apache y la base.');
         }
 
-        if (res.status === 401 && this.refresh && !retried && !AUTH_URL_PATTERN.test(url)) {
+        if (res.status === 401 && !retried && !AUTH_URL_PATTERN.test(url)) {
             await this.refreshSession();
 
             opts.headers['Authorization'] = 'Bearer ' + this.access;
@@ -83,9 +82,7 @@ export const API = {
         try {
             const res = await fetch(`${API_URL}/auth/refresh`, {
                 method: 'POST',
-                headers: {
-                    Authorization: 'Bearer ' + this.refresh
-                }
+                credentials: 'include'
             });
 
             const d = await res.json().catch(() => ({}));
@@ -94,9 +91,9 @@ export const API = {
                 throw new Error();
             }
 
-            this.setTokens(d.access, d.refresh ?? this.refresh);
+            this.setTokens(d.access);
         } catch (e) {
-            this.setTokens(null, null);
+            this.setTokens(null);
             throw new Error('La sesión expiró. Volvé a entrar.');
         }
     },
@@ -112,9 +109,16 @@ export const API = {
 
     async checkSession() {
         try {
+            if (!this.access) {
+                /* Restauración silenciosa: puede quedar la cookie sdl_refresh
+                   de una sesión previa aunque el access en memoria se haya
+                   perdido al recargar. Sin cookie => falla => login. */
+                await this.refreshSession();
+            }
+
             return await this._req(`${API_URL}/auth/check`);
         } catch (e) {
-            if (!this.refresh) {
+            if (!this.access) {
                 throw e;
             }
 
@@ -125,19 +129,18 @@ export const API = {
     },
 
     logout() {
-        const r = this.refresh;
+        this.setTokens(null);
 
-        this.setTokens(null, null);
-
-        if (r) {
-            return fetch(`${API_URL}/auth/logout`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ refresh: r })
-            }).catch(() => {});
-        }
+        /* El servidor limpia la cookie sdl_refresh; el body ya no lleva
+           tokens. Si la red falla, igual cerramos sesión del lado cliente. */
+        return fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        }).catch(() => {});
     },
 
     health() {

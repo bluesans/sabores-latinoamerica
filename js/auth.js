@@ -55,7 +55,7 @@ export function initAuth(enterApp) {
     btn.disabled = true; btn.textContent = 'Un momento…';
     try {
       const res = await API.auth(mode, userInp.value.trim(), pass1.value);
-      API.setTokens(res.access, res.refresh);
+      API.setTokens(res.access); // el refresh llega como cookie HttpOnly, no en el body
       await enterApp(res.username, mode === 'register', res.role);
     } catch (err) {
       fail(err.message);
