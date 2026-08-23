@@ -21,6 +21,7 @@ final class Auth
         return preg_match('/^Bearer\s+([\w\-.]+)$/', $auth, $m) ? $m[1] : null;
     }
 
+    /** @return array<string, mixed>|null */
     public static function userFromRequest(Request $request): ?array
     {
         $user = $request->getAttribute('auth_user');
@@ -209,16 +210,6 @@ final class Auth
             : (int) ceil($oldest + $minutes * 60 - time());
 
         return ['allowed' => false, 'retryAfter' => max(1, $retryAfter)];
-    }
-
-    private static function checkRate(
-        PDO $pdo,
-        string $ip,
-        string $action,
-        int $maxAttempts,
-        int $minutes
-    ): bool {
-        return self::checkRateDetails($pdo, $ip, $action, $maxAttempts, $minutes)['allowed'];
     }
 
     private static function recordAttempt(

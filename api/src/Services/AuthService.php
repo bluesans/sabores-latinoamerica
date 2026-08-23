@@ -15,6 +15,7 @@ final class AuthService
     {
     }
 
+    /** @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} */
     public function register(string $username, string $password, string $ip): array
     {
         $username = trim($username);
@@ -55,7 +56,10 @@ final class AuthService
                     'user',
                 ]);
         } catch (PDOException $e) {
-            [$sqlState, $driverCode] = $e->errorInfo;
+            $errorInfo = $e->errorInfo;
+            // PDO driver errors always populate errorInfo; the stub allows null.
+            \assert(is_array($errorInfo));
+            [$sqlState, $driverCode] = $errorInfo;
 
             if ($sqlState === '23000' || (int) $driverCode === 1062) {
                 return self::failure('Ese usuario ya existe. Probá con otro.', 409);
@@ -82,6 +86,7 @@ final class AuthService
         ]);
     }
 
+    /** @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} */
     public function login(string $username, string $password, string $ip): array
     {
         $username = trim($username);
@@ -125,6 +130,7 @@ final class AuthService
         ]);
     }
 
+    /** @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} */
     public function refresh(?string $token): array
     {
         if ($token === null || $token === '') {
@@ -182,6 +188,7 @@ final class AuthService
         }
     }
 
+    /** @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} */
     public function logout(string $refresh): array
     {
         if ($refresh !== '') {
@@ -191,6 +198,10 @@ final class AuthService
         return self::success([]);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>}
+     */
     private static function success(array $data, int $status = 200): array
     {
         return [
@@ -201,6 +212,10 @@ final class AuthService
         ];
     }
 
+    /**
+     * @param array<string, string> $headers
+     * @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>}
+     */
     private static function failure(string $error, int $status, array $headers = []): array
     {
         return [

@@ -16,6 +16,8 @@ final class FavoriteController
     public function index(Request $request, Response $response): Response
     {
         $user = Auth::userFromRequest($request);
+        // AuthMiddleware always populates auth_user before this route runs.
+        \assert($user !== null);
         $st = Database::connection()->prepare(
             'SELECT r.id, r.name, r.difficulty, r.time_minutes, c.id AS country_id, c.name AS country_name, c.emoji
              FROM favorites f
@@ -32,6 +34,8 @@ final class FavoriteController
     public function toggle(Request $request, Response $response): Response
     {
         $user = Auth::userFromRequest($request);
+        // AuthMiddleware always populates auth_user before this route runs.
+        \assert($user !== null);
         $b    = (array) $request->getParsedBody();
         $rid  = (int) ($b['recipe_id'] ?? 0);
         $pdo  = Database::connection();

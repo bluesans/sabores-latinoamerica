@@ -19,7 +19,9 @@ final class AuthMiddleware
 
         if (!$payload) {
             $response = new SlimResponse(401);
-            $response->getBody()->write(json_encode(['ok' => false, 'error' => 'Necesitás iniciar sesión.'], JSON_UNESCAPED_UNICODE));
+            $json = json_encode(['ok' => false, 'error' => 'Necesitás iniciar sesión.'], JSON_UNESCAPED_UNICODE);
+            \assert($json !== false);
+            $response->getBody()->write($json);
             return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         }
 

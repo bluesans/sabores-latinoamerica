@@ -26,22 +26,26 @@ final class StatsController
 
         // Same math as v_estadisticas, inlined so /stats keeps working when
         // the view is absent and stays portable across installs.
-        $stats = $db->query(
+        $stStats = $db->query(
             'SELECT
                 (SELECT COUNT(DISTINCT country_id) FROM recipes) AS paises_con_recetas,
                 (SELECT COUNT(*) FROM recipes) AS total_recetas,
                 (SELECT COUNT(*) FROM ingredients) AS ingredientes_distintos,
                 (SELECT COUNT(*) FROM recipes WHERE youtube_id IS NOT NULL AND youtube_id <> \'\') AS recetas_con_video'
-        )->fetch();
+        );
+        \assert($stStats !== false);
+        $stats = $stStats->fetch();
 
-        $top = $db->query(
+        $stTop = $db->query(
             'SELECT i.id, i.name, COUNT(*) AS uses
              FROM recipe_ingredient ri
              JOIN ingredients i ON i.id = ri.ingredient_id
              GROUP BY i.id, i.name
              ORDER BY uses DESC, i.name
              LIMIT 8'
-        )->fetchAll();
+        );
+        \assert($stTop !== false);
+        $top = $stTop->fetchAll();
 
         return $this->json($response, ['ok' => true, 'stats' => $stats, 'top_ingredients' => $top]);
     }

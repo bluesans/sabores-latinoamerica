@@ -12,6 +12,7 @@ final class RecipeController
 {
     use JsonResponder;
 
+    /** @param array<string, string> $args */
     public function byCountry(Request $request, Response $response, array $args): Response
     {
         $cid = (int) $args['id'];

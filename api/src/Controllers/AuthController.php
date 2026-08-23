@@ -52,6 +52,9 @@ final class AuthController
     {
         $user = Auth::userFromRequest($request);
 
+        // AuthMiddleware always populates auth_user before this route runs.
+        \assert($user !== null);
+
         // Verificar que el usuario todavía existe en la base de datos.
         // Sin esto, un JWT válido de un usuario borrado seguiría funcionando.
         $pdo = $this->pdo ?? Database::connection();
@@ -126,6 +129,8 @@ final class AuthController
     /**
      * Success responses carrying a fresh refresh token move it out of the JSON
      * body and into the HttpOnly cookie (todo 18).
+     *
+     * @param array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} $result
      */
     private function respondWithSessionCookie(Response $response, array $result): Response
     {
@@ -139,6 +144,7 @@ final class AuthController
         return $this->respond($response, $result);
     }
 
+    /** @param array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} $result */
     private function respond(Response $response, array $result): Response
     {
         $data = $result['data'] ?? [];

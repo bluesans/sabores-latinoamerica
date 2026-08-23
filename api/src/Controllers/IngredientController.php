@@ -12,6 +12,7 @@ final class IngredientController
 {
     use JsonResponder;
 
+    /** @param array<string, string> $args */
     public function show(Request $request, Response $response, array $args): Response
     {
         $id  = (int) $args['id'];

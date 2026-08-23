@@ -38,7 +38,9 @@ final class AuthServiceTest extends TestCase
     public function testRegisterOnEmptyUsersTableCreatesPlainUser(): void
     {
         $pdo = TestDb_pdo();
-        $count = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        $stCount = $pdo->query('SELECT COUNT(*) FROM users');
+        \assert($stCount !== false);
+        $count = (int) $stCount->fetchColumn();
         $this->assertSame(0, $count, 'precondition: users table must be empty');
 
         $service = new AuthService($pdo);
@@ -71,9 +73,9 @@ final class AuthServiceTest extends TestCase
         $this->assertSame('Ese usuario ya existe. Probá con otro.', $second['data']['error']);
 
         // Exactly one row survived the duplicate attempt.
-        $count = (int) TestDb_pdo()
-            ->query("SELECT COUNT(*) FROM users WHERE username = 'qa_dup_user'")
-            ->fetchColumn();
+        $stDup = TestDb_pdo()->query("SELECT COUNT(*) FROM users WHERE username = 'qa_dup_user'");
+        \assert($stDup !== false);
+        $count = (int) $stDup->fetchColumn();
         $this->assertSame(1, $count);
     }
 

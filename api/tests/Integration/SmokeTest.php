@@ -30,19 +30,27 @@ final class SmokeTest extends TestCase
     {
         $pdo = TestDb_pdo();
 
-        $tables = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(\PDO::FETCH_COLUMN, 0);
+        $stTables = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
+        \assert($stTables !== false);
+        $tables = $stTables->fetchAll(\PDO::FETCH_COLUMN, 0);
         sort($tables);
         $expected = self::EXPECTED_TABLES;
         sort($expected);
         $this->assertSame($expected, $tables, 'SHOW TABLES must match the 000_install.sql table set exactly');
 
-        $views = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'VIEW'")->fetchAll(\PDO::FETCH_COLUMN, 0);
+        $stViews = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'VIEW'");
+        \assert($stViews !== false);
+        $views = $stViews->fetchAll(\PDO::FETCH_COLUMN, 0);
         $this->assertContains('v_estadisticas', $views, 'statistics view v_estadisticas must exist');
 
-        $userColumns = $pdo->query('SHOW COLUMNS FROM `users`')->fetchAll(\PDO::FETCH_COLUMN, 0);
+        $stUserColumns = $pdo->query('SHOW COLUMNS FROM `users`');
+        \assert($stUserColumns !== false);
+        $userColumns = $stUserColumns->fetchAll(\PDO::FETCH_COLUMN, 0);
         $this->assertContains('role', $userColumns, 'users.role column is part of the auth contract');
 
-        $sessionColumns = $pdo->query('SHOW COLUMNS FROM `sessions`')->fetchAll(\PDO::FETCH_COLUMN, 0);
+        $stSessionColumns = $pdo->query('SHOW COLUMNS FROM `sessions`');
+        \assert($stSessionColumns !== false);
+        $sessionColumns = $stSessionColumns->fetchAll(\PDO::FETCH_COLUMN, 0);
         $this->assertContains('revoked_at', $sessionColumns, 'sessions.revoked_at column is part of the auth contract');
     }
 }

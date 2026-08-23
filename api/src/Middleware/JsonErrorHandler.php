@@ -63,9 +63,9 @@ final class JsonErrorHandler
 
         $response = new SlimResponse($status);
 
-        $response->getBody()->write(
-            json_encode($payload, JSON_UNESCAPED_UNICODE)
-        );
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        \assert($json !== false);
+        $response->getBody()->write($json);
 
         return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
     }

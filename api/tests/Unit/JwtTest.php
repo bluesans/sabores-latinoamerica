@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 final class JwtTest extends TestCase
 {
+    /** @return array{id: int, username: string, role: string} */
     private function sampleUser(): array
     {
         return [

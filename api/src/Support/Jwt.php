@@ -8,6 +8,7 @@ final class Jwt
     private const LEEWAY_SECONDS = 10;
     private const DEFAULT_TTL_SECONDS = 900;
 
+    /** @param array<string, mixed> $payload */
     public static function encode(array $payload): string
     {
         $header = json_encode([
@@ -29,6 +30,7 @@ final class Jwt
         );
     }
 
+    /** @return array<string, mixed>|null */
     public static function decode(string $token): ?array
     {
         $parts = explode('.', $token);
@@ -90,6 +92,7 @@ final class Jwt
         return $payload;
     }
 
+    /** @param array<string, int|string> $user */
     public static function issueAccess(array $user): string
     {
         return self::encode([

@@ -31,6 +31,9 @@ function TestDb_dsn(?string $dbname = null): string
         . ';charset=utf8mb4';
 }
 
+/**
+ * @return array{0: string|null, 1: string|null} [user, pass] as resolved by Env
+ */
 function TestDb_credentials(): array
 {
     return [Env::get('DB_USER', 'root'), Env::get('DB_PASS', '')];
@@ -58,7 +61,9 @@ function TestDb_migrationPath(): string
 
 function TestDb_tableCount(): int
 {
-    return count(TestDb_pdo()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN, 0));
+    $st = TestDb_pdo()->query('SHOW TABLES');
+    \assert($st !== false);
+    return count($st->fetchAll(PDO::FETCH_COLUMN, 0));
 }
 
 function TestDb_assertSchemaBooted(string $via): void

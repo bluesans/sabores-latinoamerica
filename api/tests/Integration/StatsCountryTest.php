@@ -82,7 +82,9 @@ final class StatsCountryTest extends TestCase
             ]
         );
         $pdo->exec("SET SESSION sql_mode = 'ONLY_FULL_GROUP_BY'");
-        $mode = (string) $pdo->query('SELECT @@SESSION.sql_mode')->fetchColumn();
+        $stMode = $pdo->query('SELECT @@SESSION.sql_mode');
+        \assert($stMode !== false);
+        $mode = (string) $stMode->fetchColumn();
         $this->assertStringContainsString('ONLY_FULL_GROUP_BY', $mode, 'server must honor the strict session mode');
 
         $response = (new CountryController())->index($this->request(), $this->response(), $pdo);
@@ -98,7 +100,11 @@ final class StatsCountryTest extends TestCase
 
     private function request(): ServerRequestInterface
     {
-        return (new RequestFactory())->createRequest('GET', 'http://localhost/stats');
+        $request = (new RequestFactory())->createRequest('GET', 'http://localhost/stats');
+        // Slim's factory always builds full server requests; the PSR-17 return
+        // type is just the narrower RequestInterface contract.
+        \assert($request instanceof ServerRequestInterface);
+        return $request;
     }
 
     private function response(): ResponseInterface

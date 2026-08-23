@@ -18,15 +18,19 @@ final class AdminController
     public function list(Request $request, Response $response): Response
     {
         $pdo = Database::connection();
-        $recipes = $pdo->query(
+        $stRecipes = $pdo->query(
             'SELECT r.id, r.country_id, r.name, r.description, r.difficulty, r.time_minutes, r.youtube_id, c.name AS country_name
              FROM recipes r JOIN countries c ON c.id = r.country_id
              ORDER BY c.id, r.id'
-        )->fetchAll();
-        $ings = $pdo->query(
+        );
+        \assert($stRecipes !== false);
+        $recipes = $stRecipes->fetchAll();
+        $stIngs = $pdo->query(
             'SELECT ri.recipe_id, i.name FROM recipe_ingredient ri
              JOIN ingredients i ON i.id = ri.ingredient_id ORDER BY i.name'
-        )->fetchAll();
+        );
+        \assert($stIngs !== false);
+        $ings = $stIngs->fetchAll();
 
         foreach ($recipes as &$r) { $r['ingredients'] = []; }
         unset($r);
@@ -37,14 +41,20 @@ final class AdminController
         }
         unset($r);
 
+        $stCountries = $pdo->query('SELECT id, name, emoji, tagline FROM countries ORDER BY id');
+        \assert($stCountries !== false);
+        $countries = $stCountries->fetchAll();
+        $stIngredients = $pdo->query(
+            'SELECT i.id, i.name, COUNT(ri.recipe_id) AS uses FROM ingredients i
+             LEFT JOIN recipe_ingredient ri ON ri.ingredient_id = i.id GROUP BY i.id, i.name ORDER BY i.name'
+        );
+        \assert($stIngredients !== false);
+
         return $this->json($response, [
             'ok' => true,
             'recipes' => $recipes,
-            'countries' => $pdo->query('SELECT id, name, emoji, tagline FROM countries ORDER BY id')->fetchAll(),
-            'ingredients' => $pdo->query(
-                'SELECT i.id, i.name, COUNT(ri.recipe_id) AS uses FROM ingredients i
-                 LEFT JOIN recipe_ingredient ri ON ri.ingredient_id = i.id GROUP BY i.id, i.name ORDER BY i.name'
-            )->fetchAll(),
+            'countries' => $countries,
+            'ingredients' => $stIngredients->fetchAll(),
         ]);
     }
 
@@ -163,6 +173,7 @@ final class AdminController
         return $this->json($response, ['ok' => true, 'id' => $id]);
     }
 
+    /** @param array<string, string> $args */
     public function deleteRecipe(Request $request, Response $response, array $args): Response
     {
         $st = Database::connection()->prepare('DELETE FROM recipes WHERE id = ?');
@@ -173,6 +184,7 @@ final class AdminController
         return $this->json($response, ['ok' => true]);
     }
 
+    /** @param array<string, string> $args */
     public function saveCountry(Request $request, Response $response, array $args): Response
     {
         $id = (int) $args['id'];
@@ -208,6 +220,7 @@ final class AdminController
         return $this->json($response, ['ok' => true]);
     }
 
+    /** @param array<string, string> $args */
     public function renameIngredient(Request $request, Response $response, array $args): Response
     {
         $b = (array) $request->getParsedBody();
@@ -251,6 +264,7 @@ final class AdminController
         return $this->json($response, ['ok' => true]);
     }
 
+    /** @param array<string, string> $args */
     public function deleteIngredient(Request $request, Response $response, array $args): Response
     {
         $st = Database::connection()->prepare('DELETE FROM ingredients WHERE id = ?');

@@ -27,13 +27,15 @@ final class CountryController
         // Every selected column is grouped: ONLY_FULL_GROUP_BY-safe on both
         // MySQL and MariaDB (MariaDB does not infer functional dependency
         // from the primary key).
-        $rows = $db->query(
+        $st = $db->query(
             'SELECT c.id, c.iso_code, c.name, c.emoji, c.tagline, COUNT(r.id) AS recipe_count
              FROM countries c
              LEFT JOIN recipes r ON r.country_id = c.id
              GROUP BY c.id, c.iso_code, c.name, c.emoji, c.tagline
              ORDER BY c.id'
-        )->fetchAll();
+        );
+        \assert($st !== false);
+        $rows = $st->fetchAll();
 
         foreach ($rows as &$r) { $r['recipe_count'] = (int) $r['recipe_count']; }
         unset($r);

@@ -7,6 +7,7 @@ use App\Controllers\AdminController;
 use App\Support\Database;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Factory\RequestFactory;
 use Slim\Psr7\Factory\ResponseFactory;
 
@@ -83,8 +84,13 @@ final class TransactionSweepTest extends TestCase
     private function deleteIngredientViaController(int $id): ResponseInterface
     {
         try {
+            $request = (new RequestFactory())->createRequest('DELETE', 'http://localhost/admin/ingredients/' . $id);
+            // Slim's factory always builds full server requests; the PSR-17
+            // return type is just the narrower RequestInterface contract.
+            \assert($request instanceof ServerRequestInterface);
+
             return $this->controller->deleteIngredient(
-                (new RequestFactory())->createRequest('DELETE', 'http://localhost/admin/ingredients/' . $id),
+                $request,
                 (new ResponseFactory())->createResponse(),
                 ['id' => (string) $id]
             );
@@ -96,6 +102,7 @@ final class TransactionSweepTest extends TestCase
         }
     }
 
+    /** @return array<string, mixed> */
     private function body(ResponseInterface $response): array
     {
         $response->getBody()->seek(0);
@@ -120,7 +127,15 @@ final class TransactionSweepTest extends TestCase
 
     private function totalRecipes(): int
     {
-        return (int) TestDb_pdo()->query('SELECT COUNT(*) FROM recipes')->fetchColumn();
+        return $this->scalarCount('SELECT COUNT(*) FROM recipes');
+    }
+
+    /** Behavior-free helper: runs a scalar COUNT and asserts prepare success. */
+    private function scalarCount(string $sql): int
+    {
+        $st = TestDb_pdo()->query($sql);
+        \assert($st !== false);
+        return (int) $st->fetchColumn();
     }
 
     // ------------------------------------------------------------------
@@ -169,8 +184,8 @@ final class TransactionSweepTest extends TestCase
         // the rowCount-based guard must keep answering 404 after any refactor
         // of the delete path, and must not mutate anything.
         $before = [
-            'ingredients' => (int) TestDb_pdo()->query('SELECT COUNT(*) FROM ingredients')->fetchColumn(),
-            'links' => (int) TestDb_pdo()->query('SELECT COUNT(*) FROM recipe_ingredient')->fetchColumn(),
+            'ingredients' => $this->scalarCount('SELECT COUNT(*) FROM ingredients'),
+            'links' => $this->scalarCount('SELECT COUNT(*) FROM recipe_ingredient'),
             'recipes' => $this->totalRecipes(),
         ];
 
@@ -182,8 +197,8 @@ final class TransactionSweepTest extends TestCase
         $this->assertSame('Ingrediente no encontrado.', $data['error'] ?? null);
 
         $after = [
-            'ingredients' => (int) TestDb_pdo()->query('SELECT COUNT(*) FROM ingredients')->fetchColumn(),
-            'links' => (int) TestDb_pdo()->query('SELECT COUNT(*) FROM recipe_ingredient')->fetchColumn(),
+            'ingredients' => $this->scalarCount('SELECT COUNT(*) FROM ingredients'),
+            'links' => $this->scalarCount('SELECT COUNT(*) FROM recipe_ingredient'),
             'recipes' => $this->totalRecipes(),
         ];
         $this->assertSame($before, $after, 'a 404 delete must not change any row counts');

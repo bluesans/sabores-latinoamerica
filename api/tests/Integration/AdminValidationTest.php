@@ -47,9 +47,15 @@ final class AdminValidationTest extends TestCase
     // Helpers
     // ------------------------------------------------------------------
 
+    /**
+     * @param array<string, mixed>|null $parsedBody
+     */
     private function request(string $method, string $path, ?array $parsedBody = null): ServerRequestInterface
     {
         $request = (new RequestFactory())->createRequest($method, 'http://localhost' . $path);
+        // Slim's factory always builds full server requests; the PSR-17 return
+        // type is just the narrower RequestInterface contract.
+        \assert($request instanceof ServerRequestInterface);
         if ($parsedBody !== null) {
             $request = $request->withParsedBody($parsedBody);
         }
@@ -73,6 +79,7 @@ final class AdminValidationTest extends TestCase
         }
     }
 
+    /** @return array<string, mixed> */
     private function body(ResponseInterface $response): array
     {
         $response->getBody()->seek(0);
@@ -82,6 +89,7 @@ final class AdminValidationTest extends TestCase
         return $decoded;
     }
 
+    /** @param array<string, mixed> $payload */
     private function saveRecipe(array $payload): ResponseInterface
     {
         return $this->invoke(
@@ -92,6 +100,7 @@ final class AdminValidationTest extends TestCase
         );
     }
 
+    /** @param array<string, mixed> $payload */
     private function saveCountry(string $id, array $payload): ResponseInterface
     {
         return $this->invoke(
@@ -103,6 +112,7 @@ final class AdminValidationTest extends TestCase
         );
     }
 
+    /** @param array<string, mixed> $payload */
     private function renameIngredient(string $id, array $payload): ResponseInterface
     {
         return $this->invoke(
@@ -136,6 +146,10 @@ final class AdminValidationTest extends TestCase
         );
     }
 
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
     private function validRecipePayload(array $overrides = []): array
     {
         return array_merge([
@@ -151,6 +165,7 @@ final class AdminValidationTest extends TestCase
         return (int) $pdo->lastInsertId();
     }
 
+    /** @return array<string, mixed>|null */
     private function recipeRow(int $id): ?array
     {
         $st = TestDb_pdo()->prepare('SELECT * FROM recipes WHERE id = ?');

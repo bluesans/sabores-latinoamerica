@@ -7,6 +7,7 @@ use App\Controllers\SearchController;
 use App\Support\Database;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Factory\RequestFactory;
 use Slim\Psr7\Factory\ResponseFactory;
 
@@ -55,11 +56,15 @@ final class SearchEscapeTest extends TestCase
     private function search(string $q): ResponseInterface
     {
         $request = (new RequestFactory())->createRequest('GET', 'http://localhost/api/search');
+        // Slim's factory always builds full server requests; the PSR-17 return
+        // type is just the narrower RequestInterface contract.
+        \assert($request instanceof ServerRequestInterface);
         $request = $request->withQueryParams(['q' => $q]);
 
         return $this->controller->index($request, (new ResponseFactory())->createResponse());
     }
 
+    /** @return array<string, mixed> */
     private function body(ResponseInterface $response): array
     {
         $response->getBody()->seek(0);

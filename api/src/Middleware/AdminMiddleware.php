@@ -16,7 +16,9 @@ final class AdminMiddleware
         $user = $request->getAttribute('auth_user');
         if (!$user || ($user['role'] ?? 'user') !== 'admin') {
             $response = new SlimResponse(403);
-            $response->getBody()->write(json_encode(['ok' => false, 'error' => 'Solo administradores.'], JSON_UNESCAPED_UNICODE));
+            $json = json_encode(['ok' => false, 'error' => 'Solo administradores.'], JSON_UNESCAPED_UNICODE);
+            \assert($json !== false);
+            $response->getBody()->write($json);
             return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         }
         return $handler->handle($request);

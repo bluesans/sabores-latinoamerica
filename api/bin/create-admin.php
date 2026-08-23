@@ -48,6 +48,9 @@ if ($errors !== []) {
     exit(1);
 }
 
+// The validation block above exits when either credential is missing.
+\assert($username !== null && $password !== null);
+
 try {
     $pdo = new PDO(
         'mysql:host=' . Env::get('DB_HOST', '127.0.0.1')
