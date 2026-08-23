@@ -1,4 +1,9 @@
 import { toast } from './ui/toast.js';
+import { API } from './api.js';
+
+/* Vue llega como script clásico global (js/vendor/vue.global.prod.js);
+   el módulo sólo necesita desestructurar las APIs reactivas. */
+const { ref, reactive } = Vue;
 
 const AdminApp = {
         setup() {

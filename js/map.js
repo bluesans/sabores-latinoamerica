@@ -2,6 +2,7 @@
 import { MAP_SHAPES, FILLS } from './data.js';
 import { openPanel } from './panel.js';
 import { toast } from './ui/toast.js';
+import { tipHTML } from './util/dom.js';
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -267,7 +268,7 @@ const svg = document.getElementById('mapSvg');
     }
 
     function showTip(c, e) {
-        tip.innerHTML = `<span class="tip-flag">${c.emoji || '🌎'}</span><div><b>${c.name}</b><small>${c.recipe_count > 0 ? `${c.recipe_count} recetas disponibles` : 'Sin recetas por ahora'}</small></div>`;
+        tip.innerHTML = tipHTML(c);
         tip.classList.add('show');
         moveTip(e);
     }

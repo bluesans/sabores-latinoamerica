@@ -1,6 +1,6 @@
 import { API } from './api.js';
-import { DIFF } from './data.js';
 import { toast } from './ui/toast.js';
+import { esc, headHTML, panelHTML, favoritesHTML, ingredientModalHTML, iframeHTML } from './util/dom.js';
 import { unmountAdmin, isAdminDirty } from './admin.js';
 
 const panel = document.getElementById('panel');
@@ -12,20 +12,13 @@ const panel = document.getElementById('panel');
     const mq = matchMedia('(max-width:720px)');
     let activeG = null, currentFavs = new Set();
 
-    function fmtTime(min) {
-        min = Number(min) || 0;
-        if (min < 90) return `${min} min`;
-        const h = Math.floor(min / 60), r = min % 60;
-        return r ? `${h} h ${r} min` : `${h} h`;
-    }
-
     async function openPanel(c, g, focusRid) {
         unmountAdmin();
         if (activeG) activeG.classList.remove('active');
         activeG = g;
         g.classList.add('active');
         svg.classList.add('has-active');
-        panelBody.innerHTML = `<div class="p-head"><div class="p-flag">${c.emoji || '🌎'}</div><h3>${c.name}</h3><p class="p-tag">Cargando recetas…</p></div>`;
+        panelBody.innerHTML = headHTML(c.emoji || '🌎', c.name, 'Cargando recetas…');
         panel.classList.add('open');
         panel.setAttribute('aria-hidden', 'false');
         panel.scrollTop = 0;
@@ -35,25 +28,13 @@ const panel = document.getElementById('panel');
             currentFavs = new Set(favs.favorites.map(f => Number(f.id)));
             renderPanel(data.country, data.recipes, focusRid);
         } catch (err) {
-            panelBody.innerHTML = `<div class="p-head"><div class="p-flag">${c.emoji || '🌎'}</div><h3>${c.name}</h3><p class="p-tag">${err.message}</p></div>`;
+            panelBody.innerHTML = headHTML(c.emoji || '🌎', c.name, err.message);
         }
         document.getElementById('panelClose').focus({ preventScroll: true });
     }
 
     function renderPanel(country, recipes, focusRid) {
-        const vids = recipes.filter(r => r.youtube_id).length;
-        panelBody.innerHTML = `
-            <div class="p-head">
-                <div class="p-flag">${country.emoji || '🌎'}</div>
-                <h3>${country.name}</h3>
-                <p class="p-tag">${country.tagline || ''}</p>
-                <div class="p-chips">
-                    <span class="p-chip">🍲 ${recipes.length} recetas</span>
-                    <span class="p-chip">🎬 ${vids} con video</span>
-                </div>
-            </div>
-            ${recipes.map((r, i) => cardHTML(r, i)).join('')}
-        `;
+        panelBody.innerHTML = panelHTML(country, recipes, currentFavs);
         if (focusRid) setTimeout(() => {
             const card = panelBody.querySelector(`[data-rid="${focusRid}"]`);
             if (card) {
@@ -127,7 +108,7 @@ const panel = document.getElementById('panel');
 
     function playVid(poster) {
         const v = poster.closest('.vid');
-        v.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${poster.dataset.yt}?rel=0" title="Video de la receta" loading="lazy" allowfullscreen allow="accelerometer; encrypted-media; picture-in-picture"></iframe>`;
+        v.innerHTML = iframeHTML(poster.dataset.yt);
     }
 
     function closePanel() {
@@ -148,30 +129,15 @@ const panel = document.getElementById('panel');
         if (activeG) activeG.classList.remove('active');
         activeG = null;
         svg.classList.remove('has-active');
-        panelBody.innerHTML = `<div class="p-head"><div class="p-flag">⭐</div><h3>Mis favoritos</h3><p class="p-tag">Cargando…</p></div>`;
+        panelBody.innerHTML = headHTML('⭐', 'Mis favoritos', 'Cargando…');
         panel.classList.add('open');
         panel.setAttribute('aria-hidden', 'false');
         panel.scrollTop = 0;
         if (mq.matches) backdrop.classList.add('show');
         try {
             const d = await API.getFavoritos();
-            panelBody.innerHTML = `
-                <div class="p-head">
-                    <div class="p-flag">⭐</div>
-                    <h3>Mis favoritos</h3>
-                    <p class="p-tag">${d.favorites.length ? `${d.favorites.length} receta${d.favorites.length === 1 ? '' : 's'} guardada${d.favorites.length === 1 ? '' : 's'}` : 'Todavía no guardaste ninguna receta: tocá el ♥ en una tarjeta.'}</p>
-                </div>
-                ${d.favorites.map(r => `
-                    <button class="ing-row" data-cid="${r.country_id}" data-rid="${r.id}" type="button">
-                        <span class="flag">${r.emoji || '🌎'}</span>
-                        <span>
-                            <b>${r.name}</b>
-                            <small>${r.country_name} · ${(DIFF[r.difficulty] || ['—'])[0]}</small>
-                        </span>
-                    </button>
-                `).join('')}
-            `;
-        } catch (err) { panelBody.innerHTML = `<p class="p-tag">${err.message}</p>`; }
+            panelBody.innerHTML = favoritesHTML(d.favorites);
+        } catch (err) { panelBody.innerHTML = `<p class="p-tag">${esc(err.message)}</p>`; }
     }
 
     async function openIngredientModal(id) {
@@ -179,20 +145,8 @@ const panel = document.getElementById('panel');
         ingBody.innerHTML = '<p class="ing-sub">Buscando recetas…</p>';
         try {
             const d = await API.getIngrediente(id);
-            ingBody.innerHTML = `
-                <h4 class="ing-title">🧺 ${d.ingredient.name}</h4>
-                <p class="ing-sub">Presente en ${d.recipes.length} receta${d.recipes.length === 1 ? '' : 's'}. Tocá una para ir al país.</p>
-                ${d.recipes.map(r => `
-                    <button class="ing-row" data-cid="${r.country_id}" data-rid="${r.recipe_id}" type="button">
-                        <span class="flag">${r.emoji || '🌎'}</span>
-                        <span>
-                            <b>${r.recipe_name}</b>
-                            <small>${r.country_name} · ${(DIFF[r.difficulty] || ['—'])[0]}</small>
-                        </span>
-                    </button>
-                `).join('')}
-            `;
-        } catch (err) { ingBody.innerHTML = `<p class="ing-sub">${err.message}</p>`; }
+            ingBody.innerHTML = ingredientModalHTML(d);
+        } catch (err) { ingBody.innerHTML = `<p class="ing-sub">${esc(err.message)}</p>`; }
     }
 
     function closeIngredientModal() { ingModal.hidden = true; }

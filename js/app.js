@@ -4,6 +4,7 @@ import { buildMap } from './map.js';
 import { openFavorites, openIngredientModal } from './panel.js';
 import { initAuth } from './auth.js';
 import { openAdmin } from './admin.js';
+import { searchResultsHTML, topChipsHTML } from './util/dom.js';
 
 const $ = s => document.querySelector(s);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -35,8 +36,7 @@ function renderTopIngredients(tops) {
     const strip = document.createElement('div');
     strip.id = 'ingStrip';
     strip.className = 'ing-strip';
-    strip.innerHTML = '<span class="ing-strip-title">🧺 Los más usados — tocá para explorar:</span>' +
-        tops.map(t => `<button class="chip top-chip" data-top-ing="${t.id}" type="button">${t.name}<em>${t.uses}</em></button>`).join('');
+    strip.innerHTML = topChipsHTML(tops);
     strip.addEventListener('click', e => {
         const b = e.target.closest('[data-top-ing]');
         if (b) openIngredientModal(b.dataset.topIng);
@@ -66,11 +66,7 @@ function makeHeaderControls() {
             if (q.length < 2) { res.hidden = true; return; }
             try {
                 const d = await API.buscar(q);
-                const empty = !d.countries.length && !d.recipes.length && !d.ingredients.length;
-                res.innerHTML = empty ? '<div class="s-empty">Sin resultados 🤷</div>' :
-                    d.countries.map(c => `<button class="s-res" data-k="c" data-id="${c.id}"><span>${c.emoji}</span><b>${c.name}</b><small>país</small></button>`).join('') +
-                    d.recipes.map(r => `<button class="s-res" data-k="r" data-id="${r.id}" data-cid="${r.country_id}"><span>${r.emoji}</span><b>${r.name}</b><small>${r.country_name}</small></button>`).join('') +
-                    d.ingredients.map(i => `<button class="s-res" data-k="i" data-id="${i.id}"><span>🧺</span><b>${i.name}</b><small>${i.uses} usos</small></button>`).join('');
+                res.innerHTML = searchResultsHTML(d);
                 res.hidden = false;
             } catch (e) { res.hidden = true; }
         }, 250);

@@ -82,14 +82,19 @@ export function cardHTML(r, i, favsSet) {
         `;
 }
 
-/* Cuerpo completo del panel de país: cabecera + chips + tarjetas. */
+/* Cuerpo completo del panel de país: cabecera (con chips anidados, igual que
+   el marcado original) + tarjetas. */
 export function panelHTML(country, recipes, favsSet) {
     const vids = recipes.filter(r => r.youtube_id).length;
     return `
-            ${headHTML(country.emoji || '🌎', country.name, country.tagline || '')}
-            <div class="p-chips">
-                <span class="p-chip">🍲 ${Number(recipes.length)} recetas</span>
-                <span class="p-chip">🎬 ${Number(vids)} con video</span>
+            <div class="p-head">
+                <div class="p-flag">${esc(country.emoji || '🌎')}</div>
+                <h3>${esc(country.name)}</h3>
+                <p class="p-tag">${esc(country.tagline || '')}</p>
+                <div class="p-chips">
+                    <span class="p-chip">🍲 ${Number(recipes.length)} recetas</span>
+                    <span class="p-chip">🎬 ${Number(vids)} con video</span>
+                </div>
             </div>
             ${recipes.map((r, i) => cardHTML(r, i, favsSet)).join('')}
         `;
