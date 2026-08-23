@@ -37,9 +37,21 @@ final class JsonErrorHandler
             }
         }
 
+        $id = substr(bin2hex(random_bytes(8)), 0, 8);
+
+        error_log(sprintf(
+            '[api-error %s] %s: %s in %s:%d',
+            $id,
+            get_class($exception),
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine()
+        ));
+
         $payload = [
             'ok' => false,
             'error' => $error,
+            'id' => $id,
         ];
 
         if ($displayErrorDetails) {
