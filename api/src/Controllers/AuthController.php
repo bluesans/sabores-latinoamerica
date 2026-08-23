@@ -5,14 +5,24 @@ namespace App\Controllers;
 
 use App\Services\AuthService;
 use App\Support\Auth;
+use App\Support\Cookies;
 use App\Support\Database;
 use App\Support\JsonResponder;
+use PDO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 final class AuthController
 {
     use JsonResponder;
+
+    /**
+     * Optional PDO override (integration tests bind the scratch schema);
+     * production resolves Database::connection() lazily as before.
+     */
+    public function __construct(private ?PDO $pdo = null)
+    {
+    }
 
     public function register(Request $request, Response $response): Response
     {
@@ -23,7 +33,7 @@ final class AuthController
 
         $result = $this->service()->register($username, $password, $this->ip($request));
 
-        return $this->respond($response, $result);
+        return $this->respondWithSessionCookie($response, $result);
     }
 
     public function login(Request $request, Response $response): Response
@@ -35,7 +45,7 @@ final class AuthController
 
         $result = $this->service()->login($username, $password, $this->ip($request));
 
-        return $this->respond($response, $result);
+        return $this->respondWithSessionCookie($response, $result);
     }
 
     public function check(Request $request, Response $response): Response
@@ -44,7 +54,7 @@ final class AuthController
 
         // Verificar que el usuario todavía existe en la base de datos.
         // Sin esto, un JWT válido de un usuario borrado seguiría funcionando.
-        $pdo = Database::connection();
+        $pdo = $this->pdo ?? Database::connection();
         $st = $pdo->prepare('SELECT id, username, role FROM users WHERE id = ?');
         $st->execute([$user['user_id']]);
         $dbUser = $st->fetch();
@@ -65,26 +75,41 @@ final class AuthController
 
     public function refresh(Request $request, Response $response): Response
     {
-        $token = Auth::bearerToken($request);
+        // Cookie-first (todo 18); Authorization bearer kept as transition fallback.
+        $cookieToken = $_COOKIE[Cookies::refreshCookieName()] ?? null;
+        $token = is_string($cookieToken) && $cookieToken !== ''
+            ? $cookieToken
+            : Auth::bearerToken($request);
 
         $result = $this->service()->refresh($token);
 
-        return $this->respond($response, $result);
+        if (($result['ok'] ?? false) === true) {
+            return $this->respondWithSessionCookie($response, $result);
+        }
+
+        // A failed refresh must evict the stale cookie client-side.
+        return $this->respond(Cookies::clear($response), $result);
     }
 
     public function logout(Request $request, Response $response): Response
     {
         $b = (array) $request->getParsedBody();
-        $refresh = (string) ($b['refresh'] ?? '');
+
+        // Cookie-first; legacy body field kept as transition fallback.
+        $cookieToken = $_COOKIE[Cookies::refreshCookieName()] ?? '';
+        $refresh = is_string($cookieToken) && $cookieToken !== ''
+            ? $cookieToken
+            : (string) ($b['refresh'] ?? '');
 
         $result = $this->service()->logout($refresh);
 
-        return $this->respond($response, $result);
+        // Always expire the cookie, even when there was nothing to revoke.
+        return $this->respond(Cookies::clear($response), $result);
     }
 
     private function service(): AuthService
     {
-        return new AuthService(Database::connection());
+        return new AuthService($this->pdo ?? Database::connection());
     }
 
     private function ip(Request $request): string
@@ -96,6 +121,22 @@ final class AuthController
         }
 
         return $ip;
+    }
+
+    /**
+     * Success responses carrying a fresh refresh token move it out of the JSON
+     * body and into the HttpOnly cookie (todo 18).
+     */
+    private function respondWithSessionCookie(Response $response, array $result): Response
+    {
+        $refresh = (string) ($result['data']['refresh'] ?? '');
+        unset($result['data']['refresh']);
+
+        if ($refresh !== '') {
+            $response = Cookies::issue($response, $refresh);
+        }
+
+        return $this->respond($response, $result);
     }
 
     private function respond(Response $response, array $result): Response
