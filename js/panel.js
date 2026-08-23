@@ -206,6 +206,7 @@ const panel = document.getElementById('panel');
         if (ingModal.hidden) {
             modalOpener = document.activeElement instanceof Element ? document.activeElement : null;
             ingModal.hidden = false;
+            document.documentElement.classList.add('modal-lock');
             document.getElementById('ingClose').focus({ preventScroll: true });
         }
         ingBody.innerHTML = '<p class="ing-sub">Buscando recetas…</p>';
@@ -215,6 +216,7 @@ const panel = document.getElementById('panel');
     function closeIngredientModal() {
         if (ingModal.hidden) return;
         ingModal.hidden = true;
+        document.documentElement.classList.remove('modal-lock');
         const t = modalOpener;
         modalOpener = null;
         if (t && t.isConnected) t.focus({ preventScroll: true });
