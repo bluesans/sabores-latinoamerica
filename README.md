@@ -6,17 +6,33 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
 ## Puesta en marcha (con XAMPP)
 
 1. Copiá la carpeta `sabores-latinoamerica/` dentro de `htdocs/`.
-2. Instalá las dependencias del backend (necesitás [Composer](https://getcomposer.org)):
+2. Importá el esquema canónico `db/migrations/000_install.sql`:
+   - phpMyAdmin → pestaña **Importar** → elegí `db/migrations/000_install.sql`, o
+   - consola (desde la raíz del proyecto):
+     ```
+     mysql -u root -p --default-character-set=utf8mb4 sabores_latinoamerica < db/migrations/000_install.sql
+     ```
+   Si la base no existe, creala primero. El script apunta a una base **vacía**:
+   si ya tiene tablas, MySQL corta la importación con `ERROR 1050` a propósito
+   (convención en `db/migrations/README.md`).
+3. Instalá las dependencias del backend (necesitás [Composer](https://getcomposer.org)):
    ```
    cd sabores-latinoamerica/api
    composer install
    ```
-3. Copiá `api/.env.example` a `api/.env` y ajustá los valores (usuario/clave de MySQL,
-   `JWT_SECRET` con una clave larga y aleatoria propia).
-4. Abrí phpMyAdmin → pestaña **Importar** → elegí `db/sabores_latinoamerica.sql`.
-   (o en consola: `mysql -u root -p < db/sabores_latinoamerica.sql`)
-5. Entrá a: http://localhost/sabores-latinoamerica/
-6. Creá tu cuenta desde la web (las contraseñas se guardan con bcrypt).
+4. Copiá `api/.env.example` a `api/.env` y completalo: usuario/clave de MySQL,
+   `JWT_SECRET` (una clave larga y aleatoria propia) y `ADMIN_USER`/`ADMIN_PASS`
+   para la cuenta admin inicial. Si servís por HTTPS, revisá también `COOKIE_SECURE`.
+5. Sembrá la cuenta admin (desde `api/`):
+   ```
+   php bin/create-admin.php
+   ```
+   Corrélo **una sola vez**; si más adelante querés rotar esa contraseña, usá `--force`.
+6. Entrá a: http://localhost/sabores-latinoamerica/ e iniciá sesión con la cuenta
+   admin que sembraste en el paso anterior.
+
+> **Nota:** el registro web crea siempre usuarios comunes (`role=user`). El rol
+> `admin` solo lo otorga `bin/create-admin.php`.
 
 ## Arquitectura
 
@@ -35,5 +51,8 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
 - Los países "apagados" del mapa son los que no tienen recetas en la BD
   (Belice, Haití, Puerto Rico). Agregá recetas y se encienden solos.
 - Las estadísticas salen de la vista `v_estadisticas`.
+- Los cambios de esquema van como migraciones numeradas en `db/migrations/`
+  (convención en `db/migrations/README.md`); los dumps y patches históricos
+  quedaron archivados, solo lectura, en `db/legacy/`.
 - El archivo `api/.env` **no se versiona** (está en `.gitignore`). Nunca subas tu
   `JWT_SECRET` real ni credenciales de base de datos al repositorio.

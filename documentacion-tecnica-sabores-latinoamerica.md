@@ -44,7 +44,7 @@ Es el tipo de proyecto típico de portfolio o trabajo de curso: **backend propio
 | Mapa | SVG generado por JS + datos TopoJSON | Geografía real vía CDN, con **fallback** dibujado a mano si no hay conexión |
 | Tipografías | Google Fonts: "Alfa Slab One" (títulos) + "Sofia Sans" (texto) | |
 
-No hay `package.json`, ni TypeScript, ni tests automatizados, ni Docker, ni sistema de migraciones: todo el esquema de base vive en un único archivo `.sql`.
+No hay TypeScript, ni Docker, ni CI/CD. El esquema de base ya no vive en un dump suelto: `db/migrations/000_install.sql` es el baseline canónico y los cambios futuros son migraciones numeradas (convención en `db/migrations/README.md`; los dumps y patches históricos quedaron archivados en `db/legacy/`). Sí hay tests automatizados: PHPUnit en `api/tests/` (`composer test`) y JS nativo en `js/__tests__/` (`npm run test:js`).
 
 ## 3. Estructura de carpetas
 
@@ -64,10 +64,15 @@ htdocs/                          ← raíz servida por Apache (carpeta típica d
 │   ├── admin.js                  ← panel de administración, componente Vue 3
 │   └── app.js                    ← orquestador general: buscador, stats, auto-login, utilidades
 ├── db/
-│   └── sabores_latinoamerica.sql ← script único: crea la BD, tablas, vista y datos semilla
-└── api/                          ← backend completo, subcarpeta con su propio front controller
+│   ├── migrations/
+│   │   ├── 000_install.sql        ← baseline canónico: crea la BD, tablas, vista y datos semilla
+│   │   └── README.md              ← convención de migraciones numeradas
+│   └── legacy/                    ← dumps y patches históricos (solo lectura, no aplicar)
+└── api/                           ← backend completo, subcarpeta con su propio front controller
     ├── index.php                  ← front controller (arranca Slim)
     ├── routes.php                 ← definición de todas las rutas
+    ├── bin/
+    │   └── create-admin.php       ← CLI que siembra la cuenta admin inicial (lee ADMIN_USER/ADMIN_PASS del .env)
     ├── composer.json / .lock      ← dependencias PHP
     ├── .env.example                ← plantilla de variables de entorno (copiar a .env)
     ├── .htaccess                   ← reescribe toda request hacia index.php
@@ -146,7 +151,7 @@ erDiagram
         int id PK
         string username UK
         string password "bcrypt"
-        string role "FALTA en el .sql actual"
+        string role "'user' | 'admin'"
         datetime created_at
     }
     SESSIONS {
@@ -154,6 +159,7 @@ erDiagram
         int user_id FK
         string token UK "64 chars, refresh token"
         datetime expires_at
+        datetime revoked_at
     }
     COUNTRIES {
         int id PK
@@ -182,25 +188,26 @@ erDiagram
     FAVORITES {
         int user_id PK_FK
         int recipe_id PK_FK
-        datetime created_at "tabla FALTANTE en el .sql"
+        datetime created_at
     }
 ```
 
-### 5.2 Las tablas, tal como están en `db/sabores_latinoamerica.sql`
+### 5.2 Las tablas, tal como están en `db/migrations/000_install.sql`
 
-**`users`** — cuentas de usuario. La contraseña nunca se guarda en texto plano: se hashea con `password_hash()` (bcrypt) al registrarse.
+**`users`** — cuentas de usuario. La contraseña nunca se guarda en texto plano: se hashea con `password_hash()` (bcrypt) al registrarse. El rol solo puede setearlo el CLI `api/bin/create-admin.php`; el registro web siempre crea `user`.
 ```sql
 CREATE TABLE `users` (
   `id`         INT NOT NULL AUTO_INCREMENT,
   `username`   VARCHAR(30)  NOT NULL,
   `password`   VARCHAR(255) NOT NULL,           -- bcrypt (password_hash)
+  `role`       ENUM('user','admin') NOT NULL DEFAULT 'user',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_username` (`username`)
 );
 ```
 
-**`sessions`** — refresh tokens activos (uno o varios por usuario; permite tener sesión abierta en varios dispositivos y revocarlos individualmente borrando la fila).
+**`sessions`** — refresh tokens activos (uno o varios por usuario; permite tener sesión abierta en varios dispositivos y revocarlos individualmente marcando `revoked_at` o borrando la fila).
 ```sql
 CREATE TABLE `sessions` (
   `id`         BIGINT NOT NULL AUTO_INCREMENT,
@@ -208,10 +215,27 @@ CREATE TABLE `sessions` (
   `token`      CHAR(64) NOT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `expires_at` DATETIME NOT NULL,
+  `revoked_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_token` (`token`),
   KEY `idx_sessions_user` (`user_id`),
+  KEY `idx_sessions_user_revoked` (`user_id`, `revoked_at`),
   CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+);
+```
+
+**`login_attempts`** — rate limiter de intentos de login/registro por IP (la usa `Auth::checkLoginRate()`/`Auth::recordFailedLogin()`).
+```sql
+CREATE TABLE `login_attempts` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ip`           VARCHAR(45) NOT NULL,
+  `username`     VARCHAR(30) NOT NULL DEFAULT '',
+  `action`       ENUM('login','register') NOT NULL DEFAULT 'login',
+  `attempted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_login_attempts_ip_time` (`ip`, `attempted_at`),
+  KEY `idx_login_attempts_username` (`username`),
+  KEY `idx_login_attempts_action_ip_time` (`action`, `ip`, `attempted_at`)
 );
 ```
 
@@ -239,6 +263,8 @@ CREATE TABLE `recipes` (
   `time_minutes` INT DEFAULT NULL,
   `youtube_id`   VARCHAR(30) DEFAULT NULL,
   PRIMARY KEY (`id`),
+  KEY `fk_recipe_country` (`country_id`),
+  KEY `idx_recipes_country_name` (`country_id`, `name`),
   CONSTRAINT `fk_recipe_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`)
 );
 ```
@@ -259,8 +285,22 @@ CREATE TABLE `recipe_ingredient` (
   `recipe_id`     INT NOT NULL,
   `ingredient_id` INT NOT NULL,
   PRIMARY KEY (`recipe_id`,`ingredient_id`),
+  KEY `fk_ri_ingredient` (`ingredient_id`),
   CONSTRAINT `fk_ri_recipe`     FOREIGN KEY (`recipe_id`)     REFERENCES `recipes` (`id`)     ON DELETE CASCADE,
   CONSTRAINT `fk_ri_ingredient` FOREIGN KEY (`ingredient_id`) REFERENCES `ingredients` (`id`) ON DELETE CASCADE
+);
+```
+
+**`favorites`** — recetas marcadas como favoritas por cada usuario (la usa `FavoriteController`).
+```sql
+CREATE TABLE `favorites` (
+  `user_id`    INT NOT NULL,
+  `recipe_id`  INT NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `recipe_id`),
+  KEY `idx_favorites_recipe` (`recipe_id`),
+  CONSTRAINT `fk_favorites_user`   FOREIGN KEY (`user_id`)   REFERENCES `users` (`id`)   ON DELETE CASCADE,
+  CONSTRAINT `fk_favorites_recipe` FOREIGN KEY (`recipe_id`) REFERENCES `recipes` (`id`) ON DELETE CASCADE
 );
 ```
 
@@ -276,7 +316,7 @@ SELECT
 
 ### 5.3 Datos semilla incluidos
 
-El `.sql` no solo crea el esquema: también lo llena con datos reales curados a mano.
+El baseline no solo crea el esquema: también lo llena con datos reales curados a mano.
 
 | Entidad | Cantidad | Ejemplos |
 |---|---|---|
@@ -389,7 +429,7 @@ public static function issueAccess(array $user): string
     ]);
 }
 ```
-- **`Auth`** — helpers: extraer el token `Bearer` del header, leer el usuario ya adjuntado por el middleware, crear un refresh token (32 bytes aleatorios en hex → tabla `sessions`), y un **rate limiter** de intentos de login (`checkLoginRate`/`recordFailedLogin`, máximo 10 intentos por IP cada 5 minutos). *(Ver nota importante en la sección 11: esto último necesita una tabla `login_attempts` que no está en el `.sql` provisto.)*
+- **`Auth`** — helpers: extraer el token `Bearer` del header, leer el usuario ya adjuntado por el middleware, crear un refresh token (32 bytes aleatorios en hex → tabla `sessions`), y un **rate limiter** de intentos de login (`checkLoginRate`/`recordFailedLogin`, máximo 10 intentos por IP cada 5 minutos). *(La tabla `login_attempts` que esto usa está creada en el baseline canónico `db/migrations/000_install.sql`.)*
 - **`JsonResponder`** — un `trait` con un solo método `json()` que todos los controladores usan para no repetir `json_encode` + headers en cada respuesta.
 
 ### 6.5 Controladores, uno por uno
@@ -615,6 +655,8 @@ Resumen de las piezas:
 - **Roles**: solo existen `user` y `admin`. El rol viaja *dentro* del JWT (`payload.role`), así que el backend no necesita ir a la base a cada request para saber si alguien es admin — simplemente lo lee del token ya validado. El frontend usa ese mismo dato para mostrar/ocultar el botón "🛠️ Admin".
 - **`AuthMiddleware`** protege casi todo; **`AdminMiddleware`** además exige `role === 'admin'` en las rutas de `/admin/*`.
 
+*(Flujo previo a la reorganización; se actualiza en la fase de autenticación del rework.)*
+
 ## 9. Recorrido de uso de punta a punta (ejemplo real)
 
 Para entender cómo se conectan todas las piezas, este es un recorrido completo con datos reales de la base:
@@ -632,15 +674,25 @@ Para entender cómo se conectan todas las piezas, este es un recorrido completo 
 ## 10. Cómo levantar el proyecto localmente
 
 1. Copiar la carpeta del proyecto dentro de `htdocs/` de XAMPP.
-2. Instalar dependencias del backend (requiere [Composer](https://getcomposer.org)):
+2. Importar el esquema canónico `db/migrations/000_install.sql`: phpMyAdmin → pestaña **Importar**, o desde la raíz del proyecto:
+   ```bash
+   mysql -u root -p --default-character-set=utf8mb4 sabores_latinoamerica < db/migrations/000_install.sql
+   ```
+   Si la base no existe, crearla antes (`CREATE DATABASE sabores_latinoamerica CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`). El baseline apunta a una base **vacía**: si ya tiene tablas, MySQL corta la importación con `ERROR 1050` a propósito (convención en `db/migrations/README.md`).
+3. Instalar dependencias del backend (requiere [Composer](https://getcomposer.org)):
    ```bash
    cd api
    composer install
    ```
-3. Copiar `api/.env.example` a `api/.env` y completar usuario/clave de MySQL y, sobre todo, un `JWT_SECRET` propio, largo y aleatorio (nunca dejar el valor de ejemplo en un entorno real).
-4. Importar `db/sabores_latinoamerica.sql` (phpMyAdmin → Importar, o `mysql -u root -p < db/sabores_latinoamerica.sql`). **Ojo:** el script arranca con `DROP DATABASE IF EXISTS` — borra la base si ya existía, antes de recrearla.
-5. Entrar a `http://localhost/<carpeta-del-proyecto>/`.
-6. Crear una cuenta desde la propia web (el primer usuario que se registre queda como `admin`).
+4. Copiar `api/.env.example` a `api/.env` y completar usuario/clave de MySQL, un `JWT_SECRET` propio largo y aleatorio (nunca dejar el valor de ejemplo en un entorno real) y `ADMIN_USER`/`ADMIN_PASS` para la cuenta admin inicial. Si se sirve por HTTPS, revisar también `COOKIE_SECURE`.
+5. Sembrar la cuenta admin, desde `api/`:
+   ```bash
+   php bin/create-admin.php
+   ```
+   Correrlo **una sola vez**; con `--force` rota la contraseña de esa cuenta.
+6. Entrar a `http://localhost/<carpeta-del-proyecto>/` e iniciar sesión con la cuenta admin sembrada en el paso anterior.
+
+Nota: el registro web crea siempre usuarios comunes (`role=user`); el rol `admin` solo lo otorga `bin/create-admin.php`.
 
 Variables de entorno (`api/.env`):
 
@@ -652,41 +704,22 @@ Variables de entorno (`api/.env`):
 | `JWT_SECRET` | *(placeholder — cambiar siempre)* | Clave para firmar los JWT |
 | `JWT_TTL` | `900` (15 min) | Duración del access token, en segundos |
 | `SESSION_DAYS` | `7` | Duración del refresh token, en días |
+| `CORS_ORIGIN` | `*` | Origen permitido para CORS (`*` alcanza con front y API en el mismo host) |
+| `COOKIE_SECURE` | `auto` | Cookie de refresh: `auto` marca Secure solo por HTTPS; `1` siempre; `0` nunca (HTTP local) |
+| `ADMIN_USER` / `ADMIN_PASS` | *(vacíos)* | Cuenta admin inicial que siembra `api/bin/create-admin.php` |
 | `APP_DEBUG` | `0` | `1` para ver errores detallados de Slim (solo desarrollo) |
 
 ## 11. Cosas importantes a tener en cuenta
 
-### 11.1 ⚠️ El código y el `.sql` no coinciden del todo
+### 11.1 ✅ El código y el `.sql` coinciden (resuelto)
 
-Revisando `api/src/` contra `db/sabores_latinoamerica.sql` aparecen **tres cosas que el código PHP necesita y el script SQL provisto no crea**. Tal como está el `.sql`, el registro/login y los favoritos van a tirar un error de SQL (columna o tabla inexistente) apenas se los use:
+Históricamente el dump provisto quedó atrás del código: le faltaban la columna `users.role`, la tabla `login_attempts` y la tabla `favorites`, así que el registro/login y los favoritos fallaban con errores de SQL hasta aplicar parches a mano.
 
-1. **`users` no tiene columna `role`**, pero `AuthController::register` hace `INSERT INTO users (username, password, role) VALUES (?, ?, ?)` y `login`/`refresh`/`check` seleccionan y devuelven `u.role`.
-2. **No existe la tabla `login_attempts`**, pero `Auth::checkLoginRate()` y `Auth::recordFailedLogin()` (usadas en cada intento de login) leen y escriben en ella.
-3. **No existe la tabla `favorites`**, pero `FavoriteController` (ambos endpoints) lee y escribe en ella.
+Eso quedó **resuelto** con la reorganización de la capa de datos:
 
-Estructura sugerida para completar el esquema y que el código funcione tal como está escrito (inferida directamente de cómo cada consulta usa esas tablas/columnas):
-```sql
-ALTER TABLE `users`
-  ADD COLUMN `role` ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER `password`;
-
-CREATE TABLE `login_attempts` (
-  `id`           BIGINT NOT NULL AUTO_INCREMENT,
-  `ip`           VARCHAR(45) NOT NULL,
-  `username`     VARCHAR(30) NOT NULL,
-  `attempted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_login_attempts_ip_time` (`ip`, `attempted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE `favorites` (
-  `user_id`    INT NOT NULL,
-  `recipe_id`  INT NOT NULL,
-  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`user_id`, `recipe_id`),
-  CONSTRAINT `fk_fav_user`   FOREIGN KEY (`user_id`)   REFERENCES `users` (`id`)   ON DELETE CASCADE,
-  CONSTRAINT `fk_fav_recipe` FOREIGN KEY (`recipe_id`) REFERENCES `recipes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
+- **`db/migrations/000_install.sql` es ahora el baseline canónico**: fue generado desde la base real ya parcheada e incluye todo lo que el código usa (`users.role`, `sessions.revoked_at`, `login_attempts.action`, `favorites` e índices de performance), más los datos semilla limpios. Importarlo sobre una base vacía deja el proyecto funcional sin ningún paso manual.
+- Los dumps y patches viejos quedaron **archivados como solo lectura en `db/legacy/`** (`sabores_latinoamerica.sql`, `sabores_latinoamerica.fixed.sql` y `patches/`) por si hace falta consultar la historia. No hay que aplicarlos nunca.
+- Los cambios futuros de esquema son **migraciones numeradas nuevas** (`001_*.sql`, `002_*.sql`, ...) siguiendo la convención de `db/migrations/README.md`: nunca se edita el baseline ni una migración ya aplicada, se escribe una nueva.
 
 ### 11.2 Buenas prácticas que el proyecto ya aplica
 - **100% consultas preparadas** (PDO con `?`), en ningún lado se concatena input del usuario directo en SQL.
@@ -697,6 +730,6 @@ CREATE TABLE `favorites` (
 
 ### 11.3 Otras notas útiles
 - `Access-Control-Allow-Origin: *` es permisivo a propósito (pensado para desarrollo local); en producción normalmente se restringiría a un origen concreto.
-- No hay tests automatizados, ni CI/CD, ni Docker, ni sistema de migraciones — todo el esquema vive en un único `.sql` que se reimporta entero (`DROP DATABASE` incluido) cada vez que cambia.
+- Todavía no hay CI/CD ni Docker. Sí hay tests automatizados: PHPUnit en `api/tests/` (unit + integración contra una base MySQL descartable `sabores_latinoamerica_test`, reconstruida desde el baseline) y JS nativo en `js/__tests__/` (`npm run test:js`). El esquema ya no se reimporta a ciegas: evoluciona con migraciones numeradas en `db/migrations/` (baseline `000_install.sql`), y los dumps históricos quedaron archivados en `db/legacy/`.
 - El texto de la interfaz usa **voseo rioplatense** ("Entrá", "Creá tu cuenta", "Necesitás iniciar sesión") — útil de saber si se le pide a una IA que agregue textos nuevos y deban sonar consistentes con el resto.
 - El módulo de mapa (`map.js`) es, con diferencia, el código más denso del proyecto: mezcla decodificación de TopoJSON, proyección cartográfica, geometría computacional (centroide, point-in-polygon) e interacción táctil/mouse unificada, todo sin dependencias externas.
