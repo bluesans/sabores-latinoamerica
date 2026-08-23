@@ -342,6 +342,164 @@ final class AdminValidationTest extends TestCase
         $this->assertSame('vxscY-dy9IU', $row['youtube_id']);
     }
 
+    // ------------------------------------------------------------------
+    // TODO 14 - saveCountry guards
+    // ------------------------------------------------------------------
+
+    public function testSaveCountryEmojiOver10CharsIsRejectedWith422(): void
+    {
+        // 11 regional-indicator characters (each counts as 1 mb char).
+        $longEmoji = str_repeat("\u{1F1E6}", 11);
+        $res = $this->saveCountry('2', ['emoji' => $longEmoji, 'tagline' => 'ok']);
+
+        $this->assertSame(422, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertSame('El emoji no puede superar los 10 caracteres.', $data['errors']['emoji'] ?? null);
+    }
+
+    public function testSaveCountryTaglineOver150CharsIsRejectedWith422(): void
+    {
+        $flagEmoji = "\u{1F1E6}\u{1F1F7}";
+        $res = $this->saveCountry('2', ['emoji' => $flagEmoji, 'tagline' => str_repeat('a', 151)]);
+
+        $this->assertSame(422, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertSame(
+            'El tagline no puede superar los 150 caracteres.',
+            $data['errors']['tagline'] ?? null
+        );
+    }
+
+    public function testSaveCountryUnknownIdReturns404(): void
+    {
+        $res = $this->saveCountry((string) self::MISSING_COUNTRY_ID, ['emoji' => 'x', 'tagline' => 'ok']);
+
+        $this->assertSame(404, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertFalse($data['ok']);
+        $this->assertSame('País no encontrado.', $data['error'] ?? null);
+    }
+
+    public function testSaveCountryUpdatesRowOnSuccess(): void
+    {
+        $res = $this->saveCountry('2', ['emoji' => "\u{1F1E6}\u{1F1F7}", 'tagline' => 'Tagline editado QA']);
+
+        $this->assertSame(200, $res->getStatusCode());
+        $this->assertTrue($this->body($res)['ok']);
+
+        $st = TestDb_pdo()->prepare('SELECT emoji, tagline FROM countries WHERE id = 2');
+        $st->execute();
+        $row = $st->fetch();
+        $this->assertNotFalse($row);
+        $this->assertSame("\u{1F1E6}\u{1F1F7}", $row['emoji']);
+        $this->assertSame('Tagline editado QA', $row['tagline']);
+    }
+
+    // ------------------------------------------------------------------
+    // TODO 14 - renameIngredient guards
+    // ------------------------------------------------------------------
+
+    public function testRenameIngredientEmptyNameIsRejectedWith422(): void
+    {
+        $id = $this->insertIngredient('Ing vacio QA');
+        $res = $this->renameIngredient((string) $id, ['name' => '   ']);
+
+        $this->assertSame(422, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertSame('El nombre es obligatorio.', $data['errors']['name'] ?? null);
+    }
+
+    public function testRenameIngredientTooLongNameIsRejectedWith422(): void
+    {
+        $id = $this->insertIngredient('Ing largo QA');
+        $res = $this->renameIngredient((string) $id, ['name' => str_repeat('b', 201)]);
+
+        $this->assertSame(422, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertSame('El nombre no puede superar los 200 caracteres.', $data['errors']['name'] ?? null);
+    }
+
+    public function testRenameIngredientDuplicateReturns409(): void
+    {
+        $idA = $this->insertIngredient('Ing duplicado A QA');
+        $idB = $this->insertIngredient('Ing duplicado B QA');
+
+        $res = $this->renameIngredient((string) $idB, ['name' => 'Ing duplicado A QA']);
+
+        $this->assertSame(409, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertFalse($data['ok']);
+        $this->assertSame('Ese nombre ya existe.', $data['error'] ?? null);
+        $this->assertSame($idA, $this->ingredientIdByName('Ing duplicado A QA'));
+    }
+
+    public function testRenameIngredientUnknownIdReturns404(): void
+    {
+        $res = $this->renameIngredient((string) self::MISSING_INGREDIENT_ID, ['name' => 'Nunca existio QA']);
+
+        $this->assertSame(404, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertSame('Ingrediente no encontrado.', $data['error'] ?? null);
+    }
+
+    public function testRenameIngredientSuccessPersistsNewName(): void
+    {
+        $id = $this->insertIngredient('Nombre viejo QA');
+        $res = $this->renameIngredient((string) $id, ['name' => 'Nombre nuevo QA']);
+
+        $this->assertSame(200, $res->getStatusCode());
+        $this->assertTrue($this->body($res)['ok']);
+        $this->assertFalse($this->ingredientExists('Nombre viejo QA'));
+        $this->assertTrue($this->ingredientExists('Nombre nuevo QA'));
+    }
+
+    // ------------------------------------------------------------------
+    // TODO 14 - delete guards
+    // ------------------------------------------------------------------
+
+    public function testDeleteIngredientMissingReturns404(): void
+    {
+        $res = $this->deleteIngredient((string) self::MISSING_INGREDIENT_ID);
+
+        $this->assertSame(404, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertSame('Ingrediente no encontrado.', $data['error'] ?? null);
+    }
+
+    public function testDeleteIngredientRemovesRow(): void
+    {
+        $id = $this->insertIngredient('Ing a borrar QA');
+        $res = $this->deleteIngredient((string) $id);
+
+        $this->assertSame(200, $res->getStatusCode());
+        $this->assertTrue($this->body($res)['ok']);
+
+        $st = TestDb_pdo()->prepare('SELECT 1 FROM ingredients WHERE id = ?');
+        $st->execute([$id]);
+        $this->assertFalse($st->fetchColumn(), 'ingredient row must be gone');
+    }
+
+    public function testDeleteRecipeMissingReturns404(): void
+    {
+        $res = $this->deleteRecipe((string) self::MISSING_RECIPE_ID);
+
+        $this->assertSame(404, $res->getStatusCode());
+        $data = $this->body($res);
+        $this->assertSame('Receta no encontrada.', $data['error'] ?? null);
+    }
+
+    public function testDeleteRecipeRemovesRow(): void
+    {
+        $create = $this->body($this->saveRecipe($this->validRecipePayload()));
+        $id = (int) $create['id'];
+
+        $res = $this->deleteRecipe((string) $id);
+
+        $this->assertSame(200, $res->getStatusCode());
+        $this->assertTrue($this->body($res)['ok']);
+        $this->assertNull($this->recipeRow($id), 'recipe row must be gone');
+    }
+
     private function ingredientExists(string $name): bool
     {
         $st = TestDb_pdo()->prepare('SELECT 1 FROM ingredients WHERE name = ?');

@@ -165,33 +165,99 @@ final class AdminController
 
     public function deleteRecipe(Request $request, Response $response, array $args): Response
     {
-        Database::connection()->prepare('DELETE FROM recipes WHERE id = ?')->execute([(int) $args['id']]);
+        $st = Database::connection()->prepare('DELETE FROM recipes WHERE id = ?');
+        $st->execute([(int) $args['id']]);
+        if ($st->rowCount() === 0) {
+            return $this->json($response, ['ok' => false, 'error' => 'Receta no encontrada.'], 404);
+        }
         return $this->json($response, ['ok' => true]);
     }
 
     public function saveCountry(Request $request, Response $response, array $args): Response
     {
+        $id = (int) $args['id'];
+        $pdo = Database::connection();
+
+        $st = $pdo->prepare('SELECT 1 FROM countries WHERE id = ?');
+        $st->execute([$id]);
+        if ($st->fetchColumn() === false) {
+            return $this->json($response, ['ok' => false, 'error' => 'País no encontrado.'], 404);
+        }
+
         $b = (array) $request->getParsedBody();
-        Database::connection()->prepare('UPDATE countries SET emoji = ?, tagline = ? WHERE id = ?')
-            ->execute([(string) ($b['emoji'] ?? ''), (string) ($b['tagline'] ?? ''), (int) $args['id']]);
+        $emoji   = (string) ($b['emoji'] ?? '');
+        $tagline = (string) ($b['tagline'] ?? '');
+        $errors = [];
+
+        if (mb_strlen($emoji) > 10) {
+            $errors['emoji'] = 'El emoji no puede superar los 10 caracteres.';
+        }
+        if (mb_strlen($tagline) > 150) {
+            $errors['tagline'] = 'El tagline no puede superar los 150 caracteres.';
+        }
+        if ($errors !== []) {
+            return $this->json($response, [
+                'ok' => false,
+                'error' => reset($errors),
+                'errors' => $errors,
+            ], 422);
+        }
+
+        $pdo->prepare('UPDATE countries SET emoji = ?, tagline = ? WHERE id = ?')
+            ->execute([$emoji, $tagline, $id]);
         return $this->json($response, ['ok' => true]);
     }
 
     public function renameIngredient(Request $request, Response $response, array $args): Response
     {
         $b = (array) $request->getParsedBody();
+        $name = trim((string) ($b['name'] ?? ''));
+        $id = (int) $args['id'];
+
+        if ($name === '') {
+            return $this->json($response, [
+                'ok' => false,
+                'error' => 'El nombre es obligatorio.',
+                'errors' => ['name' => 'El nombre es obligatorio.'],
+            ], 422);
+        }
+        if (mb_strlen($name) > 200) {
+            return $this->json($response, [
+                'ok' => false,
+                'error' => 'El nombre no puede superar los 200 caracteres.',
+                'errors' => ['name' => 'El nombre no puede superar los 200 caracteres.'],
+            ], 422);
+        }
+
         try {
-            Database::connection()->prepare('UPDATE ingredients SET name = ? WHERE id = ?')
-                ->execute([trim((string) ($b['name'] ?? '')), (int) $args['id']]);
+            $st = Database::connection()->prepare('UPDATE ingredients SET name = ? WHERE id = ?');
+            $st->execute([$name, $id]);
+            if ($st->rowCount() === 0) {
+                // rowCount 0 also happens when the new name equals the old one;
+                // only report 404 when the ingredient really does not exist.
+                $check = Database::connection()->prepare('SELECT 1 FROM ingredients WHERE id = ?');
+                $check->execute([$id]);
+                if ($check->fetchColumn() === false) {
+                    return $this->json($response, ['ok' => false, 'error' => 'Ingrediente no encontrado.'], 404);
+                }
+            }
         } catch (PDOException $e) {
-            return $this->json($response, ['ok' => false, 'error' => 'Ese nombre ya existe.'], 409);
+            if ((int) ($e->errorInfo[1] ?? 0) === 1062 || $e->getCode() === '23000') {
+                return $this->json($response, ['ok' => false, 'error' => 'Ese nombre ya existe.'], 409);
+            }
+            error_log('[AdminController::renameIngredient] ' . $e);
+            return $this->json($response, ['ok' => false, 'error' => 'Error interno del servidor.'], 500);
         }
         return $this->json($response, ['ok' => true]);
     }
 
     public function deleteIngredient(Request $request, Response $response, array $args): Response
     {
-        Database::connection()->prepare('DELETE FROM ingredients WHERE id = ?')->execute([(int) $args['id']]);
+        $st = Database::connection()->prepare('DELETE FROM ingredients WHERE id = ?');
+        $st->execute([(int) $args['id']]);
+        if ($st->rowCount() === 0) {
+            return $this->json($response, ['ok' => false, 'error' => 'Ingrediente no encontrado.'], 404);
+        }
         return $this->json($response, ['ok' => true]);
     }
 }
