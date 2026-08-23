@@ -72,11 +72,16 @@ test('fmtTime matriz de casos', () => {
     assert.equal(fmtTime(25), '25 min');
     assert.equal(fmtTime(90), '1 h 30 min');
     assert.equal(fmtTime(60), '1 h');
-    assert.equal(fmtTime(0), '0 min');
-    assert.equal(fmtTime(null), '0 min');
-    assert.equal(fmtTime(undefined), '0 min');
+    assert.equal(fmtTime(0), '0 min'); // 0 es un valor real, no dato ausente
     assert.equal(fmtTime(120), '2 h');
     assert.equal(fmtTime(45), '45 min');
+});
+
+test('fmtTime dato ausente o no numérico → — (no "0 min")', () => {
+    assert.equal(fmtTime(null), '—');
+    assert.equal(fmtTime(undefined), '—');
+    assert.equal(fmtTime(''), '—');
+    assert.equal(fmtTime(NaN), '—');
 });
 
 /* ---------- headHTML ---------- */

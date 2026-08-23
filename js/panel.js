@@ -146,11 +146,21 @@ const panel = document.getElementById('panel');
         await loadFavorites();
     }
 
+    /* Token de secuencia para el modal de ingrediente: si llega una segunda
+       apertura mientras la primera sigue en vuelo, la respuesta tardía de la
+       primera queda obsoleta (seq !== ingSeq) y se descarta en vez de
+       pisar contenido más nuevo. Mismo patrón de carrera que fetchWithTimeout
+       resuelve con AbortController en api.js. */
+    let ingSeq = 0;
+
     async function loadIngredient(id) {
+        const seq = ++ingSeq;
         try {
             const d = await API.getIngrediente(id);
+            if (seq !== ingSeq) return;
             ingBody.innerHTML = ingredientModalHTML(d);
         } catch (err) {
+            if (seq !== ingSeq) return;
             console.warn('ingrediente:', err.message);
             showRetryable(ingBody, err, () => loadIngredient(id));
         }

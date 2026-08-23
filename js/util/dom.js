@@ -30,8 +30,11 @@ export function safeUrl(id) {
     return /^[A-Za-z0-9_-]{11}$/.test(s) ? s : '';
 }
 
-/* "45 min" → "45 min", "90" → "1 h 30 min", "60" → "1 h". Texto plano seguro. */
+/* "45 min" → "45 min", "90" → "1 h 30 min", "60" → "1 h". Texto plano seguro.
+   Dato ausente o no numérico (null/undefined/''/NaN) → "—": nunca "0 min",
+   que mentiría diciendo que la receta tarda cero. 0 sí es un valor real. */
 export function fmtTime(min) {
+    if (min === null || min === undefined || min === '' || Number.isNaN(Number(min))) return '—';
     min = Number(min) || 0;
     if (min < 60) return `${min} min`;
     const h = Math.floor(min / 60), r = min % 60;

@@ -180,7 +180,7 @@ async function enterApp(name, isNew, role) {
     appScreen.classList.add('on');
     $('#userName').textContent = name;
     const av = $('#avatar');
-    av.textContent = name[0].toUpperCase();
+    av.textContent = name ? name[0].toUpperCase() : '🌽';
     av.style.background = ['#f2b134', '#31c98e', '#e8709a', '#e4572e'][name.length % 4];
     makeHeaderControls();
     document.getElementById('adminBtn').hidden = (role || 'user') !== 'admin';
