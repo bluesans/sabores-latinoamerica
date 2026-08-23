@@ -2,6 +2,22 @@ import { API_URL } from './config.js';
 
 const AUTH_URL_PATTERN = /\/auth\//;
 
+const REQUEST_TIMEOUT_MS = 15000;
+const HEALTH_TIMEOUT_MS = 5000;
+
+/* Fetch con corte automático tras `ms` sin respuesta. El timer se
+   limpia en finally para que una respuesta rápida no deje un abort
+   tardío en vuelo; cada llamada crea su propio controller, así el
+   reintento post-refresh arranca con el tiempo completo. */
+function fetchWithTimeout(url, opts = {}, ms) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+
+    return fetch(url, { ...opts, signal: controller.signal }).finally(() => {
+        clearTimeout(timer);
+    });
+}
+
 /* Migración desde el esquema viejo (tokens en localStorage): esas claves
    ya no se usan — el access vive sólo en memoria y el refresh viaja como
    cookie HttpOnly (sdl_refresh). Se borran para que no queden restos
@@ -40,8 +56,12 @@ export const API = {
         let res;
 
         try {
-            res = await fetch(url, opts);
+            res = await fetchWithTimeout(url, opts, REQUEST_TIMEOUT_MS);
         } catch (e) {
+            if (e && e.name === 'AbortError') {
+                throw new Error('La conexión tardó demasiado.');
+            }
+
             throw new Error('No se pudo conectar con la API. Revisá Apache y la base.');
         }
 
@@ -143,10 +163,15 @@ export const API = {
         }).catch(() => {});
     },
 
-    health() {
-        return fetch(`${API_URL}/health`)
-            .then(res => res.json())
-            .catch(() => ({ ok: false, api: false, db: false }));
+    async health() {
+        try {
+            const res = await fetchWithTimeout(`${API_URL}/health`, {}, HEALTH_TIMEOUT_MS);
+
+            return await res.json();
+        } catch {
+            /* Timeout o red caída: el chequeo nunca rechaza. */
+            return { ok: false, api: false, db: false };
+        }
     },
 
     getPaises() {

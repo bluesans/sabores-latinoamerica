@@ -202,3 +202,95 @@ test('checkSession sin cookie: el refresh falla y el boot cae en pantalla de log
         err => err instanceof Error && err.message === 'La sesión expiró. Volvé a entrar.'
     );
 });
+
+/* ---------------------------- timeouts ---------------------------- */
+
+// Drena microtareas sin tocar el setTimeout mockeado (setImmediate
+// corre después de toda la cascada de promesas pendientes).
+const settle = () => new Promise(r => setImmediate(r));
+
+/** fetch que nunca responde por sí solo pero rechaza con AbortError
+ *  cuando el controller de api.js corta la conexión (igual que undici
+ *  y los navegadores). Sin signal en el pedido (código viejo), cuelga
+ *  para siempre: así el rojo de estos tests es "no hay timeout". */
+function mockFetchHanging() {
+    return mockFetch((url, opts = {}) => {
+        if (!opts.signal) {
+            return new Promise(() => {});
+        }
+
+        return new Promise((_, reject) => {
+            opts.signal.addEventListener('abort', () => {
+                const err = new Error('The operation was aborted');
+                err.name = 'AbortError';
+                reject(err);
+            });
+        });
+    });
+}
+
+test('_req: a los 15s aborta y avisa "La conexión tardó demasiado."', { timeout: 10000 }, async t => {
+    resetApi();
+    const fetchMock = mockFetchHanging();
+
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+
+    const pending = API.getStats();
+
+    // El manejador de rechazo se cuelga ANTES de adelantar el reloj:
+    // si no, el rechazo queda sin handler y Node lo marca como
+    // unhandledRejection antes de que assert.rejects lo espere.
+    const rejection = assert.rejects(
+        () => pending,
+        err => err instanceof Error && err.message === 'La conexión tardó demasiado.'
+    );
+
+    // Adelanta el reloj falso 15s y deja correr las microtareas del abort.
+    t.mock.timers.tick(15000);
+    await settle();
+
+    await rejection;
+
+    assert.equal(fetchMock.calls.length, 1, 'el corte ocurre antes del 401: sin refresh ni reintento');
+});
+
+test('health: a los 5s cae al fallback {ok:false} sin rechazar ni colgar', { timeout: 10000 }, async t => {
+    resetApi();
+    const fetchMock = mockFetchHanging();
+
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+
+    const pending = API.health();
+
+    t.mock.timers.tick(5000);
+    await settle();
+
+    const out = await pending;
+
+    assert.deepEqual(out, { ok: false, api: false, db: false }, 'timeout de health => fallback, nunca rechaza');
+    assert.equal(fetchMock.calls.length, 1);
+});
+
+test('respuesta rápida: el timer se limpia y ningún abort tardío la toca', { timeout: 10000 }, async t => {
+    resetApi();
+
+    let seenSignal = null;
+    mockFetch((url, opts = {}) => {
+        seenSignal = opts.signal || null;
+        return Promise.resolve(resp(200, { ok: true, stats: { paises: 21 } }));
+    });
+
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+
+    const out = await API.getStats();
+
+    assert.deepEqual(out, { ok: true, stats: { paises: 21 } });
+    assert.ok(seenSignal instanceof AbortSignal, 'el pedido sale con su AbortController');
+
+    // Si el finally no limpiara el timer, este tick dispararía un abort
+    // tardío sobre un pedido ya resuelto.
+    t.mock.timers.tick(15000);
+    await settle();
+
+    assert.equal(seenSignal.aborted, false, 'sin abort post-respuesta');
+});
