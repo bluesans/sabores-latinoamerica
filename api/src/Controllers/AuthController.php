@@ -144,6 +144,11 @@ final class AuthController
         $data = $result['data'] ?? [];
         $status = $result['status'] ?? 200;
 
+        // Optional hint headers from the service layer (e.g. Retry-After on 429).
+        foreach ((array) ($result['headers'] ?? []) as $name => $value) {
+            $response = $response->withHeader((string) $name, (string) $value);
+        }
+
         return $this->json(
             $response,
             is_array($data) ? $data : [],

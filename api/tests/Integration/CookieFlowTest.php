@@ -321,4 +321,45 @@ final class CookieFlowTest extends TestCase
         $this->assertCount(1, $cookies, 'failure path must attach exactly one clear-cookie');
         $this->assertStringContainsString('Max-Age=0', $cookies[0], 'stale cookie must be evicted client-side');
     }
+
+    // ------------------------------------------------------------------
+    // TODO 20 - Retry-After hint on rate limits
+    // ------------------------------------------------------------------
+
+    public function testEleventhRapidFailedLoginGets429WithRetryAfterHint(): void
+    {
+        $this->registerUser();
+
+        $statuses = [];
+        $last = null;
+
+        for ($i = 1; $i <= 11; $i++) {
+            $last = $this->invoke(
+                fn (): ResponseInterface => $this->controller->login(
+                    $this->request('/auth/login', ['username' => self::USERNAME, 'password' => 'Incorrecta1']),
+                    (new ResponseFactory())->createResponse()
+                )
+            );
+            $statuses[] = $last->getStatusCode();
+        }
+
+        $this->assertSame(
+            [401, 401, 401, 401, 401, 401, 401, 401, 401, 401, 429],
+            $statuses,
+            'LOGIN_MAX_ATTEMPTS=10: the 11th rapid failed login must be blocked'
+        );
+
+        $retryAfter = $last->getHeaderLine('Retry-After');
+        $this->assertNotSame('', $retryAfter, '429 must carry a Retry-After hint header');
+        $this->assertMatchesRegularExpression('/^\d+$/', $retryAfter, 'Retry-After must be an integer');
+        $this->assertGreaterThan(0, (int) $retryAfter);
+        $this->assertLessThanOrEqual(300, (int) $retryAfter, 'hint cannot exceed the 5-minute login window');
+
+        $data = $this->body($last);
+        $this->assertSame(
+            'Demasiados intentos. Esperá unos minutos.',
+            $data['error'] ?? null,
+            'rate-limit message must stay unchanged'
+        );
+    }
 }

@@ -28,9 +28,10 @@ final class Auth
         return is_array($user) ? $user : null;
     }
 
-    public static function checkLoginRate(PDO $pdo, string $ip): bool
+    /** @return array{allowed: bool, retryAfter: int} */
+    public static function checkLoginRateDetails(PDO $pdo, string $ip): array
     {
-        return self::checkRate(
+        return self::checkRateDetails(
             $pdo,
             $ip,
             'login',
@@ -39,15 +40,26 @@ final class Auth
         );
     }
 
-    public static function checkRegisterRate(PDO $pdo, string $ip): bool
+    public static function checkLoginRate(PDO $pdo, string $ip): bool
     {
-        return self::checkRate(
+        return self::checkLoginRateDetails($pdo, $ip)['allowed'];
+    }
+
+    /** @return array{allowed: bool, retryAfter: int} */
+    public static function checkRegisterRateDetails(PDO $pdo, string $ip): array
+    {
+        return self::checkRateDetails(
             $pdo,
             $ip,
             'register',
             self::REGISTER_MAX_ATTEMPTS,
             self::REGISTER_WINDOW_MINUTES
         );
+    }
+
+    public static function checkRegisterRate(PDO $pdo, string $ip): bool
+    {
+        return self::checkRegisterRateDetails($pdo, $ip)['allowed'];
     }
 
     public static function recordFailedLogin(PDO $pdo, string $ip, string $username): void
@@ -158,17 +170,23 @@ final class Auth
         $pdo->exec('DELETE FROM login_attempts WHERE attempted_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)');
     }
 
-    private static function checkRate(
+    /**
+     * Rate-limit check with retry guidance: when blocked, retryAfter is the
+     * number of seconds until the oldest attempt inside the window ages out.
+     *
+     * @return array{allowed: bool, retryAfter: int}
+     */
+    public static function checkRateDetails(
         PDO $pdo,
         string $ip,
         string $action,
         int $maxAttempts,
         int $minutes
-    ): bool {
+    ): array {
         self::purgeOldAttempts($pdo);
 
         $st = $pdo->prepare(
-            "SELECT COUNT(*)
+            "SELECT MIN(attempted_at), COUNT(*)
              FROM login_attempts
              WHERE ip = ?
                AND action = ?
@@ -177,7 +195,30 @@ final class Auth
 
         $st->execute([$ip, $action]);
 
-        return ((int) $st->fetchColumn()) < $maxAttempts;
+        /** @var array{0: string|null, 1: int}|false $row */
+        $row = $st->fetch(PDO::FETCH_NUM);
+
+        if (((int) ($row[1] ?? 0)) < $maxAttempts) {
+            return ['allowed' => true, 'retryAfter' => 0];
+        }
+
+        // The window clears when its OLDEST attempt ages out.
+        $oldest = strtotime((string) ($row[0] ?? ''));
+        $retryAfter = $oldest === false
+            ? $minutes * 60
+            : (int) ceil($oldest + $minutes * 60 - time());
+
+        return ['allowed' => false, 'retryAfter' => max(1, $retryAfter)];
+    }
+
+    private static function checkRate(
+        PDO $pdo,
+        string $ip,
+        string $action,
+        int $maxAttempts,
+        int $minutes
+    ): bool {
+        return self::checkRateDetails($pdo, $ip, $action, $maxAttempts, $minutes)['allowed'];
     }
 
     private static function recordAttempt(

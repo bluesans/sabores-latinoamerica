@@ -19,8 +19,12 @@ final class AuthService
     {
         $username = trim($username);
 
-        if (!Auth::checkRegisterRate($this->pdo, $ip)) {
-            return self::failure('Demasiados registros desde esta conexión. Esperá unos minutos.', 429);
+        $rate = Auth::checkRegisterRateDetails($this->pdo, $ip);
+
+        if (!$rate['allowed']) {
+            return self::failure('Demasiados registros desde esta conexión. Esperá unos minutos.', 429, [
+                'Retry-After' => (string) $rate['retryAfter'],
+            ]);
         }
 
         Auth::recordRegisterAttempt($this->pdo, $ip, $username);
@@ -82,8 +86,12 @@ final class AuthService
     {
         $username = trim($username);
 
-        if (!Auth::checkLoginRate($this->pdo, $ip)) {
-            return self::failure('Demasiados intentos. Esperá unos minutos.', 429);
+        $rate = Auth::checkLoginRateDetails($this->pdo, $ip);
+
+        if (!$rate['allowed']) {
+            return self::failure('Demasiados intentos. Esperá unos minutos.', 429, [
+                'Retry-After' => (string) $rate['retryAfter'],
+            ]);
         }
 
         $st = $this->pdo->prepare('SELECT id, username, password, role FROM users WHERE username = ?');
@@ -189,10 +197,11 @@ final class AuthService
             'ok' => true,
             'status' => $status,
             'data' => array_merge(['ok' => true], $data),
+            'headers' => [],
         ];
     }
 
-    private static function failure(string $error, int $status): array
+    private static function failure(string $error, int $status, array $headers = []): array
     {
         return [
             'ok' => false,
@@ -201,6 +210,7 @@ final class AuthService
                 'ok' => false,
                 'error' => $error,
             ],
+            'headers' => $headers,
         ];
     }
 }
