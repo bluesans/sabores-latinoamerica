@@ -18,7 +18,11 @@ final class SearchController
         if (mb_strlen($q) < 2) {
             return $this->json($response, ['ok' => true, 'countries' => [], 'recipes' => [], 'ingredients' => []]);
         }
-        $like = '%' . $q . '%';
+        // Silently cap oversized queries before they reach the LIKE patterns.
+        if (mb_strlen($q) > 100) {
+            $q = mb_substr($q, 0, 100);
+        }
+        $like = '%' . self::likeEscape($q) . '%';
         $pdo  = Database::connection();
 
         $c = $pdo->prepare('SELECT id, name, emoji FROM countries WHERE name LIKE ? AND id IN (SELECT DISTINCT country_id FROM recipes) LIMIT 4');
@@ -44,5 +48,14 @@ final class SearchController
             'recipes' => $r->fetchAll(),
             'ingredients' => $i->fetchAll(),
         ]);
+    }
+
+    /**
+     * Escapes MySQL LIKE wildcards so user input is matched literally.
+     * Backslash first (it is the LIKE escape char itself), then % and _.
+     */
+    private static function likeEscape(string $q): string
+    {
+        return addcslashes($q, '\\%_');
     }
 }

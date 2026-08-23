@@ -12,8 +12,8 @@ final class Validation
 
     public static function passwordError(string $password): ?string
     {
-        if (strlen($password) < 6) {
-            return 'La contraseña necesita al menos 6 caracteres.';
+        if (strlen($password) < 8) {
+            return 'La contraseña necesita al menos 8 caracteres.';
         }
 
         if (strlen($password) > 72) {

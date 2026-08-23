@@ -34,6 +34,24 @@ final class ValidationTest extends TestCase
         $this->assertNotNull($long);
     }
 
+    public function testPasswordMinimumIsEightChars(): void
+    {
+        // 'Ab1' (3 chars): rejected and the message must state the new minimum.
+        $err = Validation::passwordError('Ab1');
+        $this->assertNotNull($err);
+        $this->assertStringContainsString('8', $err);
+
+        // 6 and 7 chars: still rejected under the stronger policy.
+        $this->assertNotNull(Validation::passwordError('Abcdef'), '6 chars must be rejected (old policy allowed it)');
+        $this->assertNotNull(Validation::passwordError('Abcdefg'), '7 chars must be rejected');
+
+        // Exactly 8 chars: accepted.
+        $this->assertNull(Validation::passwordError('Abcdefg1'));
+
+        // Max-72 boundary unchanged.
+        $this->assertNull(Validation::passwordError(str_repeat('a', 72)));
+    }
+
     public function testDifficulty(): void
     {
         $this->assertTrue(Validation::difficulty('easy'));
