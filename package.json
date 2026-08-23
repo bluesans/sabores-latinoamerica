@@ -1,0 +1,7 @@
+{
+    "name": "sabores-latinoamerica",
+    "private": true,
+    "scripts": {
+        "test:js": "node --test \"js/__tests__/*.test.mjs\""
+    }
+}
