@@ -43,11 +43,15 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
   las rutas están en `api/routes.php`, los controladores en `api/src/Controllers`).
   Requiere `composer install` para traer las dependencias (`slim/slim`, `slim/psr7`,
   `vlucas/phpdotenv`).
-- **Auth**: JWT (access token de corta duración) + refresh token persistido en la tabla
-  `sessions`. Middleware `AuthMiddleware`/`AdminMiddleware` protegen las rutas.
+- **Auth**: access JWT de corta duración (15 min) que vive **solo en memoria** del navegador, más un refresh token aleatorio guardado hasheado (SHA-256) en la tabla
+  `sessions` y entregado como cookie `HttpOnly` / `SameSite=Strict` (`sdl_refresh`), con rotación en cada refresh y detección de reutilización.
+  Middleware `AuthMiddleware`/`AdminMiddleware` protegen las rutas.
 
 ## Notas
 
+- Seguridad de sesión: el access token nunca se persiste (nada en `localStorage`), el refresh viaja en una cookie `HttpOnly`
+  que JavaScript no puede leer, y los rate limits de login/registro responden `429` con header `Retry-After`.
+  El flujo completo está en la sección 8 de `documentacion-tecnica-sabores-latinoamerica.md`.
 - Los países "apagados" del mapa son los que no tienen recetas en la BD
   (Belice, Haití, Puerto Rico). Agregá recetas y se encienden solos.
 - Las estadísticas salen de la vista `v_estadisticas`.

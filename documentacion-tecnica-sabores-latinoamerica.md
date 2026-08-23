@@ -38,7 +38,7 @@ Es el tipo de proyecto típico de portfolio o trabajo de curso: **backend propio
 | Micro-framework | [Slim 4](https://www.slimframework.com/) (`slim/slim ^4.12`, `slim/psr7 ^1.7`) | Solo enrutamiento + middlewares; **sin ORM ni motor de vistas** |
 | Config | `vlucas/phpdotenv ^5.6` | Carga `api/.env` como variables de entorno |
 | Base de datos | MySQL/MariaDB, charset `utf8mb4`, motor InnoDB | Acceso vía **PDO nativo** (sin ORM), 100% consultas preparadas |
-| Autenticación | **JWT artesanal** (HS256, sin librerías) + refresh tokens persistidos en tabla `sessions` | Ver sección 8 |
+| Autenticación | **JWT artesanal** (HS256, sin librerías) de vida corta, en memoria + refresh token rotativo en cookie `HttpOnly`, hasheado en tabla `sessions` | Ver sección 8 |
 | Frontend | HTML5 + CSS3 + JavaScript vanilla (ES6+) | Sin bundler, sin framework de routing, scripts cargados directo en `<script>` |
 | Panel admin | Vue 3 (`vue.global.prod.js` vía CDN de unpkg) | Sin build step: el `template` vive como string dentro del `.js` |
 | Mapa | SVG generado por JS + datos TopoJSON | Geografía real vía CDN, con **fallback** dibujado a mano si no hay conexión |
@@ -132,7 +132,7 @@ Puntos clave:
 - El **frontend no tiene paso de build**: los `<script>` se cargan uno por uno en `index.html`, en un orden que **importa**, porque cada archivo depende de variables/funciones globales que define el anterior (detalle exacto en la sección 7).
 - El **backend sigue el patrón "front controller"**: toda request a `api/*` que no sea un archivo físico pasa por `api/index.php` (gracias al `.htaccess`), que arma la app de Slim, registra middlewares y rutas, y despacha al controlador correspondiente.
 - **No hay vistas del lado del servidor.** El backend es una API REST pura que solo devuelve JSON. Todo el HTML lo genera el JS del cliente manipulando el DOM directamente (salvo el panel de admin, que usa Vue 3).
-- La sesión **no usa cookies de PHP**: se maneja 100% con JWT en el header `Authorization: Bearer <token>`, guardado en `localStorage` del navegador.
+- La sesión **no usa sesiones PHP ni `localStorage`**: el access JWT vive solo en memoria del navegador y viaja en el header `Authorization: Bearer <token>`; el refresh token viaja en una cookie `HttpOnly` (`sdl_refresh`) que JavaScript no puede leer. Detalle completo en la sección 8.
 
 ## 5. Base de datos
 
@@ -157,7 +157,7 @@ erDiagram
     SESSIONS {
         bigint id PK
         int user_id FK
-        string token UK "64 chars, refresh token"
+        string token UK "hash SHA-256 del refresh"
         datetime expires_at
         datetime revoked_at
     }
@@ -207,7 +207,7 @@ CREATE TABLE `users` (
 );
 ```
 
-**`sessions`** — refresh tokens activos (uno o varios por usuario; permite tener sesión abierta en varios dispositivos y revocarlos individualmente marcando `revoked_at` o borrando la fila).
+**`sessions`** — refresh tokens activos (uno o varios por usuario; permite tener sesión abierta en varios dispositivos y revocarlos individualmente marcando `revoked_at` o borrando la fila). La columna `token` guarda el **hash SHA-256** del token, nunca el valor crudo que recibe el navegador; cada refresh **rota** el token (revoca el viejo, crea uno nuevo) y si un token ya revocado vuelve a presentarse se borran todas las sesiones del usuario (sección 8).
 ```sql
 CREATE TABLE `sessions` (
   `id`         BIGINT NOT NULL AUTO_INCREMENT,
@@ -361,10 +361,10 @@ Detalles importantes:
 
 | Método | Ruta | Controlador → método | Protección | Qué hace |
 |---|---|---|---|---|
-| POST | `/auth/register` | AuthController → register | Pública | Crea cuenta (bcrypt); el primer usuario del sistema se vuelve `admin` |
-| POST | `/auth/login` | AuthController → login | Pública | Verifica credenciales, devuelve `access` + `refresh` |
-| POST | `/auth/logout` | AuthController → logout | Pública | Borra el refresh token recibido de `sessions` |
-| POST | `/auth/refresh` | AuthController → refresh | Bearer *refresh* | Emite un `access` token nuevo |
+| POST | `/auth/register` | AuthController → register | Pública | Crea cuenta (bcrypt, siempre `role=user`); responde `access` y deja el refresh en cookie |
+| POST | `/auth/login` | AuthController → login | Pública | Verifica credenciales, responde `access` y deja el refresh en cookie `sdl_refresh` |
+| POST | `/auth/logout` | AuthController → logout | Pública | Revoca en `sessions` el refresh de la cookie y expira la cookie |
+| POST | `/auth/refresh` | AuthController → refresh | Cookie *sdl_refresh* | Rota el refresh token y emite un `access` nuevo |
 | GET | `/auth/check` | AuthController → check | Bearer *access* | Confirma sesión activa (usado para auto-login) |
 | GET | `/countries` | CountryController → index | Bearer *access* | Lista países + cantidad de recetas de cada uno |
 | GET | `/countries/{id}/recipes` | RecipeController → byCountry | Bearer *access* | Recetas de un país, con sus ingredientes |
@@ -429,32 +429,33 @@ public static function issueAccess(array $user): string
     ]);
 }
 ```
-- **`Auth`** — helpers: extraer el token `Bearer` del header, leer el usuario ya adjuntado por el middleware, crear un refresh token (32 bytes aleatorios en hex → tabla `sessions`), y un **rate limiter** de intentos de login (`checkLoginRate`/`recordFailedLogin`, máximo 10 intentos por IP cada 5 minutos). *(La tabla `login_attempts` que esto usa está creada en el baseline canónico `db/migrations/000_install.sql`.)*
+- **`Auth`** — helpers: extraer el token `Bearer` del header, leer el usuario ya adjuntado por el middleware, crear un refresh token (32 bytes aleatorios en hex; en la tabla `sessions` se guarda su **hash SHA-256**, nunca el valor crudo), buscar/revocar sesiones (con `FOR UPDATE` para el refresh) y un **rate limiter** de intentos por IP (`checkLoginRate`/`recordFailedLogin`: máximo 10 logins fallidos cada 5 minutos; `checkRegisterRate`: 5 registros cada 15). Cuando el límite se pasa, el controlador responde `429` con header `Retry-After`. *(La tabla `login_attempts` que esto usa está creada en el baseline canónico `db/migrations/000_install.sql`.)*
+- **`Cookies`** — emite (`issue`) y limpia (`clear`) la cookie de refresh `sdl_refresh` (`HttpOnly`, `SameSite=Strict`, `Path` = base de la API, `Secure` según `COOKIE_SECURE`); como usa `withHeader()`, cada respuesta lleva como máximo un `Set-Cookie`, nunca duplicados.
+- **`Validation`** — reglas de usuario y contraseña compartidas por registro/login (mismas que valida el frontend).
 - **`JsonResponder`** — un `trait` con un solo método `json()` que todos los controladores usan para no repetir `json_encode` + headers en cada respuesta.
 
 ### 6.5 Controladores, uno por uno
 
 #### `AuthController` — el más importante
 
-- **`register`**: valida usuario (regex `^[\p{L}\p{N}_]{3,30}$`, o sea letras/números/guión bajo, 3 a 30 caracteres) y contraseña (mínimo 6 caracteres), chequea que no exista, y decide el rol así:
-  ```php
-  $role = ((int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn()) === 0 ? 'admin' : 'user';
-  ```
-  **El primer usuario que se registra en toda la base queda como administrador automáticamente**; todos los siguientes son `user`. Devuelve `access` + `refresh` de una, para loguear directo tras registrarse.
-- **`login`**: chequea rate limit por IP, busca el usuario, valida con `password_verify()`, y si todo está bien devuelve `access` + `refresh` nuevos.
-- **`refresh`**: recibe el refresh token por header `Authorization`, lo busca en `sessions`, si es válido extiende su vencimiento y emite un `access` nuevo.
-- **`check`**: solo confirma que el `access` token todavía es válido (usado al abrir la app para loguear automáticamente a quien ya tenía sesión).
-- **`logout`**: borra de `sessions` el refresh token que le pasen por body.
+- **`register`**: valida usuario (regex `^[\p{L}\p{N}_]{3,30}$`, o sea letras/números/guión bajo, 3 a 30 caracteres) y contraseña (mínimo 6 caracteres), y crea la cuenta con `password_hash()`. Si el username ya existe, el índice `UNIQUE` corta el `INSERT` y responde `409` con un mensaje amigable. **Siempre crea `role=user`**: el rol admin solo lo otorga el CLI `bin/create-admin.php`. Responde con el `access` para loguear directo tras registrarse; el refresh sale como cookie.
+- **`login`**: chequea rate limit por IP (con `Retry-After` en el `429`), busca el usuario y valida con `password_verify()`. Si todo está bien devuelve el `access` nuevo y deja el refresh en la cookie.
+- **`refresh`**: lee el token de la cookie `sdl_refresh` (el header `Authorization: Bearer` queda solo como fallback de transición), lo busca hasheado en `sessions` con `FOR UPDATE`, y si es válido **rota**: revoca el viejo, crea uno nuevo y emite un `access` nuevo. Si el token que llega ya estaba revocado, asume credencial robada y borra todas las sesiones del usuario.
+- **`check`**: confirma que el `access` todavía es válido y que el usuario sigue existiendo en la base (usado al abrir la app para restaurar la sesión en silencio).
+- **`logout`**: revoca en `sessions` el refresh token que viene en la cookie y expira la cookie, haya fila que revocar o no.
 
-Ejemplo de respuesta de `POST /auth/login`:
+Ejemplo de respuesta de `POST /auth/login` (ojo: ningún token de refresh en el body):
 ```json
 {
   "ok": true,
   "username": "chef_querubin",
   "role": "user",
-  "refresh": "b7f1c0a9e3d84f21a6c9502e7fa1b3d0c8e5a17f...9c2",
   "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjcsIm5hbWUiOiJjaGVmX3F1ZXJ1YmluIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NTU1NTU1NTUsImV4cCI6MTc1NTU1NjQ1NX0.f3a8c1..."
 }
+```
+El refresh viaja en un header aparte:
+```
+Set-Cookie: sdl_refresh=b7f1c0a9e3d84f21a6c9502e7fa1b3d0c8e5a17f...; Path=/sabores-latinoamerica/api; Max-Age=604800; HttpOnly; SameSite=Strict
 ```
 El `access` decodificado (la parte del medio, el *payload*) es:
 ```json
@@ -562,15 +563,16 @@ Define `MAP_SHAPES` (un arreglo de 22 países con su `iso_code`, nombre, emoji y
 
 ### 7.5 `js/api.js` — el cliente HTTP
 
-Es un objeto único `API` que centraliza **todas** las llamadas al backend y resuelve dos problemas transversales:
+Es un objeto único `API` que centraliza **todas** las llamadas al backend y resuelve tres problemas transversales:
 
 1. **Inyectar el JWT automáticamente** en cada request (`Authorization: Bearer <access>`).
-2. **Refrescar el token solo cuando hace falta**: si una request da `401` y hay `refresh` guardado, primero pide un `access` nuevo contra `/auth/refresh` y **reintenta la request original una sola vez** (parámetro `retried` para no entrar en loop infinito):
+2. **Mantener el access solo en memoria**: `API.access` es una propiedad del objeto, nada se escribe en `localStorage`. Al cargarse, el módulo además borra las claves `sdl_access`/`sdl_refresh` que pudieran quedar de versiones anteriores, para no dejar restos legibles por JS de sesiones viejas.
+3. **Refrescar el token solo cuando hace falta**: si una request da `401` (y no es una ruta de `/auth/`), pide un `access` nuevo contra `/auth/refresh` enviando la cookie (`credentials: 'include'`) y **reintenta la request original una sola vez** (parámetro `retried` para no entrar en loop infinito). Varias requests que fallan juntas comparten una misma promesa de refresh (`_refreshPromise`) para no disparar refreshes en paralelo:
 ```javascript
 async _req(url, opts = {}, retried = false) {
   // ...agrega Authorization si hay access...
   let res = await fetch(url, opts);
-  if (res.status === 401 && this.refresh && !retried && !/\/auth\//.test(url)) {
+  if (res.status === 401 && !retried && !AUTH_URL_PATTERN.test(url)) {
     await this.refreshSession();
     opts.headers['Authorization'] = 'Bearer ' + this.access;
     return this._req(url, opts, true);
@@ -578,10 +580,10 @@ async _req(url, opts = {}, retried = false) {
   // ...valida data.ok, lanza Error si algo falló...
 }
 ```
-Los tokens se guardan en `localStorage` bajo las claves `sdl_access` y `sdl_refresh`. El resto del objeto son métodos "de una línea" por endpoint (`getPaises()`, `getRecetas(id)`, `toggleFav(id, add)`, `adminSave(payload)`, etc.) que arman la URL y el body y delegan en `_req`.
+El resto del objeto son métodos "de una línea" por endpoint (`getPaises()`, `getRecetas(id)`, `toggleFav(id, add)`, `adminSave(payload)`, etc.) que arman la URL y el body y delegan en `_req`.
 
 ### 7.6 `js/auth.js`
-Controla la pantalla de login/registro: cambio de pestaña (login ⇄ registro), mostrar/ocultar contraseña, validación en vivo del usuario con la **misma regex que usa el backend** (`/^[\p{L}\p{N}_]{3,30}$/u` — validación duplicada a propósito: la del cliente es solo para UX inmediata, la del servidor es la que realmente protege), envío del formulario (llama `API.auth()`, guarda tokens, dispara `enterApp()`), y logout.
+Controla la pantalla de login/registro: cambio de pestaña (login ⇄ registro), mostrar/ocultar contraseña, validación en vivo del usuario con la **misma regex que usa el backend** (`/^[\p{L}\p{N}_]{3,30}$/u` — validación duplicada a propósito: la del cliente es solo para UX inmediata, la del servidor es la que realmente protege), envío del formulario (llama `API.auth()` y guarda el access en memoria; el refresh llega como cookie `HttpOnly`, nunca en el body) y logout (avisa a la API para revocar la sesión y limpiar la cookie).
 
 ### 7.7 `js/map.js` — el módulo más complejo del proyecto
 
@@ -619,9 +621,25 @@ No tiene un solo tema, es el "pegamento" del resto de los módulos:
 - `renderTopIngredients()`: inserta la tira de "ingredientes más usados" debajo de las estadísticas.
 - `makeHeaderControls()`: inyecta en el header el buscador (con debounce de 250ms, dropdown de resultados agrupados por tipo, navegación con teclado), el botón de favoritos con contador, y el botón de admin (oculto salvo que `role === 'admin'`).
 - `enterApp(name, isNew, role)`: la función que hace la transición completa de "recién logueado" a "app lista": cambia de pantalla, pone el avatar y nombre, decide si mostrar el botón de admin, carga países+estadísticas en paralelo, construye el mapa, anima los contadores y muestra un toast de bienvenida.
-- Al final del archivo, una IIFE que corre al cargar la página: si hay tokens guardados en `localStorage`, intenta un **auto-login silencioso** llamando `API.checkSession()` (que internamente refresca el token si hace falta) para no pedirle usuario/contraseña de nuevo a quien ya tenía sesión abierta.
+- Al final del archivo, una IIFE que corre al cargar la página e intenta un **auto-login silencioso** llamando `API.checkSession()`: como el access ya no está en memoria tras recargar, `checkSession()` prueba el refresh desde la cookie `sdl_refresh`; si todavía vive, entra directo a la app sin pedirle usuario/contraseña a quien ya tenía sesión abierta.
 
 ## 8. Autenticación y autorización: flujo completo
+
+El modelo tiene dos piezas con vidas muy distintas:
+
+- **Access token**: un JWT (HS256) que vive **15 minutos** por defecto (`JWT_TTL`) y se guarda **solo en memoria** del navegador (`API.access`, en `js/api.js`). Viaja en el header `Authorization: Bearer <token>` de cada request protegida y muere al cerrar o recargar la página: nunca toca `localStorage` ni ninguna cookie.
+- **Refresh token**: un string aleatorio de 64 caracteres hexa (`bin2hex(random_bytes(32))`), vive **7 días** por defecto (`SESSION_DAYS`) y viaja **únicamente** como cookie `sdl_refresh` con los flags `HttpOnly` y `SameSite=Strict` (más `Secure` cuando se sirve por HTTPS, según `COOKIE_SECURE`). El navegador lo adjunta solo hacia la API y JavaScript no puede leerlo. En la base no se guarda el valor crudo sino su **hash SHA-256**, así que un dump de la tabla no sirve para hacerse pasar por nadie.
+
+Flujo paso a paso:
+
+1. **Login** (`POST /auth/login`; el registro funciona igual): el backend verifica la contraseña con `password_verify()`, emite el access JWT y crea el refresh token. La respuesta JSON trae `{ ok, username, role, access }`: **el refresh nunca va en el body**, sale como header `Set-Cookie: sdl_refresh=...; HttpOnly; SameSite=Strict; Path=<base de la API>; Max-Age=604800`.
+2. **Storage**: `auth.js` llama `API.setTokens(res.access)` y el access queda en una variable en memoria. No queda nada de sesión persistido y legible por JS.
+3. **Request autenticada**: cada llamada pasa por `_req()` en `api.js`, que inyecta `Authorization: Bearer <access>` si hay token.
+4. **Expiración**: a los 15 minutos el JWT vence y la API responde `401`. `_req()` detecta ese código (en rutas que no sean de `/auth/`) y dispara el refresh antes de reintentar la request original **una sola vez** (parámetro `retried`, para no entrar en loop infinito).
+5. **Refresh silencioso**: `POST /auth/refresh` con `credentials: 'include'`; la cookie viaja sola. El backend busca la fila por hash **con `FOR UPDATE`** dentro de una transacción, **revoca el token viejo y crea uno nuevo (rotación)**, y responde con un access nuevo más otra cookie. Si varias requests fallan a la vez, todas comparten una única promesa de refresh (`_refreshPromise`) y no se pisan entre sí.
+6. **Restaurar tras recargar**: al cargar la página, una IIFE de `app.js` llama `API.checkSession()`; como el access ya no está en memoria, `checkSession()` hace el refresh silencioso desde la cookie y, si funciona, entra directo a la app sin pedir usuario ni contraseña.
+7. **Logout** (`POST /auth/logout`): el backend marca `revoked_at` en la fila de la sesión y manda la orden de expirar la cookie; el cliente borra el access de memoria.
+8. **Detección de reutilización**: si un token **ya revocado** se presenta de nuevo en `/auth/refresh` (señal clásica de robo de credencial), el backend borra **todas** las sesiones del usuario y responde `401`. La sesión termina en todos los dispositivos y hay que volver a loguearse.
 
 ```mermaid
 sequenceDiagram
@@ -635,39 +653,41 @@ sequenceDiagram
     A->>DB: SELECT * FROM users WHERE username=?
     DB-->>A: fila del usuario
     A->>A: password_verify(password, hash)
-    A->>DB: INSERT INTO sessions (refresh token nuevo)
-    A-->>F: 200 { access, refresh, username, role }
-    F->>F: localStorage: sdl_access / sdl_refresh
+    A->>DB: INSERT INTO sessions (hash SHA-256 del refresh)
+    A-->>F: 200 { access } + Set-Cookie sdl_refresh (HttpOnly)
+    F->>F: access guardado solo en memoria
     F-->>U: enterApp() muestra el mapa
 
     Note over F,A: Más tarde, en cualquier request protegida:
     F->>A: GET /countries (Bearer access)
     A-->>F: 401 (access vencido: TTL de 15 min)
-    F->>A: POST /auth/refresh (Bearer refresh)
-    A->>DB: valida el token contra sessions
-    A-->>F: 200 { access nuevo }
+    F->>A: POST /auth/refresh (cookie sdl_refresh, credentials include)
+    A->>DB: SELECT ... FOR UPDATE por hash
+    A->>DB: revoca el token viejo e inserta el nuevo (rotación)
+    A-->>F: 200 { access nuevo } + Set-Cookie sdl_refresh nueva
     F->>A: reintenta GET /countries (Bearer access nuevo)
     A-->>F: 200 { countries: [...] }
 ```
 
-Resumen de las piezas:
-- **Dos tokens, dos vidas distintas**: el `access` (JWT, vive 15 minutos por defecto — `JWT_TTL`) viaja en cada request protegida; el `refresh` (string aleatorio de 64 caracteres, vive 7 días por defecto — `SESSION_DAYS`) solo se usa para pedir un `access` nuevo sin volver a pedir contraseña, y está persistido en la tabla `sessions` (lo que permite invalidarlo del lado servidor con solo borrar la fila — algo que un JWT autocontenido no permitiría por sí solo).
-- **Roles**: solo existen `user` y `admin`. El rol viaja *dentro* del JWT (`payload.role`), así que el backend no necesita ir a la base a cada request para saber si alguien es admin — simplemente lo lee del token ya validado. El frontend usa ese mismo dato para mostrar/ocultar el botón "🛠️ Admin".
-- **`AuthMiddleware`** protege casi todo; **`AdminMiddleware`** además exige `role === 'admin'` en las rutas de `/admin/*`.
+**Por qué cookie**: un token guardado en `localStorage` es legible por cualquier script que corra en la página, así que una sola vulnerabilidad XSS alcanza para robar la sesión completa. Con la cookie `HttpOnly` eso cambia: JavaScript no puede leerla ni escribirla, así que aun con XSS el refresh queda fuera de su alcance (y el access, que sí está en memoria, vence solo a los 15 minutos). El costo clásico de las cookies es CSRF, y acá está mitigado por dos lados: `SameSite=Strict` evita que el navegador adjunte la cookie en requests cross-site, y la API no usa credenciales cross-origin (front y API viven en el mismo host; el CORS no habilita `Allow-Credentials`).
 
-*(Flujo previo a la reorganización; se actualiza en la fase de autenticación del rework.)*
+Notas al margen del mismo paquete:
+- Los rate limits de login (10 intentos por IP cada 5 minutos) y de registro (5 cada 15) responden `429` con header **`Retry-After`**, indicando los segundos que faltan para volver a intentar.
+- El registro web crea siempre cuentas `role=user`; el rol admin solo lo otorga el CLI `api/bin/create-admin.php`.
+- **Roles**: solo existen `user` y `admin`. El rol viaja *dentro* del JWT (`payload.role`), así que el backend no necesita ir a la base a cada request para saber si alguien es admin, simplemente lo lee del token ya validado. El frontend usa ese mismo dato para mostrar/ocultar el botón "🛠️ Admin".
+- **`AuthMiddleware`** protege casi todo; **`AdminMiddleware`** además exige `role === 'admin'` en las rutas de `/admin/*`.
 
 ## 9. Recorrido de uso de punta a punta (ejemplo real)
 
 Para entender cómo se conectan todas las piezas, este es un recorrido completo con datos reales de la base:
 
-1. **Entra a `http://localhost/sabores-latinoamerica/`.** `app.js` revisa si hay tokens en `localStorage`; como es la primera vez, no hay, así que se queda en `#authScreen`.
-2. **Se registra** con usuario `chef_ana` y contraseña `mate1234`. `auth.js` valida el formato en el cliente, llama `API.auth('register', ...)` → `POST /auth/register`. Como es el primer usuario de la base, `AuthController` le asigna `role: 'admin'` automáticamente. Responde con `access`/`refresh`; `auth.js` los guarda y llama `enterApp('chef_ana', true, 'admin')`.
+1. **Entra a `http://localhost/sabores-latinoamerica/`.** La IIFE de `app.js` intenta el auto-login silencioso (`API.checkSession()`); como es la primera vez no hay cookie de sesión previa, el refresh falla y se queda en `#authScreen`.
+2. **Se registra** con usuario `chef_ana` y contraseña `mate1234`. `auth.js` valida el formato en el cliente, llama `API.auth('register', ...)` → `POST /auth/register`. Como todo registro web, la cuenta queda `role=user` (el admin se siembra aparte con `bin/create-admin.php`). La respuesta trae el `access` y el refresh llega como cookie `HttpOnly`; `auth.js` guarda el access en memoria y llama `enterApp('chef_ana', true, 'user')`.
 3. **`enterApp` arma la pantalla principal**: pide `/countries` y `/stats` en paralelo, y le pasa el resultado a `buildMap()`. `map.js` intenta bajar el TopoJSON real desde el CDN; si lo consigue, dibuja los 22 países con geografía precisa y muestra la insignia "🌐 Mapa HD". Los 19 países con recetas quedan coloreados (rotando entre 4 colores); Belice, Haití y Puerto Rico quedan con una textura rayada (`url(#hatch)`, sin datos). Los contadores de la barra de estadísticas animan hasta `19 países · 57 recetas · 185 ingredientes · 57 recetas con video`.
 4. **Toca Perú en el mapa.** `map.js` detecta el clic (`pointerup` sin arrastre), ve que `recipe_count > 0`, y llama `window.openPanel(info, g)`. `panel.js` pide en paralelo `GET /countries/4/recipes` y `GET /favorites`, y renderiza 3 tarjetas: *Ceviche Peruano*, *Lomo Saltado*, *Ají de Gallina* — cada una con su chip de dificultad, tiempo, ingredientes y poster de video.
 5. **Toca el chip "Limón peruano"** dentro de la tarjeta del ceviche. `panel.js` abre el modal de ingrediente (`openIngredientModal(57)`), que llama `GET /ingredients/57` y muestra la lista de recetas de **todo el continente** que usan ese ingrediente (en este caso, solo el Ceviche Peruano, ya que es un ingrediente específico de esa receta).
 6. **Cierra el modal y marca el Ceviche como favorito** (♥ en la tarjeta). `panel.js` llama `POST /favorites` con `{ "recipe_id": 10, "add": 1 }`; el backend hace `INSERT IGNORE INTO favorites (user_id, recipe_id) VALUES (7, 10)`. El contador de favoritos del header se actualiza a `1`.
-7. **Como es admin, ve el botón "🛠️ Admin"** en el header y lo toca. `admin.js` monta el componente Vue dentro del panel lateral, pide `GET /admin/data`, y muestra la lista completa de recetas. Edita la descripción de "Ají de Gallina" y guarda: `POST /admin/recipes` con el payload completo de la receta (incluyendo la lista de ingredientes como texto separado por comas). El backend actualiza la fila, borra y recrea sus filas en `recipe_ingredient`, y responde `{ "ok": true, "id": 12 }`. Esto marca `window.__adminDirty = true`.
+7. **Para recorrer el panel de admin, entra con la cuenta sembrada por `api/bin/create-admin.php`** (chef_ana es `user`, así que no ve el botón "🛠️ Admin"). Ya como admin, toca el botón "🛠️ Admin" del header; `admin.js` monta el componente Vue dentro del panel lateral, pide `GET /admin/data`, y muestra la lista completa de recetas. Edita la descripción de "Ají de Gallina" y guarda: `POST /admin/recipes` con el payload completo de la receta (incluyendo la lista de ingredientes como texto separado por comas). El backend actualiza la fila, borra y recrea sus filas en `recipe_ingredient`, y responde `{ "ok": true, "id": 12 }`. Esto marca `window.__adminDirty = true`.
 8. **Cierra el panel de admin.** Como `__adminDirty` está en `true`, `panel.js` hace `location.reload()` en vez de solo cerrar el panel, para que el mapa y las estadísticas reflejen cualquier cambio (por ejemplo, si hubiera borrado una receta y eso "apagara" un país).
 9. **La próxima vez que abra la app** (aunque hayan pasado varios días, mientras sea dentro de los 7 días del `refresh`), el auto-login de `app.js` lo mete directo a la pantalla del mapa sin pedirle usuario y contraseña de nuevo.
 
