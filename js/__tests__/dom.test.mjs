@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import {
     esc, safeUrl, fmtTime, headHTML,
     cardHTML, panelHTML, tipHTML, searchResultsHTML,
-    topChipsHTML, favoritesHTML, ingredientModalHTML, iframeHTML
+    topChipsHTML, favoritesHTML, ingredientModalHTML, iframeHTML,
+    loadingHTML, errorHTML
 } from '../util/dom.js';
 
 /* ---------- esc ---------- */
@@ -250,6 +251,94 @@ test('ingredientModalHTML escapa nombre del ingrediente y filas', () => {
     assert.ok(out.includes('data-rid="3" data-cid="1"') || (out.includes('data-cid="1"') && out.includes('data-rid="3"')));
 });
 
+test('ingredientModalHTML plural "2 recetas" y cableado data-cid/data-rid por fila', () => {
+    const d = {
+        ingredient: { name: 'Ajo' },
+        recipes: [
+            { recipe_id: 9, country_id: 4, recipe_name: 'Sopa de ajo', country_name: 'España', emoji: '🇪🇸', difficulty: 'easy' },
+            { recipe_id: 12, country_id: 7, recipe_name: 'Ají de gallina', country_name: 'Perú', emoji: '🇵🇪', difficulty: 'medium' }
+        ]
+    };
+    const out = ingredientModalHTML(d);
+    assert.ok(out.includes('Presente en 2 recetas.'));
+    assert.ok(!out.includes('Presente en 2 receta.')); // sin singular suelto
+    assert.ok(out.includes('data-cid="4" data-rid="9"'));
+    assert.ok(out.includes('data-cid="7" data-rid="12"'));
+    assert.ok(out.includes('<b>Sopa de ajo</b>'));
+    assert.ok(out.includes('Intermedia')); // DIFF medium
+});
+
+test('favoritesHTML cablea data-cid/data-rid con los ids reales de cada fila', () => {
+    const out = favoritesHTML([
+        { id: 5, country_id: 2, name: 'Ceviche', country_name: 'Perú', emoji: '🇵🇪', difficulty: 'medium' },
+        { id: 8, country_id: 1, name: 'Mole', country_name: 'México', emoji: '🇲🇽', difficulty: 'hard' }
+    ]);
+    assert.ok(out.includes('data-cid="2" data-rid="5"'));
+    assert.ok(out.includes('data-cid="1" data-rid="8"'));
+    assert.ok(out.includes('2 recetas guardadas'));
+});
+
+/* ---------- headHTML / panelHTML: flag, tagline y chips ---------- */
+
+test('headHTML escapa también el flag', () => {
+    const out = headHTML('<svg onload=1>', 'Título', 'Bajada');
+    assert.ok(out.includes('&lt;svg onload=1&gt;'));
+    assert.ok(!out.includes('<svg onload=1>'));
+});
+
+test('panelHTML usa 🌎 por defecto sin emoji y escapa tagline venenosa', () => {
+    const country = { name: 'Belice', tagline: '"Ruta del & caribe"' };
+    const out = panelHTML(country, [], new Set());
+    assert.ok(out.includes('<div class="p-flag">🌎</div>'));
+    assert.ok(out.includes('&quot;Ruta del &amp; caribe&quot;'));
+    assert.ok(out.includes('🍲 0 recetas'));
+    assert.ok(out.includes('🎬 0 con video'));
+});
+
+test('panelHTML cuenta sólo las recetas con video en el chip 🎬', () => {
+    const withVid = { ...baseRecipe, youtube_id: 'MWo42SO1aOM' };
+    const out = panelHTML({ emoji: '🇵🇪', name: 'Perú', tagline: '' }, [baseRecipe, withVid], new Set());
+    assert.ok(out.includes('🍲 2 recetas'));
+    assert.ok(out.includes('🎬 1 con video'));
+});
+
+/* ---------- loadingHTML ---------- */
+
+test('loadingHTML pinta n tarjetas skeleton y escapa el mensaje', () => {
+    const out = loadingHTML('Cargando <México>', 5);
+    assert.ok(out.includes('<p class="p-tag">Cargando &lt;México&gt;</p>'));
+    assert.ok(!out.includes('<México>'));
+    const cards = out.match(/skel-card/g) || [];
+    assert.equal(cards.length, 5);
+    assert.ok(out.includes('aria-hidden="true"'));
+});
+
+test('loadingHTML sin mensaje no emite <p> y con n inválido deja 1 tarjeta', () => {
+    const out = loadingHTML('', 0);
+    assert.ok(!out.includes('<p class="p-tag">'));
+    const cards = out.match(/skel-card/g) || [];
+    assert.equal(cards.length, 1);
+
+    const junk = loadingHTML(null, 'x');
+    assert.equal((junk.match(/skel-card/g) || []).length, 1);
+});
+
+/* ---------- errorHTML ---------- */
+
+test('errorHTML escapa el mensaje y aterriza retryId en data-retry', () => {
+    const out = errorHTML('La API no responde <ahora>', 'country:3');
+    assert.ok(out.includes('role="alert"'));
+    assert.ok(out.includes('<p>La API no responde &lt;ahora&gt;</p>'));
+    assert.ok(out.includes('data-retry="country:3"'));
+    assert.ok(out.includes('↻ Reintentar'));
+});
+
+test('errorHTML neutraliza un retryId hostil (defensa en profundidad)', () => {
+    const out = errorHTML('Error', '"><svg onload=1>');
+    assert.ok(out.includes('data-retry="&quot;&gt;&lt;svg onload=1&gt;"'));
+    assert.ok(!out.includes('<svg onload=1>'));
+});
+
 /* ---------- iframeHTML ---------- */
 
 test('iframeHTML construye el embed sólo con IDs válidos', () => {
@@ -265,4 +354,81 @@ test('iframeHTML devuelve "" con ID inválido (sin iframe)', () => {
     assert.equal(iframeHTML('corto'), '');
     assert.equal(iframeHTML(null), '');
     assert.equal(iframeHTML(undefined), '');
+});
+
+/* ---------- tipHTML: ramas y escape extra ---------- */
+
+test('tipHTML escapa emoji envenenado y coacciona recipe_count string', () => {
+    const out = tipHTML({ emoji: '<svg onload=1>', name: 'Perú', recipe_count: '5' });
+    assert.ok(out.includes('&lt;svg onload=1&gt;'));
+    assert.ok(!out.includes('<svg onload=1>'));
+    assert.ok(out.includes('5 recetas disponibles')); // Number('5') → 5
+});
+
+test('tipHTML con recipe_count ausente cae en la rama "Sin recetas"', () => {
+    const out = tipHTML({ name: 'Haití' }); // undefined > 0 === false
+    assert.ok(out.includes('Sin recetas por ahora'));
+    assert.ok(!out.includes('recetas disponibles'));
+});
+
+test('tipHTML con recipe_count 1 sigue en plural ("1 recetas disponibles")', () => {
+    const out = tipHTML({ name: 'Chile', recipe_count: 1 });
+    assert.ok(out.includes('<small>1 recetas disponibles</small>'));
+});
+
+/* ---------- searchResultsHTML: secciones parciales y escape por sección ---------- */
+
+test('searchResultsHTML con sólo países: las otras secciones aportan ""', () => {
+    const out = searchResultsHTML({
+        countries: [{ id: 3, emoji: '🇧🇷', name: 'Brasil' }],
+        recipes: [],
+        ingredients: []
+    });
+    assert.ok(out.includes('data-k="c" data-id="3"'));
+    assert.ok(!out.includes('data-k="r"'));
+    assert.ok(!out.includes('data-k="i"'));
+});
+
+test('searchResultsHTML escapa nombres venenosos en países y recetas', () => {
+    const d = {
+        countries: [{ id: 1, emoji: '"onmouseover=x', name: '<b>Perú</b>' }],
+        recipes: [{ id: 2, emoji: '🍲', name: 'Ceviche "deluxe"', country_id: 9, country_name: '&Pe&' }],
+        ingredients: []
+    };
+    const out = searchResultsHTML(d);
+    assert.ok(out.includes('&lt;b&gt;Perú&lt;/b&gt;'));
+    assert.ok(out.includes('&quot;onmouseover=x'));
+    assert.ok(out.includes('Ceviche &quot;deluxe&quot;'));
+    assert.ok(out.includes('&amp;Pe&amp;'));
+    assert.ok(!out.includes('<b>Perú</b>'));
+    assert.ok(out.includes('data-cid="9"'));
+});
+
+test('searchResultsHTML coacciona ids string a numéricos sin comillas raras', () => {
+    const d = {
+        countries: [],
+        recipes: [],
+        ingredients: [{ id: '"6', name: 'Ajo', uses: '12' }]
+    };
+    const out = searchResultsHTML(d);
+    assert.ok(out.includes('data-k="i" data-id="NaN"')); // Number('"6') es NaN, no un sink
+    assert.ok(out.includes('>Ajo<'));
+    assert.ok(out.includes('<small>12 usos</small>'));
+});
+
+/* ---------- topChipsHTML: múltiples chips, escape y conteos ---------- */
+
+test('topChipsHTML arma varios chips con em de uso y nombres escapados', () => {
+    const out = topChipsHTML([
+        { id: 6, name: 'Cebolla', uses: 4 },
+        { id: '11', name: 'Ajo & morrón', uses: '2' },
+        { id: 3, name: '<script>x</script>', uses: 0 }
+    ]);
+    assert.ok(out.includes('data-top-ing="6"'));
+    assert.ok(out.includes('data-top-ing="11"')); // Number('11') → 11
+    assert.ok(out.includes('data-top-ing="3"'));
+    assert.ok(out.includes('>Cebolla<em>4</em></button>'));
+    assert.ok(out.includes('Ajo &amp; morrón<em>2</em>'));
+    assert.ok(out.includes('&lt;script&gt;x&lt;/script&gt;<em>0</em>'));
+    assert.ok(!out.includes('<script>x'));
 });
