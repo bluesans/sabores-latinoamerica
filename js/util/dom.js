@@ -153,3 +153,28 @@ export function ingredientModalHTML(d) {
                 `).join('')}
             `;
 }
+
+/* Placeholders de carga con shimmer: n tarjetas que imitan la silueta de
+   .rcard para que el panel no salte de altura cuando llega la data real. */
+export function loadingHTML(msg, n = 3) {
+    const cards = Array.from({ length: Math.max(1, Number(n) || 1) }, (_, i) => `
+                <div class="skel-card" style="--i:${i}" aria-hidden="true">
+                    <div class="skel w40"></div>
+                    <div class="skel w90"></div>
+                    <div class="skel w70"></div>
+                    <div class="skel tall"></div>
+                </div>`).join('');
+    return `${msg ? `<p class="p-tag">${esc(msg)}</p>` : ''}${cards}`;
+}
+
+/* Tarjeta de error con botón Reintentar. retryId es un token interno que
+   panel.js usa para resolver la acción guardada; nunca es dato de usuario. */
+export function errorHTML(msg, retryId) {
+    return `
+                <div class="state-error" role="alert">
+                    <span class="state-error-ico">⚠️</span>
+                    <p>${esc(msg)}</p>
+                    <button class="btn-retry" type="button" data-retry="${esc(retryId)}">↻ Reintentar</button>
+                </div>
+            `;
+}

@@ -228,43 +228,53 @@ const svg = document.getElementById('mapSvg');
         countriesByIso = {};
         countries.forEach(c => countriesByIso[c.iso_code] = c);
         addBase();
-        let geo = null;
-        try { geo = await buildGeoLayers(); } catch (e) { geo = null; }
-        let di = 0;
-        if (geo) {
-            world.appendChild(el('line', { x1: -400, x2: 1400, y1: geo.eqY, y2: geo.eqY, stroke: 'rgba(242,177,52,.14)', 'stroke-dasharray': '7 7' }));
-            const eqt = el('text', { x: 60, y: geo.eqY - 8, class: 'eq-lab' });
-            eqt.textContent = 'LÍNEA DEL ECUADOR';
-            world.appendChild(eqt);
-            addLabel('OCÉANO PACÍFICO', geo.labels.pacifico, -75);
-            addLabel('OCÉANO ATLÁNTICO', geo.labels.atlantico, -70);
-            addLabel('MAR CARIBE', geo.labels.caribe, 0, true);
-            MAP_SHAPES.forEach(sh => {
-                const db = countriesByIso[sh.iso], d = geo.byIso[sh.iso];
-                if (!db || !d) return;
-                const info = { ...db };
-                countriesByIso[sh.iso] = info;
-                addCountryGroup(info, d, db.recipe_count > 0 ? FILLS[di % FILLS.length] : 'url(#hatch)');
-                if (db.recipe_count > 0) di++;
-            });
-        } else {
-            world.appendChild(el('line', { x1: -400, x2: 1400, y1: 420, y2: 420, stroke: 'rgba(242,177,52,.14)', 'stroke-dasharray': '7 7' }));
-            const eqt = el('text', { x: 20, y: 412, class: 'eq-lab' });
-            eqt.textContent = 'LÍNEA DEL ECUADOR';
-            world.appendChild(eqt);
-            addLabel('OCÉANO PACÍFICO', [150, 700], -78);
-            addLabel('MAR CARIBE', [468, 236], 0, true);
-            addLabel('OCÉANO ATLÁNTICO', [880, 700], -72);
-            MAP_SHAPES.forEach(sh => {
-                const db = countriesByIso[sh.iso];
-                const info = db ? { ...db } : { id: null, iso_code: sh.iso, name: sh.n, emoji: sh.f, tagline: '', recipe_count: 0 };
-                countriesByIso[sh.iso] = info;
-                addCountryGroup(info, sh.p.join(''), info.recipe_count > 0 ? FILLS[di % FILLS.length] : 'url(#hatch)');
-                if (info.recipe_count > 0) di++;
-            });
+        /* Overlay mientras se resuelve la geometría (CDN o caché): convive
+           con el badge HD/básico, que aparece recién al terminar. */
+        const loading = document.createElement('div');
+        loading.className = 'map-loading';
+        loading.innerHTML = '<span class="map-loading-spin" aria-hidden="true"></span>Ubicando Latinoamérica…';
+        shell.appendChild(loading);
+        try {
+            let geo = null;
+            try { geo = await buildGeoLayers(); } catch (e) { geo = null; }
+            let di = 0;
+            if (geo) {
+                world.appendChild(el('line', { x1: -400, x2: 1400, y1: geo.eqY, y2: geo.eqY, stroke: 'rgba(242,177,52,.14)', 'stroke-dasharray': '7 7' }));
+                const eqt = el('text', { x: 60, y: geo.eqY - 8, class: 'eq-lab' });
+                eqt.textContent = 'LÍNEA DEL ECUADOR';
+                world.appendChild(eqt);
+                addLabel('OCÉANO PACÍFICO', geo.labels.pacifico, -75);
+                addLabel('OCÉANO ATLÁNTICO', geo.labels.atlantico, -70);
+                addLabel('MAR CARIBE', geo.labels.caribe, 0, true);
+                MAP_SHAPES.forEach(sh => {
+                    const db = countriesByIso[sh.iso], d = geo.byIso[sh.iso];
+                    if (!db || !d) return;
+                    const info = { ...db };
+                    countriesByIso[sh.iso] = info;
+                    addCountryGroup(info, d, db.recipe_count > 0 ? FILLS[di % FILLS.length] : 'url(#hatch)');
+                    if (db.recipe_count > 0) di++;
+                });
+            } else {
+                world.appendChild(el('line', { x1: -400, x2: 1400, y1: 420, y2: 420, stroke: 'rgba(242,177,52,.14)', 'stroke-dasharray': '7 7' }));
+                const eqt = el('text', { x: 20, y: 412, class: 'eq-lab' });
+                eqt.textContent = 'LÍNEA DEL ECUADOR';
+                world.appendChild(eqt);
+                addLabel('OCÉANO PACÍFICO', [150, 700], -78);
+                addLabel('MAR CARIBE', [468, 236], 0, true);
+                addLabel('OCÉANO ATLÁNTICO', [880, 700], -72);
+                MAP_SHAPES.forEach(sh => {
+                    const db = countriesByIso[sh.iso];
+                    const info = db ? { ...db } : { id: null, iso_code: sh.iso, name: sh.n, emoji: sh.f, tagline: '', recipe_count: 0 };
+                    countriesByIso[sh.iso] = info;
+                    addCountryGroup(info, sh.p.join(''), info.recipe_count > 0 ? FILLS[di % FILLS.length] : 'url(#hatch)');
+                    if (info.recipe_count > 0) di++;
+                });
+            }
+            addCountryLabels(geo && geo.labelPts);
+            addGeoBadge(!!geo);
+        } finally {
+            loading.remove();
         }
-        addCountryLabels(geo && geo.labelPts);
-        addGeoBadge(!!geo);
     }
 
     function showTip(c, e) {

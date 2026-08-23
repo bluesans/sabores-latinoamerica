@@ -64,11 +64,19 @@ function makeHeaderControls() {
         deb = setTimeout(async () => {
             const q = inp.value.trim();
             if (q.length < 2) { res.hidden = true; return; }
+            res.innerHTML = '<div class="s-empty">Buscando…</div>';
+            res.hidden = false;
             try {
                 const d = await API.buscar(q);
                 res.innerHTML = searchResultsHTML(d);
                 res.hidden = false;
-            } catch (e) { res.hidden = true; }
+            } catch (e) {
+                /* El buscador se oculta en silencio al fallar, a propósito:
+                   es una superficie transitoria (el usuario ya siguió
+                   tecleando o cerró el dropdown); un cartel de error acá
+                   sería ruido. Los datos críticos sí avisan (panel, stats). */
+                res.hidden = true;
+            }
         }, 250);
     });
     res.addEventListener('click', e => {
