@@ -2,4 +2,4 @@
    Si servís el proyecto desde htdocs de XAMPP, el valor relativo 'api' alcanza.
    Si el front y la API están en lugares distintos, poné la ruta completa:
    const API_URL = 'http://localhost/sabores-latinoamerica/api'; */
-const API_URL = 'api';
+export const API_URL = 'api';

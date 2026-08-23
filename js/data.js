@@ -1,7 +1,7 @@
 /* Geometría del mapa (siluetas estilizadas, coordenadas ya proyectadas).
    Se mantiene en el cliente; la clave de cada país es su iso_code numérico,
    que coincide con countries.iso_code de la base de datos. */
-const MAP_SHAPES = [
+export const MAP_SHAPES = [
  {iso:484, n:'México',        f:'🇲🇽', p:['M33,30 L156,38 L196,72 L236,90 L263,109 L276,190 L293,202 L340,181 L380,162 L382,167 L365,199 L320,245 L285,227 L231,218 L170,173 L156,142 L105,85 L59,31 L99,108 L112,130 L116,145 L86,90 L69,60 Z']},
  {iso:84,  n:'Belice',        f:'🇧🇿', p:['M365,199 L377,194 L373,230 L360,228 Z']},
  {iso:320, n:'Guatemala',     f:'🇬🇹', p:['M324,250 L344,222 L360,228 L366,242 L352,256 L332,256 Z']},
@@ -26,5 +26,5 @@ const MAP_SHAPES = [
  {iso:152, n:'Chile',         f:'🇨🇱', p:['M571,640 L586,630 L592,692 L577,744 L571,804 L575,852 L570,900 L548,960 L566,1040 L595,1048 L574,1052 L540,1000 L528,876 L551,816 L564,703 L568,662 Z','M586,1056 L604,1052 L600,1072 L588,1068 Z','M592,1084 L606,1092 L588,1094 Z']}
 ];
 
-const FILLS = ['#f2b134', '#e4572e', '#31c98e', '#e8709a'];
-const DIFF  = { easy:['Fácil','lv1'], medium:['Intermedia','lv2'], hard:['Difícil','lv3'] };
+export const FILLS = ['#f2b134', '#e4572e', '#31c98e', '#e8709a'];
+export const DIFF  = { easy:['Fácil','lv1'], medium:['Intermedia','lv2'], hard:['Difícil','lv3'] };

@@ -1,6 +1,9 @@
-(function () {
-    'use strict';
-    const panel = document.getElementById('panel');
+import { API } from './api.js';
+import { DIFF } from './data.js';
+import { toast } from './ui/toast.js';
+import { unmountAdmin, isAdminDirty } from './admin.js';
+
+const panel = document.getElementById('panel');
     const panelBody = document.getElementById('panelBody');
     const backdrop = document.getElementById('backdrop');
     const ingModal = document.getElementById('ingModal');
@@ -17,7 +20,7 @@
     }
 
     async function openPanel(c, g, focusRid) {
-        if (window.__unmountAdmin) window.__unmountAdmin();
+        unmountAdmin();
         if (activeG) activeG.classList.remove('active');
         activeG = g;
         g.classList.add('active');
@@ -27,7 +30,6 @@
         panel.setAttribute('aria-hidden', 'false');
         panel.scrollTop = 0;
         if (mq.matches) backdrop.classList.add('show');
-        if (window.focusCountry) window.focusCountry(g);
         try {
             const [data, favs] = await Promise.all([API.getRecetas(c.id), API.getFavoritos()]);
             currentFavs = new Set(favs.favorites.map(f => Number(f.id)));
@@ -116,7 +118,7 @@
         on ? currentFavs.add(id) : currentFavs.delete(id);
         try {
             await API.toggleFav(id, on);
-            if (window.reloadFavCount) window.reloadFavCount();
+            document.dispatchEvent(new CustomEvent('fav:changed'));
         } catch (err) {
             btn.classList.toggle('on', !on);
             toast(err.message);
@@ -129,8 +131,8 @@
     }
 
     function closePanel() {
-        if (window.__adminDirty) { location.reload(); return; }
-        if (window.__unmountAdmin) window.__unmountAdmin();
+        if (isAdminDirty()) { location.reload(); return; }
+        unmountAdmin();
         panel.classList.remove('open');
         panel.setAttribute('aria-hidden', 'true');
         backdrop.classList.remove('show');
@@ -142,7 +144,7 @@
     backdrop.addEventListener('click', closePanel);
 
     async function openFavorites() {
-        if (window.__unmountAdmin) window.__unmountAdmin();
+        unmountAdmin();
         if (activeG) activeG.classList.remove('active');
         activeG = null;
         svg.classList.remove('has-active');
@@ -199,12 +201,15 @@
     ingModal.addEventListener('click', e => { if (e.target === ingModal) closeIngredientModal(); });
     ingBody.addEventListener('click', e => { const row = e.target.closest('.ing-row'); if (row) rowJump(row); });
 
+    /* Va por evento porque panel no puede importar map.js (sería un ciclo). */
     function rowJump(row) {
-        const c = window.getCountryById ? window.getCountryById(row.dataset.cid) : null;
-        if (!c || !c._g) return;
         closeIngredientModal();
-        document.getElementById('coach').classList.add('done');
-        openPanel(c, c._g, row.dataset.rid ? Number(row.dataset.rid) : undefined);
+        document.dispatchEvent(new CustomEvent('nav:country', {
+            detail: {
+                cid: Number(row.dataset.cid),
+                rid: row.dataset.rid ? Number(row.dataset.rid) : undefined
+            }
+        }));
     }
 
     document.addEventListener('keydown', e => {
@@ -213,9 +218,4 @@
         if (panel.classList.contains('open')) closePanel();
     });
 
-    window.openPanel = openPanel;
-    window.closePanel = closePanel;
-    window.closeIngredientModal = closeIngredientModal;
-    window.openIngredientModal = openIngredientModal;
-    window.openFavorites = openFavorites;
-})();
+export { openPanel, closePanel, closeIngredientModal, openIngredientModal, openFavorites };

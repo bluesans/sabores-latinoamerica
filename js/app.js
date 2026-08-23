@@ -1,15 +1,14 @@
-const $ = s => document.querySelector(s);
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let toastT;
+import { API } from './api.js';
+import { toast } from './ui/toast.js';
+import { buildMap } from './map.js';
+import { openFavorites, openIngredientModal } from './panel.js';
+import { initAuth } from './auth.js';
+import { openAdmin } from './admin.js';
 
-function toast(msg) {
-    const t = $('#toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastT);
-    toastT = setTimeout(() => t.classList.remove('show'), 3000);
-}
+const $ = s => document.querySelector(s);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const authScreen = document.getElementById('authScreen');
+const appScreen  = document.getElementById('appScreen');
 
 function countUp(el, target) {
     if (reduceMotion) { el.textContent = target; return; }
@@ -40,7 +39,7 @@ function renderTopIngredients(tops) {
         tops.map(t => `<button class="chip top-chip" data-top-ing="${t.id}" type="button">${t.name}<em>${t.uses}</em></button>`).join('');
     strip.addEventListener('click', e => {
         const b = e.target.closest('[data-top-ing]');
-        if (b && window.openIngredientModal) window.openIngredientModal(b.dataset.topIng);
+        if (b) openIngredientModal(b.dataset.topIng);
     });
     document.getElementById('statsBar').after(strip);
 }
@@ -56,8 +55,8 @@ function makeHeaderControls() {
         <button id="favBtn" class="btn-ghost" type="button" title="Mis favoritos">⭐ <span id="favCount">0</span></button>
         <button id="adminBtn" class="btn-ghost" type="button" hidden>🛠️ Admin</button>
     `);
-    document.getElementById('favBtn').addEventListener('click', () => window.openFavorites && window.openFavorites());
-    document.getElementById('adminBtn').addEventListener('click', () => window.openAdmin && window.openAdmin());
+    document.getElementById('favBtn').addEventListener('click', () => openFavorites());
+    document.getElementById('adminBtn').addEventListener('click', () => openAdmin());
     const inp = $('#searchInp'), res = $('#searchRes');
     let deb;
     inp.addEventListener('input', () => {
@@ -81,12 +80,13 @@ function makeHeaderControls() {
         if (!b) return;
         res.hidden = true;
         inp.value = '';
-        if (b.dataset.k === 'i') return window.openIngredientModal(b.dataset.id);
-        const c = window.getCountryById(b.dataset.k === 'c' ? b.dataset.id : b.dataset.cid);
-        if (c && c._g) {
-            document.getElementById('coach').classList.add('done');
-            window.openPanel(c, c._g, b.dataset.k === 'r' ? Number(b.dataset.id) : undefined);
-        }
+        if (b.dataset.k === 'i') return openIngredientModal(b.dataset.id);
+        document.dispatchEvent(new CustomEvent('nav:country', {
+            detail: {
+                cid: Number(b.dataset.k === 'c' ? b.dataset.id : b.dataset.cid),
+                rid: b.dataset.k === 'r' ? Number(b.dataset.id) : undefined
+            }
+        }));
     });
     inp.addEventListener('keydown', e => {
         if (e.key === 'Escape') { res.hidden = true; return; }
@@ -100,7 +100,7 @@ async function reloadFavCount() {
     if (!el) return;
     try { const d = await API.getFavoritos(); el.textContent = d.favorites.length; } catch (e) {}
 }
-window.reloadFavCount = reloadFavCount;
+document.addEventListener('fav:changed', reloadFavCount);
 
 async function enterApp(name, isNew, role) {
     authScreen.classList.remove('on');
@@ -124,8 +124,10 @@ async function enterApp(name, isNew, role) {
         renderTopIngredients(sd.top_ingredients);
     } catch (err) { toast(err.message); console.error(err); return; }
     toast(isNew ? `¡Cuenta creada! Bienvenido, ${name} 🌶️` : `Hola de nuevo, ${name} 👋`);
-    window.scrollTo({ top: 0 });
+    scrollTo({ top: 0 });
 }
+
+initAuth(enterApp);
 
 (async () => {
     if (!API.access && !API.refresh) return;

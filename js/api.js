@@ -1,6 +1,8 @@
+import { API_URL } from './config.js';
+
 const AUTH_URL_PATTERN = /\/auth\//;
 
-const API = {
+export const API = {
     access: localStorage.getItem('sdl_access'),
     refresh: localStorage.getItem('sdl_refresh'),
     _refreshPromise: null,

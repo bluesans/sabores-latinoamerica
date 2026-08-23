@@ -1,3 +1,7 @@
+import { API } from './api.js';
+import { toast } from './ui/toast.js';
+import { closePanel, closeIngredientModal } from './panel.js';
+
 const authScreen = document.getElementById('authScreen');
 const appScreen  = document.getElementById('appScreen');
 const userInp = document.getElementById('username');
@@ -41,30 +45,34 @@ userInp.addEventListener('input', () => {
   h.textContent = '✓'; h.classList.add('good');
 });
 
-document.getElementById('authForm').addEventListener('submit', async e => {
-  e.preventDefault(); clearError();
-  if (mode === 'register' && pass1.value !== pass2.value) return fail('Las contraseñas no coinciden.');
-  const btn = document.getElementById('authSubmit');
-  btn.disabled = true; btn.textContent = 'Un momento…';
-  try {
-    const res = await API.auth(mode, userInp.value.trim(), pass1.value);
-    API.setTokens(res.access, res.refresh);
-    await enterApp(res.username, mode === 'register', res.role);
-  } catch (err) {
-    fail(err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = mode === 'register' ? 'Crear cuenta y entrar' : 'Entrar';
-  }
-});
+/* El submit y el logout necesitan enterApp (definido en app.js), así que se
+   conectan acá vía initAuth en lugar de puentes globales por window. */
+export function initAuth(enterApp) {
+  document.getElementById('authForm').addEventListener('submit', async e => {
+    e.preventDefault(); clearError();
+    if (mode === 'register' && pass1.value !== pass2.value) return fail('Las contraseñas no coinciden.');
+    const btn = document.getElementById('authSubmit');
+    btn.disabled = true; btn.textContent = 'Un momento…';
+    try {
+      const res = await API.auth(mode, userInp.value.trim(), pass1.value);
+      API.setTokens(res.access, res.refresh);
+      await enterApp(res.username, mode === 'register', res.role);
+    } catch (err) {
+      fail(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = mode === 'register' ? 'Crear cuenta y entrar' : 'Entrar';
+    }
+  });
 
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await API.logout();
-  window.closePanel && window.closePanel();
-  window.closeIngredientModal && window.closeIngredientModal();
-  appScreen.classList.remove('on');
-  authScreen.classList.add('on');
-  pass1.value = ''; pass2.value = '';
-  setMode('login');
-  toast('Sesión cerrada. ¡Buen provecho! 🫡');
-});
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await API.logout();
+    closePanel();
+    closeIngredientModal();
+    appScreen.classList.remove('on');
+    authScreen.classList.add('on');
+    pass1.value = ''; pass2.value = '';
+    setMode('login');
+    toast('Sesión cerrada. ¡Buen provecho! 🫡');
+  });
+}

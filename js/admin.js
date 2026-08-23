@@ -1,8 +1,6 @@
-(function () {
-    'use strict';
-    const { createApp, reactive, ref } = Vue;
+import { toast } from './ui/toast.js';
 
-    const AdminApp = {
+const AdminApp = {
         setup() {
             const tab = ref('recipes');
             const loading = ref(true);
@@ -10,7 +8,7 @@
             const editing = ref(null);
             const data = reactive({ recipes: [], countries: [], ingredients: [] });
 
-            function markDirty() { window.__adminDirty = true; }
+            function markDirty() { adminDirty = true; }
 
             async function load() {
                 loading.value = true;
@@ -190,24 +188,25 @@
         `
     };
 
-    let appInstance = null;
+let appInstance = null;
+let adminDirty = false;
 
-    function unmountAdmin() {
-        if (appInstance) { appInstance.unmount(); appInstance = null; }
-    }
+/* closePanel recarga la página si hubo cambios sin guardar en la vista. */
+export function isAdminDirty() { return adminDirty; }
 
-    function openAdmin() {
-        const panel = document.getElementById('panel');
-        const panelBody = document.getElementById('panelBody');
-        unmountAdmin();
-        panelBody.innerHTML = '<div id="admRoot"></div>';
-        appInstance = createApp(AdminApp);
-        appInstance.mount('#admRoot');
-        panel.classList.add('open');
-        panel.setAttribute('aria-hidden', 'false');
-        panel.scrollTop = 0;
-    }
+export function unmountAdmin() {
+    if (appInstance) { appInstance.unmount(); appInstance = null; }
+}
 
-    window.openAdmin = openAdmin;
-    window.__unmountAdmin = unmountAdmin;
-})();
+export function openAdmin() {
+    const { createApp } = Vue; // Vue llega del script clásico vendido (global).
+    const panel = document.getElementById('panel');
+    const panelBody = document.getElementById('panelBody');
+    unmountAdmin();
+    panelBody.innerHTML = '<div id="admRoot"></div>';
+    appInstance = createApp(AdminApp);
+    appInstance.mount('#admRoot');
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+    panel.scrollTop = 0;
+}

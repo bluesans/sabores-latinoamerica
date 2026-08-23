@@ -1,7 +1,12 @@
 /* ============ Mapa HD sin dependencias externas ============ */
-(function () {
-    'use strict';
-    const svg = document.getElementById('mapSvg');
+import { MAP_SHAPES, FILLS } from './data.js';
+import { openPanel } from './panel.js';
+import { toast } from './ui/toast.js';
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const svg = document.getElementById('mapSvg');
     const world = document.getElementById('world');
     const shell = document.getElementById('mapShell');
     const tip = document.getElementById('tip');
@@ -284,7 +289,8 @@
         if (!info) return;
         if (info.recipe_count > 0) {
             document.getElementById('coach').classList.add('done');
-            if (window.openPanel) window.openPanel(info, g);
+            focusCountry(g);
+            openPanel(info, g);
         } else {
             toast(`Pronto sumaremos recetas de ${info.name} 🌱`);
         }
@@ -302,10 +308,21 @@
             if (!opts.length) return;
             const c = opts[Math.floor(Math.random() * opts.length)];
             document.getElementById('coach').classList.add('done');
-            if (window.openPanel) window.openPanel(c, c._g);
+            focusCountry(c._g);
+            openPanel(c, c._g);
         });
         head.insertBefore(b, head.querySelector('.legend'));
     })();
+
+    /* 'nav:country' lo emiten panel.js (rowJump) y app.js (buscador). */
+    document.addEventListener('nav:country', e => {
+        const c = getCountryById(e.detail.cid);
+        if (!c || !c._g) return;
+        document.getElementById('coach').classList.add('done');
+        focusCountry(c._g);
+        if (e.detail.rid) openPanel(c, c._g, e.detail.rid);
+        else openPanel(c, c._g);
+    });
 
     function metrics() {
         const r = svg.getBoundingClientRect();
@@ -442,7 +459,4 @@
         return null;
     }
 
-    window.buildMap = buildMap;
-    window.focusCountry = focusCountry;
-    window.getCountryById = getCountryById;
-})();
+export { buildMap, focusCountry, getCountryById };
