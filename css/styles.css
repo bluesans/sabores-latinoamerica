@@ -138,7 +138,7 @@ button{font-family:inherit;cursor:pointer}
 .zoom-ctl{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px;z-index:5}
 .zoom-ctl button{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:rgba(13,22,17,.85);color:var(--cream);font-size:1.25rem;font-weight:700;transition:.2s}
 .zoom-ctl button:hover{color:var(--yellow);border-color:var(--yellow);transform:scale(1.06)}
-.coach{position:absolute;top:14px;left:14px;z-index:5;background:rgba(13,22,17,.9);border:1px solid rgba(242,177,52,.5);color:var(--cream);padding:.55rem .95rem;border-radius:999px;font-size:.9rem;font-weight:600;animation:bob 2.6s ease-in-out infinite;transition:opacity .6s, transform .6s}
+.coach{position:absolute;top:14px;left:14px;z-index:5;pointer-events:none;background:rgba(13,22,17,.9);border:1px solid rgba(242,177,52,.5);color:var(--cream);padding:.55rem .95rem;border-radius:999px;font-size:.9rem;font-weight:600;animation:bob 2.6s ease-in-out infinite;transition:opacity .6s, transform .6s}
 .coach.done{opacity:0;transform:translateY(-10px);pointer-events:none}
 @keyframes bob{50%{transform:translateY(-5px)}}
 .tip{position:absolute;z-index:6;pointer-events:none;display:flex;gap:.65rem;align-items:center;background:rgba(10,18,14,.94);border:1px solid var(--line);padding:.5rem .8rem;border-radius:11px;box-shadow:0 10px 26px rgba(0,0,0,.5);opacity:0;transition:opacity .15s}
