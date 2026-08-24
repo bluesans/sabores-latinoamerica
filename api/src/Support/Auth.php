@@ -41,11 +41,6 @@ final class Auth
         );
     }
 
-    public static function checkLoginRate(PDO $pdo, string $ip): bool
-    {
-        return self::checkLoginRateDetails($pdo, $ip)['allowed'];
-    }
-
     /** @return array{allowed: bool, retryAfter: int} */
     public static function checkRegisterRateDetails(PDO $pdo, string $ip): array
     {
@@ -56,11 +51,6 @@ final class Auth
             self::REGISTER_MAX_ATTEMPTS,
             self::REGISTER_WINDOW_MINUTES
         );
-    }
-
-    public static function checkRegisterRate(PDO $pdo, string $ip): bool
-    {
-        return self::checkRegisterRateDetails($pdo, $ip)['allowed'];
     }
 
     public static function recordFailedLogin(PDO $pdo, string $ip, string $username): void
