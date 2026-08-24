@@ -70,7 +70,7 @@ const panel = document.getElementById('panel');
         panel.scrollTop = 0;
         if (mq.matches) backdrop.classList.add('show');
         await loadPanel(c, g, focusRid);
-        document.getElementById('panelClose').focus({ preventScroll: true });
+        document.getElementById('panelClose')?.focus({ preventScroll: true });
     }
 
     function renderPanel(country, recipes, focusRid) {
