@@ -108,7 +108,7 @@ final class CookieFlowTest extends TestCase
      */
     private function setCookies(ResponseInterface $response): array
     {
-        return $response->getHeader('Set-Cookie');
+        return array_values($response->getHeader('Set-Cookie'));
     }
 
     /** Extracts the 64-hex refresh token from the Set-Cookie header ('' if absent). */
