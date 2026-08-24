@@ -1,0 +1,8 @@
+# Security headers for the whole app (HTML, assets and API).
+# "always" covers Apache-generated error responses (403/404) too.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+</IfModule>
