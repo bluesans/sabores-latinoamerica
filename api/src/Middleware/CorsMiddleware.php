@@ -14,9 +14,14 @@ final class CorsMiddleware
     {
         $response = $handler->handle($request);
 
-        $allowedOrigin = Env::get('CORS_ORIGIN', '*');
+        $allowedOrigin = Env::get('CORS_ORIGIN', '');
         // Env::get only returns null when no default is provided.
         \assert($allowedOrigin !== null);
+
+        // Same-origin posture: no CORS surface at all unless explicitly opened.
+        if ($allowedOrigin === '') {
+            return $response;
+        }
 
         $response = $response
             ->withHeader('Access-Control-Allow-Origin', $allowedOrigin)

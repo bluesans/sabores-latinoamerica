@@ -755,7 +755,7 @@ Variables de entorno (`api/.env`):
 | `JWT_SECRET` | *(placeholder — cambiar siempre)* | Clave para firmar los JWT |
 | `JWT_TTL` | `900` (15 min) | Duración del access token, en segundos |
 | `SESSION_DAYS` | `7` | Duración del refresh token, en días |
-| `CORS_ORIGIN` | `*` | Origen permitido para CORS (`*` alcanza con front y API en el mismo host) |
+| `CORS_ORIGIN` | *(vacío)* | Dejarlo vacío si front y API comparten origen (no se emiten cabeceras CORS); `*` abre solo sin credenciales; un origen exacto lo permite con credenciales |
 | `COOKIE_SECURE` | `auto` | Cookie de refresh: `auto` marca Secure solo por HTTPS; `1` siempre; `0` nunca (HTTP local) |
 | `ADMIN_USER` / `ADMIN_PASS` | *(vacíos)* | Cuenta admin inicial que siembra `api/bin/create-admin.php` |
 | `APP_DEBUG` | `0` | `1` para ver errores detallados de Slim (solo desarrollo) |
