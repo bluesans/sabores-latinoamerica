@@ -1,6 +1,10 @@
 # Orchestration state (not part of the product)
 /.omo/
 
+# Local tooling
+/.codegraph/
+/.playwright-mcp/
+
 # Misc
 .DS_Store
 Thumbs.db
