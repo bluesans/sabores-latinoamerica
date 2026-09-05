@@ -14,6 +14,9 @@ final class Auth
     private const REGISTER_MAX_ATTEMPTS = 5;
     private const REGISTER_WINDOW_MINUTES = 15;
 
+    private const REFRESH_MAX_ATTEMPTS = 10;
+    private const REFRESH_WINDOW_MINUTES = 5;
+
     public static function bearerToken(Request $request): ?string
     {
         $auth = $request->getHeaderLine('Authorization');
@@ -63,16 +66,34 @@ final class Auth
         self::recordAttempt($pdo, $ip, $username, 'register');
     }
 
-    public static function createRefreshToken(PDO $pdo, int $userId): string
+    /** @return array{allowed: bool, retryAfter: int} */
+    public static function checkRefreshRateDetails(PDO $pdo, string $ip): array
+    {
+        return self::checkRateDetails(
+            $pdo,
+            $ip,
+            'refresh',
+            self::REFRESH_MAX_ATTEMPTS,
+            self::REFRESH_WINDOW_MINUTES
+        );
+    }
+
+    public static function recordFailedRefresh(PDO $pdo, string $ip): void
+    {
+        self::recordAttempt($pdo, $ip, '', 'refresh');
+    }
+
+    public static function createRefreshToken(PDO $pdo, int $userId, ?string $ip = null, ?string $userAgent = null): string
     {
         $token = bin2hex(random_bytes(32));
         $tokenHash = self::hashToken($token);
         $days = Env::int('SESSION_DAYS', 7);
+        $userAgent = $userAgent === null ? null : Validation::truncate($userAgent, 255);
 
         $pdo->prepare(
-            "INSERT INTO sessions (user_id, token, expires_at, revoked_at)
-             VALUES (?, ?, DATE_ADD(NOW(), INTERVAL $days DAY), NULL)"
-        )->execute([$userId, $tokenHash]);
+            "INSERT INTO sessions (user_id, token, expires_at, revoked_at, ip, user_agent)
+             VALUES (?, ?, DATE_ADD(NOW(), INTERVAL $days DAY), NULL, ?, ?)"
+        )->execute([$userId, $tokenHash, $ip, $userAgent]);
 
         return $token;
     }

@@ -16,7 +16,7 @@ final class AuthService
     }
 
     /** @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} */
-    public function register(string $username, string $password, string $ip): array
+    public function register(string $username, string $password, string $ip, ?string $userAgent = null): array
     {
         $username = trim($username);
 
@@ -57,8 +57,11 @@ final class AuthService
                 ]);
         } catch (PDOException $e) {
             $errorInfo = $e->errorInfo;
-            // PDO driver errors always populate errorInfo; the stub allows null.
-            \assert(is_array($errorInfo));
+
+            if (!is_array($errorInfo)) {
+                throw $e;
+            }
+
             [$sqlState, $driverCode] = $errorInfo;
 
             if ($sqlState === '23000' || (int) $driverCode === 1062) {
@@ -77,7 +80,7 @@ final class AuthService
         return self::success([
             'username' => $username,
             'role' => 'user',
-            'refresh' => Auth::createRefreshToken($this->pdo, $userId),
+            'refresh' => Auth::createRefreshToken($this->pdo, $userId, $ip, $userAgent),
             'access' => Jwt::issueAccess([
                 'id' => $userId,
                 'username' => $username,
@@ -87,7 +90,7 @@ final class AuthService
     }
 
     /** @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} */
-    public function login(string $username, string $password, string $ip): array
+    public function login(string $username, string $password, string $ip, ?string $userAgent = null): array
     {
         $username = trim($username);
 
@@ -121,7 +124,7 @@ final class AuthService
         return self::success([
             'username' => $username,
             'role' => $role,
-            'refresh' => Auth::createRefreshToken($this->pdo, $userId),
+            'refresh' => Auth::createRefreshToken($this->pdo, $userId, $ip, $userAgent),
             'access' => Jwt::issueAccess([
                 'id' => $userId,
                 'username' => $username,
@@ -131,9 +134,25 @@ final class AuthService
     }
 
     /** @return array{ok: bool, status: int, data: array<string, mixed>, headers: array<string, string>} */
-    public function refresh(?string $token): array
+    public function refresh(?string $token, ?string $ip = null, ?string $userAgent = null): array
     {
+        $ipForRate = $ip ?? '';
+
+        if ($ipForRate !== '') {
+            $rate = Auth::checkRefreshRateDetails($this->pdo, $ipForRate);
+
+            if (!$rate['allowed']) {
+                return self::failure('Demasiados intentos. Esperá unos minutos.', 429, [
+                    'Retry-After' => (string) $rate['retryAfter'],
+                ]);
+            }
+        }
+
         if ($token === null || $token === '') {
+            if ($ipForRate !== '') {
+                Auth::recordFailedRefresh($this->pdo, $ipForRate);
+            }
+
             return self::failure('Sesión expirada.', 401);
         }
 
@@ -147,12 +166,20 @@ final class AuthService
             if ($row === null) {
                 $this->pdo->rollBack();
 
+                if ($ipForRate !== '') {
+                    Auth::recordFailedRefresh($this->pdo, $ipForRate);
+                }
+
                 return self::failure('Sesión expirada.', 401);
             }
 
             if ($row['revoked_at'] !== null) {
                 Auth::revokeAllUserSessions($this->pdo, $row['user_id']);
                 $this->pdo->commit();
+
+                if ($ipForRate !== '') {
+                    Auth::recordFailedRefresh($this->pdo, $ipForRate);
+                }
 
                 return self::failure('Sesión expirada.', 401);
             }
@@ -162,12 +189,16 @@ final class AuthService
             if ($expiresAt === false || $expiresAt <= time()) {
                 $this->pdo->rollBack();
 
+                if ($ipForRate !== '') {
+                    Auth::recordFailedRefresh($this->pdo, $ipForRate);
+                }
+
                 return self::failure('Sesión expirada.', 401);
             }
 
             Auth::revokeRefreshToken($this->pdo, $token);
 
-            $newRefresh = Auth::createRefreshToken($this->pdo, $row['user_id']);
+            $newRefresh = Auth::createRefreshToken($this->pdo, $row['user_id'], $ip, $userAgent);
 
             $this->pdo->commit();
 

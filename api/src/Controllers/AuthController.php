@@ -84,7 +84,12 @@ final class AuthController
             ? $cookieToken
             : Auth::bearerToken($request);
 
-        $result = $this->service()->refresh($token);
+        $userAgent = $request->getHeaderLine('User-Agent');
+        $userAgent = function_exists('mb_substr')
+            ? mb_substr($userAgent, 0, 255)
+            : substr($userAgent, 0, 255);
+
+        $result = $this->service()->refresh($token, $this->ip($request), $userAgent);
 
         if (($result['ok'] ?? false) === true) {
             return $this->respondWithSessionCookie($response, $result);
