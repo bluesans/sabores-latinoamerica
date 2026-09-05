@@ -27,9 +27,9 @@ return function (App $app): void {
 
     // ---------- Recursos protegidos ----------
     $app->get('/countries', [CountryController::class, 'index'])->add(AuthMiddleware::class);
-    $app->get('/countries/{id}/recipes', [RecipeController::class, 'byCountry'])->add(AuthMiddleware::class);
+    $app->get('/countries/{id:[0-9]+}/recipes', [RecipeController::class, 'byCountry'])->add(AuthMiddleware::class);
     $app->get('/stats', [StatsController::class, 'index'])->add(AuthMiddleware::class);
-    $app->get('/ingredients/{id}', [IngredientController::class, 'show'])->add(AuthMiddleware::class);
+    $app->get('/ingredients/{id:[0-9]+}', [IngredientController::class, 'show'])->add(AuthMiddleware::class);
     $app->get('/search', [SearchController::class, 'index'])->add(AuthMiddleware::class);
 
     $app->get('/favorites', [FavoriteController::class, 'index'])->add(AuthMiddleware::class);
@@ -43,5 +43,7 @@ return function (App $app): void {
         $group->put('/countries/{id}', [AdminController::class, 'saveCountry']);
         $group->put('/ingredients/{id}', [AdminController::class, 'renameIngredient']);
         $group->delete('/ingredients/{id}', [AdminController::class, 'deleteIngredient']);
+        $group->get('/sessions', [AdminController::class, 'sessions']);
+        $group->delete('/sessions/{id:[0-9]+}', [AdminController::class, 'revokeSession']);
     })->add(AdminMiddleware::class)->add(AuthMiddleware::class);
 };

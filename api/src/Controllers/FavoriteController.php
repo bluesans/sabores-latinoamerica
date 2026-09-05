@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Support\Auth;
 use App\Support\Database;
 use App\Support\JsonResponder;
+use App\Support\Validation;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -37,7 +38,10 @@ final class FavoriteController
         // AuthMiddleware always populates auth_user before this route runs.
         \assert($user !== null);
         $b    = (array) $request->getParsedBody();
-        $rid  = (int) ($b['recipe_id'] ?? 0);
+        $rid  = Validation::positiveInt($b['recipe_id'] ?? null);
+        if ($rid === null) {
+            return $this->json($response, ['ok' => false, 'error' => 'Identificador inválido.'], 400);
+        }
         $pdo  = Database::connection();
 
         $st = $pdo->prepare('SELECT id FROM recipes WHERE id = ?');

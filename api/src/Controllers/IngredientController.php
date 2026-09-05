@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Support\Database;
 use App\Support\JsonResponder;
+use App\Support\Validation;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -15,7 +16,10 @@ final class IngredientController
     /** @param array<string, string> $args */
     public function show(Request $request, Response $response, array $args): Response
     {
-        $id  = (int) $args['id'];
+        $id = Validation::positiveInt($args['id'] ?? null);
+        if ($id === null) {
+            return $this->json($response, ['ok' => false, 'error' => 'Identificador inválido.'], 400);
+        }
         $pdo = Database::connection();
 
         $st = $pdo->prepare('SELECT id, name FROM ingredients WHERE id = ?');
