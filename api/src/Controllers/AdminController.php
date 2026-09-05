@@ -34,12 +34,12 @@ final class AdminController
 
         foreach ($recipes as &$r) { $r['ingredients'] = []; }
         unset($r);
+        $indexById = [];
+        foreach ($recipes as $i => $r) { $indexById[(int) $r['id']] = $i; }
         foreach ($ings as $row) {
-            foreach ($recipes as &$r) {
-                if ((int) $r['id'] === (int) $row['recipe_id']) { $r['ingredients'][] = $row['name']; break; }
-            }
+            $rid = (int) $row['recipe_id'];
+            if (isset($indexById[$rid])) { $recipes[$indexById[$rid]]['ingredients'][] = $row['name']; }
         }
-        unset($r);
 
         $stCountries = $pdo->query('SELECT id, name, emoji, tagline FROM countries ORDER BY id');
         \assert($stCountries !== false);
@@ -125,6 +125,15 @@ final class AdminController
             }
         }
 
+        foreach ((array) ($b['ingredients'] ?? []) as $nm) {
+            $nm = trim((string) $nm);
+            if ($nm === '') continue;
+            if (mb_strlen($nm) > 200) {
+                $errors['ingredients'] = 'El nombre del ingrediente no puede superar los 200 caracteres.';
+                break;
+            }
+        }
+
         if ($errors !== []) {
             // Top-level `error` mirrors the first field message so the existing
             // toast path (api.js throws Error(data.error)) keeps working.
@@ -136,10 +145,19 @@ final class AdminController
         }
 
         $pdo = Database::connection();
+
+        $id = (int) ($b['id'] ?? 0);
+        if ($id > 0) {
+            $check = $pdo->prepare('SELECT 1 FROM recipes WHERE id = ?');
+            $check->execute([$id]);
+            if ($check->fetchColumn() === false) {
+                return $this->json($response, ['ok' => false, 'error' => 'Receta no encontrada.'], 404);
+            }
+        }
+
         try {
             $pdo->beginTransaction();
 
-            $id = (int) ($b['id'] ?? 0);
             if ($id > 0) {
                 $pdo->prepare('UPDATE recipes SET country_id=?, name=?, description=?, difficulty=?, time_minutes=?, youtube_id=? WHERE id=?')
                     ->execute([$cid, $name, $description, $difficulty, $timeMinutes, $youtubeId, $id]);
@@ -187,7 +205,10 @@ final class AdminController
     /** @param array<string, string> $args */
     public function saveCountry(Request $request, Response $response, array $args): Response
     {
-        $id = (int) $args['id'];
+        $id = Validation::positiveInt($args['id'] ?? null);
+        if ($id === null) {
+            return $this->json($response, ['ok' => false, 'error' => 'ID inválido.'], 400);
+        }
         $pdo = Database::connection();
 
         $st = $pdo->prepare('SELECT 1 FROM countries WHERE id = ?');
@@ -225,7 +246,11 @@ final class AdminController
     {
         $b = (array) $request->getParsedBody();
         $name = trim((string) ($b['name'] ?? ''));
-        $id = (int) $args['id'];
+        $id = Validation::positiveInt($args['id'] ?? null);
+
+        if ($id === null) {
+            return $this->json($response, ['ok' => false, 'error' => 'ID inválido.'], 400);
+        }
 
         if ($name === '') {
             return $this->json($response, [
@@ -267,10 +292,44 @@ final class AdminController
     /** @param array<string, string> $args */
     public function deleteIngredient(Request $request, Response $response, array $args): Response
     {
+        $id = Validation::positiveInt($args['id'] ?? null);
+        if ($id === null) {
+            return $this->json($response, ['ok' => false, 'error' => 'ID inválido.'], 400);
+        }
         $st = Database::connection()->prepare('DELETE FROM ingredients WHERE id = ?');
-        $st->execute([(int) $args['id']]);
+        $st->execute([$id]);
         if ($st->rowCount() === 0) {
             return $this->json($response, ['ok' => false, 'error' => 'Ingrediente no encontrado.'], 404);
+        }
+        return $this->json($response, ['ok' => true]);
+    }
+
+    public function sessions(Request $request, Response $response): Response
+    {
+        $st = Database::connection()->query(
+            'SELECT s.id, u.username, s.created_at, s.expires_at, s.revoked_at, s.ip, s.user_agent
+             FROM sessions s
+             JOIN users u ON u.id = s.user_id
+             ORDER BY s.created_at DESC'
+        );
+        \assert($st !== false);
+
+        return $this->json($response, ['ok' => true, 'sessions' => $st->fetchAll()]);
+    }
+
+    /** @param array<string, string> $args */
+    public function revokeSession(Request $request, Response $response, array $args): Response
+    {
+        $id = Validation::positiveInt($args['id'] ?? null);
+        if ($id === null) {
+            return $this->json($response, ['ok' => false, 'error' => 'ID inválido.'], 400);
+        }
+        $st = Database::connection()->prepare(
+            'UPDATE sessions SET revoked_at = NOW() WHERE id = ? AND revoked_at IS NULL'
+        );
+        $st->execute([$id]);
+        if ($st->rowCount() === 0) {
+            return $this->json($response, ['ok' => false, 'error' => 'Sesión no encontrada.'], 404);
         }
         return $this->json($response, ['ok' => true]);
     }
