@@ -30,7 +30,13 @@ final class Validation
 
     public static function positiveInt(mixed $value): ?int
     {
-        if (!is_numeric($value)) {
+        if (is_int($value)) {
+            return $value > 0 ? $value : null;
+        }
+
+        // Solo dígitos: is_numeric() aceptaría "1.9" o "1e2" y el (int)
+        // truncaría a 1 o 100 silenciosamente.
+        if (!is_string($value) || !ctype_digit($value)) {
             return null;
         }
 

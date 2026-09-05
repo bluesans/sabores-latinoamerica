@@ -75,7 +75,14 @@ final class Jwt
 
         $now = time();
         $exp = (int) ($payload['exp'] ?? 0);
-        $iat = (int) ($payload['iat'] ?? 0);
+
+        // iat es obligatorio (issueAccess siempre lo emite): sin él no hay
+        // forma de acotar la edad del token.
+        if (!isset($payload['iat']) || !is_numeric($payload['iat'])) {
+            return null;
+        }
+
+        $iat = (int) $payload['iat'];
 
         if ($exp < ($now - self::LEEWAY_SECONDS)) {
             return null;
@@ -95,13 +102,19 @@ final class Jwt
     /** @param array<string, int|string> $user */
     public static function issueAccess(array $user): string
     {
+        $ttl = Env::int('JWT_TTL', self::DEFAULT_TTL_SECONDS);
+
+        if ($ttl <= 0) {
+            throw new \RuntimeException('JWT_TTL debe ser un entero positivo.');
+        }
+
         return self::encode([
             'sub' => (int) ($user['id'] ?? 0),
             'name' => (string) ($user['username'] ?? ''),
             'role' => (string) ($user['role'] ?? 'user'),
             'token_type' => 'access',
             'iat' => time(),
-            'exp' => time() + Env::int('JWT_TTL', self::DEFAULT_TTL_SECONDS),
+            'exp' => time() + $ttl,
         ]);
     }
 

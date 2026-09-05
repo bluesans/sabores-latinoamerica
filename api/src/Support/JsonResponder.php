@@ -11,7 +11,11 @@ trait JsonResponder
     protected function json(Response $response, array $data, int $status = 200): Response
     {
         $json = json_encode($data, JSON_UNESCAPED_UNICODE);
-        \assert($json !== false);
+
+        if ($json === false) {
+            throw new \RuntimeException('No se pudo codificar la respuesta JSON.');
+        }
+
         $response->getBody()->write($json);
         return $response->withHeader('Content-Type', 'application/json; charset=utf-8')->withStatus($status);
     }
