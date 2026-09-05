@@ -1,9 +1,10 @@
-import { toast } from './ui/toast.js';
 import { API } from './api.js';
+import { toast } from './ui/toast.js';
 
-/* Vue llega como script clásico global (js/vendor/vue.global.prod.js);
-   el módulo sólo necesita desestructurar las APIs reactivas. */
-const { ref, reactive } = Vue;
+/* Vue llega como script clásico global (js/vendor/vue.global.prod.js).
+   Se resuelve contra window con fallback a {} para que un vendor fallido
+   no rompa la importación de toda la app; openAdmin() verifica antes de montar. */
+const { ref, reactive } = window.Vue ?? {};
 
 const AdminApp = {
         setup() {
@@ -12,6 +13,9 @@ const AdminApp = {
             const error = ref('');
             const editing = ref(null);
             const data = reactive({ recipes: [], countries: [], ingredients: [] });
+            const sessions = ref([]);
+            const sessionsLoading = ref(false);
+            const sessionsError = ref('');
 
             function markDirty() { adminDirty = true; }
 
@@ -27,7 +31,7 @@ const AdminApp = {
                 loading.value = false;
             }
 
-            function changeTab(t) { tab.value = t; editing.value = null; }
+            function changeTab(t) { tab.value = t; editing.value = null; if (t === 'sessions') loadSessions(); }
 
             function newRecipe() {
                 editing.value = {
@@ -112,11 +116,33 @@ const AdminApp = {
                 } catch (err) { toast(err.message); }
             }
 
+            async function loadSessions() {
+                sessionsLoading.value = true;
+                sessionsError.value = '';
+                try {
+                    const d = await API.adminSessions();
+                    sessions.value = d.sessions || [];
+                } catch (err) { sessionsError.value = err.message; }
+                sessionsLoading.value = false;
+            }
+
+            function sessionState(s) { return s.revoked_at ? 'Revocada' : 'Activa'; }
+
+            async function revokeSession(id) {
+                if (!confirm('¿Revocar esta sesión? El usuario deberá volver a entrar.')) return;
+                try {
+                    await API.revokeSession(id);
+                    await loadSessions();
+                    toast('Sesión revocada');
+                } catch (err) { toast(err.message); }
+            }
+
             load();
 
             return {
                 tab, loading, error, editing, data, changeTab, newRecipe, editRecipe, submitRecipe,
-                deleteRecipe, saveCountry, renameIngredient, deleteIngredient
+                deleteRecipe, saveCountry, renameIngredient, deleteIngredient,
+                sessions, sessionsLoading, sessionsError, loadSessions, sessionState, revokeSession
             };
         },
         template: `
@@ -132,6 +158,7 @@ const AdminApp = {
                     <button type="button" :class="{on: tab==='recipes'}" @click="changeTab('recipes')">Recetas</button>
                     <button type="button" :class="{on: tab==='countries'}" @click="changeTab('countries')">Países</button>
                     <button type="button" :class="{on: tab==='ingredients'}" @click="changeTab('ingredients')">Ingredientes</button>
+                    <button type="button" :class="{on: tab==='sessions'}" @click="changeTab('sessions')">Sesiones</button>
                 </div>
                 <form v-if="tab==='recipes' && editing" class="adm-form" @submit.prevent="submitRecipe">
                     <label>País
@@ -181,6 +208,18 @@ const AdminApp = {
                         <button class="adm-ico" @click="saveCountry(c)">💾</button>
                     </div>
                 </div>
+                <div v-else-if="tab==='sessions'">
+                    <p v-if="sessionsLoading" class="p-tag">Cargando sesiones…</p>
+                    <p v-else-if="sessionsError" class="p-tag">{{ sessionsError }}</p>
+                    <p v-else-if="!sessions.length" class="p-tag">No hay sesiones para mostrar.</p>
+                    <div v-else>
+                        <div class="adm-row adm-crow" v-for="s in sessions" :key="s.id">
+                            <span class="adm-name"><b>{{ s.username }}</b> · {{ sessionState(s) }}</span>
+                            <small class="adm-uses">Creada {{ s.created_at }} · Expira {{ s.expires_at }} · IP {{ s.ip || '—' }} · {{ s.user_agent || '—' }}</small>
+                            <button v-if="!s.revoked_at" class="adm-ico" title="Revocar sesión" @click="revokeSession(s.id)">🚫</button>
+                        </div>
+                    </div>
+                </div>
                 <div v-else>
                     <div class="adm-row adm-crow" v-for="i in data.ingredients" :key="i.id">
                         <input v-model="i.name">
@@ -204,7 +243,14 @@ export function unmountAdmin() {
 }
 
 export function openAdmin() {
-    const { createApp } = Vue; // Vue llega del script clásico vendido (global).
+    const VueGlobal = window.Vue;
+
+    if (!VueGlobal || !ref || !reactive) {
+        toast('El panel de administración no está disponible (no se pudo cargar Vue).');
+        return;
+    }
+
+    const { createApp } = VueGlobal;
     const panel = document.getElementById('panel');
     const panelBody = document.getElementById('panelBody');
     unmountAdmin();

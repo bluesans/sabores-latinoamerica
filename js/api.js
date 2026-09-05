@@ -50,7 +50,7 @@ export const API = {
         }
 
         if (this.access) {
-            opts.headers['Authorization'] = 'Bearer ' + this.access;
+            opts.headers.Authorization = `Bearer ${this.access}`;
         }
 
         let res;
@@ -68,7 +68,7 @@ export const API = {
         if (res.status === 401 && !retried && !AUTH_URL_PATTERN.test(url)) {
             await this.refreshSession();
 
-            opts.headers['Authorization'] = 'Bearer ' + this.access;
+            opts.headers.Authorization = `Bearer ${this.access}`;
 
             return this._req(url, opts, true);
         }
@@ -77,7 +77,7 @@ export const API = {
 
         try {
             data = await res.json();
-        } catch (e) {
+        } catch {
             // Respuesta sin body.
         }
 
@@ -100,10 +100,14 @@ export const API = {
 
     async _doRefresh() {
         try {
-            const res = await fetch(`${API_URL}/auth/refresh`, {
-                method: 'POST',
-                credentials: 'include'
-            });
+            const res = await fetchWithTimeout(
+                `${API_URL}/auth/refresh`,
+                {
+                    method: 'POST',
+                    credentials: 'include'
+                },
+                REQUEST_TIMEOUT_MS
+            );
 
             const d = await res.json().catch(() => ({}));
 
@@ -112,7 +116,7 @@ export const API = {
             }
 
             this.setTokens(d.access);
-        } catch (e) {
+        } catch {
             this.setTokens(null);
             throw new Error('La sesión expiró. Volvé a entrar.');
         }
@@ -153,14 +157,18 @@ export const API = {
 
         /* El servidor limpia la cookie sdl_refresh; el body ya no lleva
            tokens. Si la red falla, igual cerramos sesión del lado cliente. */
-        return fetch(`${API_URL}/auth/logout`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
+        return fetchWithTimeout(
+            `${API_URL}/auth/logout`,
+            {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
             },
-            body: JSON.stringify({})
-        }).catch(() => {});
+            REQUEST_TIMEOUT_MS
+        ).catch(() => {});
     },
 
     async health() {
@@ -179,7 +187,15 @@ export const API = {
     },
 
     getRecetas(id) {
-        return this._req(`${API_URL}/countries/${id}/recipes`);
+        return this.byCountry(id);
+    },
+
+    byCountry(id, page, perPage = 12) {
+        let url = `${API_URL}/countries/${Number(id)}/recipes`;
+        if (page !== undefined && page !== null) {
+            url += `?page=${Number(page)}&per_page=${Number(perPage)}`;
+        }
+        return this._req(url);
     },
 
     getStats() {
@@ -241,6 +257,16 @@ export const API = {
 
     adminIngDelete(id) {
         return this._req(`${API_URL}/admin/ingredients/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    adminSessions() {
+        return this._req(`${API_URL}/admin/sessions`);
+    },
+
+    revokeSession(id) {
+        return this._req(`${API_URL}/admin/sessions/${Number(id)}`, {
             method: 'DELETE'
         });
     }

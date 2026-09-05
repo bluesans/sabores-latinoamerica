@@ -1,7 +1,7 @@
+import { isAdminDirty, unmountAdmin } from './admin.js';
 import { API } from './api.js';
 import { toast } from './ui/toast.js';
-import { headHTML, panelHTML, favoritesHTML, ingredientModalHTML, iframeHTML, loadingHTML, errorHTML } from './util/dom.js';
-import { unmountAdmin, isAdminDirty } from './admin.js';
+import { errorHTML, favoritesHTML, headHTML, iframeHTML, ingredientModalHTML, loadingHTML, panelHTML } from './util/dom.js';
 
 const panel = document.getElementById('panel');
     const panelBody = document.getElementById('panelBody');
@@ -11,6 +11,13 @@ const panel = document.getElementById('panel');
     const svg = document.getElementById('mapSvg');
     const mq = matchMedia('(max-width:720px)');
     let activeG = null, currentFavs = new Set();
+
+    /* Paginador de recetas: el backend responde pagination.{page,per_page,total,total_pages}.
+       Con PAGE_SIZE o menos recetas se muestra la lista completa sin paginador (sin params
+       page/per_page la API devuelve la lista entera). */
+    const PAGE_SIZE = 12;
+    /** @type {{ countryId: number, page: number, perPage: number, total: number, totalPages: number } | null} */
+    let pager = null;
 
     /* Elemento que abrió el panel: closePanel le devuelve el foco. Los puntos
        de entrada (mapa, nav:country, botón sorpresa, buscador) lo fijan con
@@ -49,13 +56,28 @@ const panel = document.getElementById('panel');
 
     async function loadPanel(c, g, focusRid) {
         try {
-            const [data, favs] = await Promise.all([API.getRecetas(c.id), API.getFavoritos()]);
+            const [data, favs] = await Promise.all([API.byCountry(c.id, 1, PAGE_SIZE), API.getFavoritos()]);
             currentFavs = new Set(favs.favorites.map(f => Number(f.id)));
+            pager = pagerOf(c.id, data.pagination);
             renderPanel(data.country, data.recipes, focusRid);
         } catch (err) {
             console.warn('panel:', err.message);
             showRetryable(panelBody, err, () => loadPanel(c, g, focusRid));
         }
+    }
+
+    /* Normaliza el bloque pagination del backend: sin paginación (o con total
+       dentro de una página) devuelve null y el panel usa la lista completa. */
+    function pagerOf(countryId, pagination) {
+        const total = Number(pagination && pagination.total);
+        if (!pagination || !(total > PAGE_SIZE)) return null;
+        return {
+            countryId: Number(countryId),
+            page: Number(pagination.page) || 1,
+            perPage: PAGE_SIZE,
+            total,
+            totalPages: Number(pagination.total_pages) || 1
+        };
     }
 
     async function openPanel(c, g, focusRid) {
@@ -74,7 +96,7 @@ const panel = document.getElementById('panel');
     }
 
     function renderPanel(country, recipes, focusRid) {
-        panelBody.innerHTML = panelHTML(country, recipes, currentFavs);
+        panelBody.innerHTML = panelHTML(country, recipes, currentFavs) + pagerHTML();
         if (focusRid) setTimeout(() => {
             const card = panelBody.querySelector(`[data-rid="${focusRid}"]`);
             if (card) {
@@ -85,22 +107,47 @@ const panel = document.getElementById('panel');
         }, 80);
     }
 
+    function pagerHTML() {
+        if (!pager || pager.totalPages < 2) return '';
+        const prevOff = pager.page <= 1 ? ' disabled' : '';
+        const nextOff = pager.page >= pager.totalPages ? ' disabled' : '';
+        return `<div class="pager"><button class="btn-ghost" type="button" data-pg="prev"${prevOff}>← Anterior</button><span class="p-tag">Página ${pager.page} de ${pager.totalPages}</span><button class="btn-ghost" type="button" data-pg="next"${nextOff}>Siguiente →</button></div>`;
+    }
+
+    async function goPage(which) {
+        const pg = pager;
+        if (!pg) return;
+        const next = which === 'prev' ? pg.page - 1 : pg.page + 1;
+        if (next < 1 || next > pg.totalPages) return;
+        try {
+            const data = await API.byCountry(pg.countryId, next, pg.perPage);
+            pg.page = Number(data.pagination && data.pagination.page) || next;
+            pg.totalPages = Number(data.pagination && data.pagination.total_pages) || pg.totalPages;
+            renderPanel(data.country, data.recipes);
+            panel.scrollTop = 0;
+        } catch (err) {
+            toast(err.message);
+        }
+    }
+
     panelBody.addEventListener('click', e => {
-        const retry = e.target.closest('[data-retry]');
+        const retry = e.target instanceof Element ? e.target.closest('[data-retry]') : null;
         if (retry) return runRetry(retry);
-        const poster = e.target.closest('.poster');
+        const pgBtn = /** @type {HTMLElement | null} */ (e.target instanceof Element ? e.target.closest('[data-pg]') : null);
+        if (pgBtn) return goPage(pgBtn.dataset.pg);
+        const poster = e.target instanceof Element ? e.target.closest('.poster') : null;
         if (poster) return playVid(poster);
-        const chip = e.target.closest('.chip[data-ing-id]');
+        const chip = /** @type {HTMLElement | null} */ (e.target instanceof Element ? e.target.closest('.chip[data-ing-id]') : null);
         if (chip) return openIngredientModal(chip.dataset.ingId);
-        const fav = e.target.closest('.fav-btn');
+        const fav = e.target instanceof Element ? e.target.closest('.fav-btn') : null;
         if (fav) return toggleFav(fav);
-        const row = e.target.closest('.ing-row');
+        const row = e.target instanceof Element ? e.target.closest('.ing-row') : null;
         if (row) return rowJump(row);
     });
 
     panelBody.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
-            const p = e.target.closest('.poster');
+            const p = e.target instanceof Element ? e.target.closest('.poster') : null;
             if (p) playVid(p);
         }
     });
@@ -175,8 +222,8 @@ const panel = document.getElementById('panel');
     let modalOpener = null;
 
     function modalFocusables() {
-        return [...ingModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
-            .filter(el => !el.disabled && el.offsetParent !== null);
+        const els = /** @type {Array<HTMLElement & { disabled: unknown }>} */ ([...ingModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]);
+        return els.filter(el => !el.disabled && el.offsetParent !== null);
     }
 
     ingModal.addEventListener('keydown', e => {
@@ -225,9 +272,9 @@ const panel = document.getElementById('panel');
     document.getElementById('ingClose').addEventListener('click', closeIngredientModal);
     ingModal.addEventListener('click', e => { if (e.target === ingModal) closeIngredientModal(); });
     ingBody.addEventListener('click', e => {
-        const retry = e.target.closest('[data-retry]');
+        const retry = e.target instanceof Element ? e.target.closest('[data-retry]') : null;
         if (retry) return runRetry(retry);
-        const row = e.target.closest('.ing-row');
+        const row = e.target instanceof Element ? e.target.closest('.ing-row') : null;
         if (row) rowJump(row);
     });
 
@@ -248,4 +295,4 @@ const panel = document.getElementById('panel');
         if (panel.classList.contains('open')) closePanel();
     });
 
-export { openPanel, closePanel, closeIngredientModal, openIngredientModal, openFavorites, setOpener };
+export { closeIngredientModal, closePanel, openFavorites, openIngredientModal, openPanel, setOpener };
