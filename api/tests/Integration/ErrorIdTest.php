@@ -35,7 +35,7 @@ final class ErrorIdTest extends TestCase
 
         $this->assertFalse($body['ok']);
         $this->assertArrayHasKey('id', $body, 'error id must be present even with debug off');
-        $this->assertMatchesRegularExpression('/^[0-9a-f]{8}$/', $body['id']);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $body['id']);
 
         $this->assertArrayNotHasKey('message', $body, 'raw message must not leak when debug is off');
         $this->assertArrayNotHasKey('file', $body, 'file path must not leak when debug is off');
@@ -59,7 +59,7 @@ final class ErrorIdTest extends TestCase
         $body = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertFalse($body['ok']);
-        $this->assertMatchesRegularExpression('/^[0-9a-f]{8}$/', $body['id']);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $body['id']);
         $this->assertSame(RuntimeException::class, $body['exception']);
         $this->assertSame('debug-boom', $body['message']);
         $this->assertArrayHasKey('file', $body);

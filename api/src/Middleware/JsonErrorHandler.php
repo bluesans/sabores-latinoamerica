@@ -37,7 +37,7 @@ final class JsonErrorHandler
             }
         }
 
-        $id = substr(bin2hex(random_bytes(8)), 0, 8);
+        $id = bin2hex(random_bytes(8));
 
         error_log(sprintf(
             '[api-error %s] %s: %s in %s:%d',

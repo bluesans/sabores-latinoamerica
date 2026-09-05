@@ -22,7 +22,9 @@ final class AuthMiddleware
             $json = json_encode(['ok' => false, 'error' => 'Necesitás iniciar sesión.'], JSON_UNESCAPED_UNICODE);
             \assert($json !== false);
             $response->getBody()->write($json);
-            return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
+            return $response
+                ->withHeader('Content-Type', 'application/json; charset=utf-8')
+                ->withHeader('WWW-Authenticate', 'Bearer');
         }
 
         $request = $request->withAttribute('auth_user', [

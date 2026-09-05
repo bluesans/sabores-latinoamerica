@@ -26,7 +26,9 @@ final class CorsMiddleware
         $response = $response
             ->withHeader('Access-Control-Allow-Origin', $allowedOrigin)
             ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->withHeader('Vary', 'Origin')
+            ->withHeader('Access-Control-Max-Age', '600');
 
         if ($allowedOrigin !== '*') {
             $response = $response->withHeader('Access-Control-Allow-Credentials', 'true');

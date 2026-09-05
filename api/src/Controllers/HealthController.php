@@ -37,7 +37,7 @@ final class HealthController
             'ok' => $dbOk,
             'api' => true,
             'db' => $dbOk,
-            'time' => date('c'),
+            'time' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('c'),
         ], $dbOk ? 200 : 503);
     }
 }
