@@ -3,6 +3,13 @@
     "private": true,
     "scripts": {
         "test:js": "node --test \"js/__tests__/*.test.mjs\"",
-        "lint:templates": "node scripts/lint-templates.mjs"
+        "lint:templates": "node scripts/lint-templates.mjs",
+        "lint": "biome check js",
+        "format": "biome check --write --changed js",
+        "check": "tsc --noEmit -p jsconfig.json"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.5.12",
+        "typescript": "5.9.3"
     }
 }
