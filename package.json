@@ -3,6 +3,7 @@
     "private": true,
     "scripts": {
         "test:js": "node --test \"js/__tests__/*.test.mjs\"",
+        "test:e2e": "node --test e2e/smoke.test.mjs",
         "lint:templates": "node scripts/lint-templates.mjs",
         "lint": "biome check js",
         "format": "biome check --write --changed js",
@@ -10,6 +11,7 @@
     },
     "devDependencies": {
         "@biomejs/biome": "2.5.12",
+        "playwright-core": "^1.55.0",
         "typescript": "5.9.3"
     }
 }
