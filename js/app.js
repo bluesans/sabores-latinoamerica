@@ -1,22 +1,22 @@
+import { openAdmin } from './admin.js';
 import { API } from './api.js';
-import { toast } from './ui/toast.js';
+import { initAuth } from './auth.js';
 import { buildMap } from './map.js';
 import { openFavorites, openIngredientModal, setOpener } from './panel.js';
-import { initAuth } from './auth.js';
-import { openAdmin } from './admin.js';
+import { toast } from './ui/toast.js';
 import { searchResultsHTML, topChipsHTML } from './util/dom.js';
 
 const $ = s => document.querySelector(s);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const authScreen = document.getElementById('authScreen');
-const appScreen  = document.getElementById('appScreen');
+const appScreen = document.getElementById('appScreen');
 
 function countUp(el, target) {
     if (reduceMotion) { el.textContent = target; return; }
     const t0 = performance.now(), dur = 1300;
     const step = n => {
         const p = Math.min(1, (n - t0) / dur);
-        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+        el.textContent = Math.round(target * (1 - (1 - p) ** 3));
         if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -38,7 +38,7 @@ function renderTopIngredients(tops) {
     strip.className = 'ing-strip';
     strip.innerHTML = topChipsHTML(tops);
     strip.addEventListener('click', e => {
-        const b = e.target.closest('[data-top-ing]');
+        const b = /** @type {HTMLElement | null} */ (e.target instanceof Element ? e.target.closest('[data-top-ing]') : null);
         if (b) openIngredientModal(b.dataset.topIng);
     });
     document.getElementById('statsBar').after(strip);
@@ -97,7 +97,7 @@ function makeHeaderControls() {
         if (e.key === 'Escape') { res.hidden = true; return; }
         if (e.key === 'Enter') { const first = res.querySelector('.s-res'); if (first) first.click(); }
     });
-    document.addEventListener('click', e => { if (!e.target.closest('.search-box')) res.hidden = true; });
+    document.addEventListener('click', e => { if (!(e.target instanceof Element) || !e.target.closest('.search-box')) res.hidden = true; });
 }
 
 async function reloadFavCount() {
@@ -188,7 +188,7 @@ async function enterApp(name, isNew, role) {
     reloadFavCount();
     await enterAppData();
     toast(isNew ? `¡Cuenta creada! Bienvenido, ${name} 🌶️` : `Hola de nuevo, ${name} 👋`);
-    scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
 }
 
 initAuth(enterApp);

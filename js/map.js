@@ -1,5 +1,5 @@
 /* ============ Mapa HD sin dependencias externas ============ */
-import { MAP_SHAPES, FILLS } from './data.js';
+import { FILLS, MAP_SHAPES } from './data.js';
 import { openPanel, setOpener } from './panel.js';
 import { toast } from './ui/toast.js';
 import { tipHTML } from './util/dom.js';
@@ -121,11 +121,11 @@ const svg = document.getElementById('mapSvg');
         const latam = feats.filter(f => isos.has(f.id));
         if (!latam.length) return null;
         let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-        latam.forEach(f => f.polys.forEach(poly => poly.forEach(ring => ring.forEach(([lon, lat]) => {
+        latam.forEach(f => { f.polys.forEach(poly => { poly.forEach(ring => { ring.forEach(([lon, lat]) => {
             const [x, y] = merc(lon, lat);
             if (x < minX) minX = x; if (x > maxX) maxX = x;
             if (y < minY) minY = y; if (y > maxY) maxY = y;
-        }))));
+        }); }); }); });
         const pad = 18;
         const s = Math.min((VB_W - 2 * pad) / (maxX - minX), (VB_H - 2 * pad) / (maxY - minY));
         const ox = (VB_W - (maxX - minX) * s) / 2, oy = (VB_H - (maxY - minY) * s) / 2;
@@ -142,7 +142,9 @@ const svg = document.getElementById('mapSvg');
         };
         const byIso = {}, labelPts = {};
         latam.forEach(f => {
-            let d = '', best = null;
+            let d = '';
+            /** @type {{ a: number, ring: Array<Array<number>> } | null} */
+            let best = null;
             f.polys.forEach(poly => {
                 const rings = poly.map(ring => ring.map(pt => prj(pt[0], pt[1])));
                 rings.forEach(r2 => { d += path2d(r2, 0.35); });
@@ -150,7 +152,7 @@ const svg = document.getElementById('mapSvg');
                 if (!best || a > best.a) best = { a, ring: rings[0] };
             });
             byIso[f.id] = d;
-            labelPts[f.id] = labelPoint(best.ring);
+            if (best) labelPts[f.id] = labelPoint(best.ring);
         });
         return {
             byIso, labelPts, eqY: prj(-70, 0)[1],
@@ -232,14 +234,14 @@ const svg = document.getElementById('mapSvg');
     function syncLabels() {
         svg.classList.toggle('zoomed', view.k >= 1.8);
         const inv = 1 / view.k;
-        labelEls.forEach(o => o.t.setAttribute('transform', `translate(${o.x},${o.y}) scale(${inv})`));
+        labelEls.forEach(o => { o.t.setAttribute('transform', `translate(${o.x},${o.y}) scale(${inv})`); });
     }
 
     async function buildMap(countries) {
         if (built) return;
         built = true;
         countriesByIso = {};
-        countries.forEach(c => countriesByIso[c.iso_code] = c);
+        countries.forEach(c => { countriesByIso[c.iso_code] = c; });
         addBase();
         /* Overlay mientras se resuelve la geometría (CDN o caché): convive
            con el badge HD/básico, que aparece recién al terminar. */
@@ -348,13 +350,14 @@ const svg = document.getElementById('mapSvg');
 
     /* 'nav:country' lo emiten panel.js (rowJump) y app.js (buscador). */
     document.addEventListener('nav:country', e => {
-        const c = getCountryById(e.detail.cid);
+        const d = /** @type {CustomEvent} */ (e).detail;
+        const c = getCountryById(d.cid);
         if (!c || !c._g) return;
         const ae = document.activeElement;
         setOpener(ae instanceof Element && ae !== document.body ? ae : null);
         document.getElementById('coach').classList.add('done');
         focusCountry(c._g);
-        if (e.detail.rid) openPanel(c, c._g, e.detail.rid);
+        if (d.rid) openPanel(c, c._g, d.rid);
         else openPanel(c, c._g);
     });
 
@@ -399,7 +402,7 @@ const svg = document.getElementById('mapSvg');
             drag = { sx: e.clientX, sy: e.clientY, moved: 0 };
             dragging = false;
             pinchPrev = null;
-            downCountry = (e.target && e.target.closest) ? e.target.closest('.country') : null;
+            downCountry = e.target instanceof Element ? e.target.closest('.country') : null;
         } else if (pointers.size === 2) {
             drag = null;
             downCountry = null;
@@ -438,13 +441,13 @@ const svg = document.getElementById('mapSvg');
         }
     });
 
-    ['pointerup', 'pointercancel'].forEach(ev => svg.addEventListener(ev, e => {
-        pointers.delete(e.pointerId);
+    ['pointerup', 'pointercancel'].forEach(ev => { svg.addEventListener(ev, e => {
+        pointers.delete(/** @type {PointerEvent} */ (e).pointerId);
         if (pointers.size < 2) pinchPrev = null;
         if (ev === 'pointerup' && drag && drag.moved <= 5 && downCountry) selectCountry(downCountry);
         downCountry = null;
         if (pointers.size === 0) { drag = null; dragging = false; svg.classList.remove('dragging'); }
-    }));
+    }); });
 
     document.getElementById('zin').addEventListener('click', () => {
         const r = svg.getBoundingClientRect();
