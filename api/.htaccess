@@ -3,6 +3,10 @@ RewriteEngine On
 # --- Rework hardening: CLI-only tooling is never web-reachable ---
 RewriteRule ^bin/ - [F,L]
 
+# Internals (tests, vendor, src) are never served directly; PHP includes
+# resolve them via filesystem, not HTTP.
+RewriteRule ^(tests|vendor|src)/ - [F,L]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]
@@ -15,6 +19,9 @@ RewriteRule ^ index.php [QSA,L]
   Require all denied
 </FilesMatch>
 <Files "routes.php">
+  Require all denied
+</Files>
+<Files "composer.json">
   Require all denied
 </Files>
 Options -Indexes
