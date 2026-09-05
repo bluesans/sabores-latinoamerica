@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "checkJs": true,
+    // strict:false: el front es JS vanilla sin JSDoc; strict exigiría anotar todo para pasar.
+    "strict": false,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "baseUrl": "."
+  },
+  "include": ["js/**/*.js", "js/vendor/vue-shim.d.ts"],
+  // Los tests usan tipos de node (sin @types en el repo) y se verifican con node --test, no con tsc.
+  "exclude": ["node_modules", "js/vendor/vue.global.prod.js", "js/__tests__/**"]
+}
