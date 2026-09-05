@@ -59,6 +59,20 @@ function TestDb_migrationPath(): string
     return dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'db' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '000_install.sql';
 }
 
+/**
+ * @return list<string> forward-only migrations after the 000 baseline, sorted.
+ */
+function TestDb_forwardMigrations(): array
+{
+    $dir = dirname(TestDb_migrationPath());
+    $files = glob($dir . DIRECTORY_SEPARATOR . '00[1-9]*_*.sql');
+    if (!is_array($files)) {
+        return [];
+    }
+    sort($files);
+    return $files;
+}
+
 function TestDb_tableCount(): int
 {
     $st = TestDb_pdo()->query('SHOW TABLES');
@@ -174,16 +188,43 @@ function TestDb_reloadSchema(): void
             ]
         );
         $target->exec($sql);
+
+        // Forward-only migrations (001_*, 002_*, ...) applied in order so the
+        // scratch schema mirrors the live database (sessions.ip/user_agent,
+        // login_attempts.action='refresh').
+        foreach (TestDb_forwardMigrations() as $migration) {
+            $mSql = file_get_contents($migration);
+            if ($mSql === false || trim($mSql) === '') {
+                throw new RuntimeException("Could not read migration {$migration}.");
+            }
+            $target->exec($mSql);
+        }
+
         $target = null;
 
         TestDb_assertSchemaBooted('PDO MULTI_STATEMENTS');
     } catch (PDOException|RuntimeException $e) {
-        // 3) Documented fallback: real mysql.exe client over stdin.
+        // 3) Documented fallback: real mysql.exe client over stdin. Rebuilds
+        // from scratch (DROP+CREATE first) so a half-imported schema can never
+        // survive, and replays baseline PLUS forward migrations so the scratch
+        // schema always mirrors the live database.
         trigger_error(
             'PDO multi-statement import failed (' . $e->getMessage() . '); falling back to mysql.exe.',
             E_USER_NOTICE
         );
-        TestDb_importViaMysqlCli($sql);
+        $all = 'DROP DATABASE IF EXISTS `' . TEST_DB . '`;'
+            . ' CREATE DATABASE `' . TEST_DB . '`'
+            . ' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+            . ' USE `' . TEST_DB . '`;'
+            . "\n" . $sql;
+        foreach (TestDb_forwardMigrations() as $migration) {
+            $mSql = file_get_contents($migration);
+            if ($mSql === false || trim($mSql) === '') {
+                throw new RuntimeException("Could not read migration {$migration}.");
+            }
+            $all .= "\n" . $mSql;
+        }
+        TestDb_importViaMysqlCli($all);
         TestDb_assertSchemaBooted('mysql.exe fallback');
     }
 }
