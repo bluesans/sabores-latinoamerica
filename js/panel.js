@@ -29,7 +29,7 @@ const panel = document.getElementById('panel');
     function restoreFocus() {
         const t = openerEl;
         openerEl = null;
-        if (t && t.isConnected) { t.focus({ preventScroll: true }); return; }
+        if (t?.isConnected) { t.focus({ preventScroll: true }); return; }
         const shellEl = document.getElementById('mapShell');
         if (shellEl) shellEl.focus({ preventScroll: true });
     }
@@ -41,7 +41,7 @@ const panel = document.getElementById('panel');
     let retrySeq = 0;
 
     function showRetryable(surface, err, fn) {
-        const id = 'retry-' + (++retrySeq);
+        const id = `retry-${++retrySeq}`;
         retryActions.set(id, fn);
         surface.innerHTML = errorHTML(err.message, id);
     }
@@ -69,7 +69,7 @@ const panel = document.getElementById('panel');
     /* Normaliza el bloque pagination del backend: sin paginación (o con total
        dentro de una página) devuelve null y el panel usa la lista completa. */
     function pagerOf(countryId, pagination) {
-        const total = Number(pagination && pagination.total);
+        const total = Number(pagination?.total);
         if (!pagination || !(total > PAGE_SIZE)) return null;
         return {
             countryId: Number(countryId),
@@ -121,8 +121,8 @@ const panel = document.getElementById('panel');
         if (next < 1 || next > pg.totalPages) return;
         try {
             const data = await API.byCountry(pg.countryId, next, pg.perPage);
-            pg.page = Number(data.pagination && data.pagination.page) || next;
-            pg.totalPages = Number(data.pagination && data.pagination.total_pages) || pg.totalPages;
+            pg.page = Number(data.pagination?.page) || next;
+            pg.totalPages = Number(data.pagination?.total_pages) || pg.totalPages;
             renderPanel(data.country, data.recipes);
             panel.scrollTop = 0;
         } catch (err) {
@@ -266,7 +266,7 @@ const panel = document.getElementById('panel');
         document.documentElement.classList.remove('modal-lock');
         const t = modalOpener;
         modalOpener = null;
-        if (t && t.isConnected) t.focus({ preventScroll: true });
+        if (t?.isConnected) t.focus({ preventScroll: true });
     }
 
     document.getElementById('ingClose').addEventListener('click', closeIngredientModal);

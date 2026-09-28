@@ -32,7 +32,7 @@ function countUp(el, target) {
 function renderTopIngredients(tops) {
     const old = document.getElementById('ingStrip');
     if (old) old.remove();
-    if (!tops || !tops.length) return;
+    if (!tops?.length) return;
     const strip = document.createElement('div');
     strip.id = 'ingStrip';
     strip.className = 'ing-strip';
@@ -70,7 +70,7 @@ function makeHeaderControls() {
                 const d = await API.buscar(q);
                 res.innerHTML = searchResultsHTML(d);
                 res.hidden = false;
-            } catch (e) {
+            } catch {
                 /* El buscador se oculta en silencio al fallar, a propósito:
                    es una superficie transitoria (el usuario ya siguió
                    tecleando o cerró el dropdown); un cartel de error acá
@@ -198,5 +198,5 @@ initAuth(enterApp);
     // de una sesión previa y checkSession la restaura en silencio.
     // ALLOWLIST (captura vacía intencional): es un sondeo opcional de sesión;
     // si falla lo correcto es quedarse en el login, no mostrar un error.
-    try { const r = await API.checkSession(); await enterApp(r.username, false, r.role); } catch (e) { /* sondeo silencioso */ }
+    try { const r = await API.checkSession(); await enterApp(r.username, false, r.role); } catch { /* sondeo silencioso */ }
 })();

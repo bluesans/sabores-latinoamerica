@@ -110,11 +110,11 @@ const svg = document.getElementById('mapSvg');
                     const res = await fetch(url);
                     if (!res.ok) continue;
                     json = await res.json();
-                    if (url === GEO_SOURCES[0]) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(json)); } catch (e) { /* cuota llena o storage bloqueado: se sigue sin caché */ } }
+                    if (url === GEO_SOURCES[0]) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(json)); } catch { /* cuota llena o storage bloqueado: se sigue sin caché */ } }
                 }
                 feats = decodeTopo(json);
-                if (feats && feats.length) break;
-            } catch (e) { /* siguiente fuente */ }
+                if (feats?.length) break;
+            } catch { /* siguiente fuente */ }
         }
         if (!feats) return null;
         const isos = new Set(MAP_SHAPES.map(s => s.iso));
@@ -133,8 +133,8 @@ const svg = document.getElementById('mapSvg');
         const path2d = (r2, tol) => {
             let d = '', lx = 0, ly = 0, st = false;
             for (const [x, y] of r2) {
-                if (!st) { d += 'M' + x.toFixed(1) + ',' + y.toFixed(1); st = true; }
-                else if (Math.hypot(x - lx, y - ly) >= tol) d += 'L' + x.toFixed(1) + ',' + y.toFixed(1);
+                if (!st) { d += `M${x.toFixed(1)},${y.toFixed(1)}`; st = true; }
+                else if (Math.hypot(x - lx, y - ly) >= tol) d += `L${x.toFixed(1)},${y.toFixed(1)}`;
                 else continue;
                 lx = x; ly = y;
             }
@@ -167,7 +167,7 @@ const svg = document.getElementById('mapSvg');
     }
 
     function addLabel(text, pos, rot, small) {
-        const t = el('text', { x: pos[0], y: pos[1], 'text-anchor': 'middle', class: 'ocean-lab' + (small ? ' small' : '') });
+        const t = el('text', { x: pos[0], y: pos[1], 'text-anchor': 'middle', class: `ocean-lab${small ? ' small' : ''}` });
         if (rot) t.setAttribute('transform', `rotate(${rot} ${pos[0]} ${pos[1]})`);
         t.textContent = text;
         world.appendChild(t);
@@ -184,7 +184,7 @@ const svg = document.getElementById('mapSvg');
     function addCountryGroup(info, d, fillColor) {
         const hasData = info.recipe_count > 0;
         const g = el('g', {
-            class: 'country ' + (hasData ? 'has-data' : 'no-data'),
+            class: `country ${hasData ? 'has-data' : 'no-data'}`,
             tabindex: '0',
             role: 'button',
             'aria-label': `${info.name} — ${hasData ? `${info.recipe_count} recetas` : 'sin recetas'}`
@@ -220,7 +220,7 @@ const svg = document.getElementById('mapSvg');
             const info = countriesByIso[iso];
             if (!info._g) continue;
             let x, y;
-            if (pts && pts[iso]) { x = pts[iso][0]; y = pts[iso][1]; }
+            if (pts?.[iso]) { x = pts[iso][0]; y = pts[iso][1]; }
             else { const b = info._g.getBBox(); x = b.x + b.width / 2; y = b.y + b.height / 2; }
             const t = el('text', { class: 'country-lab', 'text-anchor': 'middle' });
             t.textContent = info.name;
@@ -306,8 +306,8 @@ const svg = document.getElementById('mapSvg');
         let x = e.clientX - r.left + 16, y = e.clientY - r.top + 18;
         if (x + tip.offsetWidth > r.width - 10) x = e.clientX - r.left - tip.offsetWidth - 14;
         if (y + tip.offsetHeight > r.height - 10) y = e.clientY - r.top - tip.offsetHeight - 14;
-        tip.style.left = x + 'px';
-        tip.style.top = y + 'px';
+        tip.style.left = `${x}px`;
+        tip.style.top = `${y}px`;
     }
 
     function hideTip() { tip.classList.remove('show'); }
