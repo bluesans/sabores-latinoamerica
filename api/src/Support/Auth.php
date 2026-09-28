@@ -88,6 +88,10 @@ final class Auth
         $token = bin2hex(random_bytes(32));
         $tokenHash = self::hashToken($token);
         $days = Env::int('SESSION_DAYS', 7);
+
+        if ($days <= 0) {
+            throw new \RuntimeException('SESSION_DAYS debe ser un entero positivo.');
+        }
         $userAgent = $userAgent === null ? null : Validation::truncate($userAgent, 255);
 
         $pdo->prepare(

@@ -28,8 +28,6 @@ final class AuthService
             ]);
         }
 
-        Auth::recordRegisterAttempt($this->pdo, $ip, $username);
-
         if (!Validation::username($username)) {
             return self::failure(
                 'El usuario debe tener entre 3 y 30 caracteres: letras, números o guión bajo.',
@@ -42,6 +40,10 @@ final class AuthService
         if ($passwordError !== null) {
             return self::failure($passwordError, 422);
         }
+
+        // La cuota se consume solo con datos válidos: si no, un atacante la
+        // agota con basura (self-DoS) sin intentar ni un registro real.
+        Auth::recordRegisterAttempt($this->pdo, $ip, $username);
 
         // Web registration always creates a plain user; the admin role is
         // granted exclusively by bin/create-admin.php. Username uniqueness is
@@ -111,6 +113,12 @@ final class AuthService
             Auth::recordFailedLogin($this->pdo, $ip, $username);
 
             return self::failure('Usuario o contraseña incorrectos.', 401);
+        }
+
+        // Rehash transparente si cambió el algoritmo/costo por defecto.
+        if (password_needs_rehash((string) ($user['password'] ?? ''), PASSWORD_DEFAULT)) {
+            $rehash = $this->pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
+            $rehash->execute([password_hash($password, PASSWORD_DEFAULT), (int) ($user['id'] ?? 0)]);
         }
 
         $userId = (int) ($user['id'] ?? 0);

@@ -55,6 +55,11 @@ final class Cookies
             'SameSite=Strict',
         ];
 
+        if ($maxAge <= 0) {
+            // Max-Age=0 basta en clientes modernos; Expires pasado cubre viejos.
+            $parts[] = 'Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+
         if (self::secure()) {
             $parts[] = 'Secure';
         }

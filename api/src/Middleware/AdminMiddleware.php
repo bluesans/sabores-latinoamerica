@@ -14,13 +14,28 @@ final class AdminMiddleware
     public function __invoke(Request $request, Handler $handler): Response
     {
         $user = $request->getAttribute('auth_user');
-        if (!$user || ($user['role'] ?? 'user') !== 'admin') {
-            $response = new SlimResponse(403);
-            $json = json_encode(['ok' => false, 'error' => 'Solo administradores.'], JSON_UNESCAPED_UNICODE);
-            \assert($json !== false);
-            $response->getBody()->write($json);
-            return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
+
+        if (!$user) {
+            return self::deny(401, 'Autenticación requerida.');
         }
+
+        if (($user['role'] ?? 'user') !== 'admin') {
+            return self::deny(403, 'Solo administradores.');
+        }
+
         return $handler->handle($request);
+    }
+
+    private static function deny(int $status, string $error): Response
+    {
+        $response = new SlimResponse($status);
+        $json = json_encode(['ok' => false, 'error' => $error], JSON_UNESCAPED_UNICODE);
+
+        if ($json === false) {
+            throw new \RuntimeException('No se pudo codificar la respuesta JSON.');
+        }
+
+        $response->getBody()->write($json);
+        return $response->withHeader('Content-Type', 'application/json; charset=utf-8');
     }
 }
