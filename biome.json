@@ -2,7 +2,7 @@
     "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
     "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true, "defaultBranch": "master" },
     "files": { "ignoreUnknown": true, "includes": ["js/**/*.js", "!js/vendor/**", "!js/__tests__/**"] },
-    "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 4, "lineWidth": 320, "lineEnding": "crlf" },
+    "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 4, "lineWidth": 320, "lineEnding": "lf" },
     "linter": { "enabled": true, "rules": { "preset": "recommended" } },
     "javascript": { "formatter": { "quoteStyle": "single", "jsxQuoteStyle": "single", "quoteProperties": "preserve", "arrowParentheses": "asNeeded", "semicolons": "always", "bracketSpacing": true, "trailingCommas": "none" } },
     "overrides": [

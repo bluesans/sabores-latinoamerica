@@ -138,7 +138,7 @@ const svg = document.getElementById('mapSvg');
                 else continue;
                 lx = x; ly = y;
             }
-            return d + 'Z';
+            return `${d}Z`;
         };
         const byIso = {}, labelPts = {};
         latam.forEach(f => {
@@ -253,7 +253,7 @@ const svg = document.getElementById('mapSvg');
             let geo = null;
             /* Sin geometría remota se cae al trazado básico embebido y el
                badge lo explica: el mapa nunca queda vacío por un CDN caído. */
-            try { geo = await buildGeoLayers(); } catch (e) { geo = null; }
+            try { geo = await buildGeoLayers(); } catch { geo = null; }
             let di = 0;
             if (geo) {
                 world.appendChild(el('line', { x1: -400, x2: 1400, y1: geo.eqY, y2: geo.eqY, stroke: 'rgba(242,177,52,.14)', 'stroke-dasharray': '7 7' }));
@@ -287,7 +287,7 @@ const svg = document.getElementById('mapSvg');
                     if (info.recipe_count > 0) di++;
                 });
             }
-            addCountryLabels(geo && geo.labelPts);
+            addCountryLabels(geo?.labelPts);
             addGeoBadge(!!geo);
         } finally {
             loading.remove();
@@ -313,7 +313,7 @@ const svg = document.getElementById('mapSvg');
     function hideTip() { tip.classList.remove('show'); }
 
     function selectCountry(g) {
-        const info = g && g.__info;
+        const info = g?.__info;
         if (!info) return;
         /* Opener para devolver el foco al cerrar el panel: si la entrada fue
            por teclado, activeElement ya es el propio grupo; por clic cae en
@@ -352,7 +352,7 @@ const svg = document.getElementById('mapSvg');
     document.addEventListener('nav:country', e => {
         const d = /** @type {CustomEvent} */ (e).detail;
         const c = getCountryById(d.cid);
-        if (!c || !c._g) return;
+        if (!c?._g) return;
         const ae = document.activeElement;
         setOpener(ae instanceof Element && ae !== document.body ? ae : null);
         document.getElementById('coach').classList.add('done');
@@ -466,7 +466,7 @@ const svg = document.getElementById('mapSvg');
         const from = { ...view }, t0 = performance.now();
         const step = n => {
             let p = clamp((n - t0) / ms, 0, 1);
-            p = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+            p = p < .5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2;
             view.k = from.k + (target.k - from.k) * p;
             view.x = from.x + (target.x - from.x) * p;
             view.y = from.y + (target.y - from.y) * p;

@@ -1,0 +1,6 @@
+# Endings deterministas: el formatter (biome, lineEnding lf) debe ver los
+# mismos bytes en Windows y en CI/Linux. Sin esto, `biome check` pasa en
+# local (CRLF por autocrlf) y falla en GitHub Actions (LF).
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
