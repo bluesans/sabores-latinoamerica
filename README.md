@@ -1,5 +1,7 @@
 # Sabores de Latinoamérica 🌽
 
+[![CI](https://github.com/bluesans/sabores-latinoamerica/actions/workflows/ci.yml/badge.svg)](https://github.com/bluesans/sabores-latinoamerica/actions/workflows/ci.yml)
+
 Atlas gastronómico interactivo (front vanilla JS + Vue 3 para el panel de admin,
 API REST en PHP con **Slim 4**, base de datos MySQL).
 
@@ -52,8 +54,13 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
 ## Notas
 
 - Seguridad de sesión: el access token nunca se persiste (nada en `localStorage`), el refresh viaja en una cookie `HttpOnly`
-  que JavaScript no puede leer, y los rate limits de login/registro responden `429` con header `Retry-After`.
+  que JavaScript no puede leer, y los rate limits de login/registro/refresh responden `429` con header `Retry-After`.
   El flujo completo está en la sección 8 de `documentacion-tecnica-sabores-latinoamerica.md`.
+- El panel admin tiene una pestaña **Sesiones** (`GET/DELETE /admin/sessions`): lista sesiones activas
+  con usuario, IP y user-agent, y permite revocarlas una por una.
+- `GET /countries/{id}/recipes` acepta `?page=N&per_page=M` (máx 100) y siempre devuelve
+  `pagination:{page,per_page,total,total_pages}`; sin parámetros devuelve todo como antes.
+- Los ids de ruta son numéricos (`{id:[0-9]+}`); un id malformado responde `400`, uno inexistente `404`.
 - Los países "apagados" del mapa son los que no tienen recetas en la BD
   (Belice, Haití, Puerto Rico). Agregá recetas y se encienden solos.
 - Las estadísticas las calcula `StatsController` con consultas propias (misma matemática
@@ -63,3 +70,17 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
   quedaron archivados, solo lectura, en `db/legacy/`.
 - El archivo `api/.env` **no se versiona** (está en `.gitignore`). Nunca subas tu
   `JWT_SECRET` real ni credenciales de base de datos al repositorio.
+
+## Scripts y checks
+
+```bash
+cd api && php vendor/bin/phpunit   # 120 tests (Unit + Integration, con MySQL)
+cd api && composer stan            # phpstan, 0 errores
+npm run test:js                    # 58 tests JS
+npm run lint                       # biome check
+npm run check                      # tsc --noEmit
+npm run test:e2e                   # smoke E2E contra XAMPP vivo (crea y borra un usuario e2e_smoke_*)
+```
+
+El CI (`.github/workflows/ci.yml`) corre todo lo anterior en cada push,
+menos el E2E (necesita el XAMPP local; correlo a mano antes de pushear cambios grandes).
