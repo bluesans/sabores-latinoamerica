@@ -1,0 +1,12 @@
+# Dependencias y build
+node_modules/
+dist/
+
+# Entorno (nunca versionar secretos; .env.example sí se versiona)
+.env
+.env.local
+.env.*.local
+
+# Artefactos de tooling
+coverage/
+*.tsbuildinfo
