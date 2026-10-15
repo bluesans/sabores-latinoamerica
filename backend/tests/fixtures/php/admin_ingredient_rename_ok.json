@@ -1,0 +1,26 @@
+{
+    "case": "admin_ingredient_rename_ok",
+    "request": {
+        "method": "PUT",
+        "path": "/admin/ingredients/<FIXTURE_INGREDIENT_ID_A>",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ADMIN_ACCESS_TOKEN>",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "name": "Fixture7 Ingrediente A (renombrado)"
+        }
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true
+        }
+    }
+}

@@ -1,0 +1,61 @@
+{
+    "case": "admin_sessions_ok",
+    "request": {
+        "method": "GET",
+        "path": "/admin/sessions",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ADMIN_ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "sessions": [
+                {
+                    "id": "<SESSION_ID>",
+                    "username": "fixture7_admin",
+                    "created_at": "<TIMESTAMP>",
+                    "expires_at": "<TIMESTAMP>",
+                    "revoked_at": null,
+                    "ip": "127.0.0.1",
+                    "user_agent": null
+                },
+                {
+                    "id": "<SESSION_ID>",
+                    "username": "fixture7_user",
+                    "created_at": "<TIMESTAMP>",
+                    "expires_at": "<TIMESTAMP>",
+                    "revoked_at": "<TIMESTAMP>",
+                    "ip": "127.0.0.1",
+                    "user_agent": "fixtures7-parity/1.0"
+                },
+                {
+                    "id": "<SESSION_ID>",
+                    "username": "fixture7_user",
+                    "created_at": "<TIMESTAMP>",
+                    "expires_at": "<TIMESTAMP>",
+                    "revoked_at": "<TIMESTAMP>",
+                    "ip": "127.0.0.1",
+                    "user_agent": null
+                },
+                {
+                    "id": "<SESSION_ID>",
+                    "username": "fixture7_user",
+                    "created_at": "<TIMESTAMP>",
+                    "expires_at": "<TIMESTAMP>",
+                    "revoked_at": null,
+                    "ip": "127.0.0.1",
+                    "user_agent": null
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "case": "logout_ok",
+    "request": {
+        "method": "POST",
+        "path": "/auth/logout",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0"
+        },
+        "cookies": {
+            "sdl_refresh": "<REFRESH_TOKEN>"
+        },
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8",
+            "set-cookie": ["sdl_refresh=; Path=/sabores-latinoamerica/api; Max-Age=0; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT"]
+        },
+        "body": {
+            "ok": true
+        }
+    }
+}

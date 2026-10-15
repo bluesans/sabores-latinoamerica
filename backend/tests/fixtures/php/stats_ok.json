@@ -1,0 +1,71 @@
+{
+    "case": "stats_ok",
+    "request": {
+        "method": "GET",
+        "path": "/stats",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "stats": {
+                "paises_con_recetas": 19,
+                "total_recetas": 57,
+                "ingredientes_distintos": 185,
+                "recetas_con_video": 57
+            },
+            "top_ingredients": [
+                {
+                    "id": 6,
+                    "name": "Cebolla",
+                    "uses": 27
+                },
+                {
+                    "id": 15,
+                    "name": "Ajo",
+                    "uses": 16
+                },
+                {
+                    "id": 51,
+                    "name": "Sal",
+                    "uses": 16
+                },
+                {
+                    "id": 16,
+                    "name": "Tomate",
+                    "uses": 16
+                },
+                {
+                    "id": 60,
+                    "name": "Culantro",
+                    "uses": 10
+                },
+                {
+                    "id": 69,
+                    "name": "Arroz",
+                    "uses": 9
+                },
+                {
+                    "id": 48,
+                    "name": "Huevo",
+                    "uses": 8
+                },
+                {
+                    "id": 54,
+                    "name": "Mantequilla",
+                    "uses": 8
+                }
+            ]
+        }
+    }
+}

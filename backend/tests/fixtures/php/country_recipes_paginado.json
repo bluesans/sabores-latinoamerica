@@ -1,0 +1,120 @@
+{
+    "case": "country_recipes_paginado",
+    "request": {
+        "method": "GET",
+        "path": "/countries/4/recipes",
+        "query": {
+            "per_page": "2",
+            "page": "1"
+        },
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "country": {
+                "id": 4,
+                "name": "Perú",
+                "emoji": "🇵🇪",
+                "tagline": "La despensa del Pacífico"
+            },
+            "recipes": [
+                {
+                    "id": 10,
+                    "name": "Ceviche Peruano",
+                    "description": "Pescado fresco marinado en limón con ají limo, cebolla morada y culantro. Servido con choclo desgranado y camote. Emblema de la gastronomía peruana.",
+                    "difficulty": "easy",
+                    "time_minutes": 25,
+                    "youtube_id": "oRw2YNE5kLU",
+                    "ingredients": [
+                        {
+                            "id": 58,
+                            "name": "Ají limo"
+                        },
+                        {
+                            "id": 62,
+                            "name": "Camote"
+                        },
+                        {
+                            "id": 59,
+                            "name": "Cebolla morada"
+                        },
+                        {
+                            "id": 61,
+                            "name": "Choclo"
+                        },
+                        {
+                            "id": 56,
+                            "name": "Corvina o lenguado"
+                        },
+                        {
+                            "id": 60,
+                            "name": "Culantro"
+                        },
+                        {
+                            "id": 57,
+                            "name": "Limón peruano"
+                        }
+                    ]
+                },
+                {
+                    "id": 11,
+                    "name": "Lomo Saltado",
+                    "description": "Salteado de tiras de lomo fino con tomate, cebolla roja, ají amarillo y sillao. Fusión criolla-oriental que se sirve con papas fritas y arroz blanco.",
+                    "difficulty": "medium",
+                    "time_minutes": 30,
+                    "youtube_id": "3VFCsPuR3Sg",
+                    "ingredients": [
+                        {
+                            "id": 65,
+                            "name": "Ají amarillo"
+                        },
+                        {
+                            "id": 69,
+                            "name": "Arroz"
+                        },
+                        {
+                            "id": 64,
+                            "name": "Cebolla roja"
+                        },
+                        {
+                            "id": 63,
+                            "name": "Lomo fino"
+                        },
+                        {
+                            "id": 68,
+                            "name": "Papa"
+                        },
+                        {
+                            "id": 66,
+                            "name": "Sillao"
+                        },
+                        {
+                            "id": 16,
+                            "name": "Tomate"
+                        },
+                        {
+                            "id": 67,
+                            "name": "Vinagre"
+                        }
+                    ]
+                }
+            ],
+            "pagination": {
+                "page": 1,
+                "per_page": 2,
+                "total": 3,
+                "total_pages": 2
+            }
+        }
+    }
+}

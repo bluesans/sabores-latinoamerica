@@ -1,0 +1,28 @@
+{
+    "case": "admin_country_id_cero_400",
+    "request": {
+        "method": "PUT",
+        "path": "/admin/countries/0",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ADMIN_ACCESS_TOKEN>",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "emoji": "x",
+            "tagline": "y"
+        }
+    },
+    "response": {
+        "status": 400,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": false,
+            "error": "ID inválido."
+        }
+    }
+}

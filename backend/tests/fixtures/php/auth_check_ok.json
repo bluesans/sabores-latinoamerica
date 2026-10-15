@@ -1,0 +1,25 @@
+{
+    "case": "auth_check_ok",
+    "request": {
+        "method": "GET",
+        "path": "/auth/check",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "username": "fixture7_user",
+            "role": "user"
+        }
+    }
+}

@@ -1,0 +1,201 @@
+{
+    "case": "countries_ok",
+    "request": {
+        "method": "GET",
+        "path": "/countries",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "countries": [
+                {
+                    "id": 1,
+                    "iso_code": 484,
+                    "name": "México",
+                    "emoji": "🇲🇽",
+                    "tagline": "Cocina mestiza: maíz, chile y comal",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 2,
+                    "iso_code": 32,
+                    "name": "Argentina",
+                    "emoji": "🇦🇷",
+                    "tagline": "Brasa, pampa y bodega",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 3,
+                    "iso_code": 76,
+                    "name": "Brasil",
+                    "emoji": "🇧🇷",
+                    "tagline": "Del sertão a Bahía",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 4,
+                    "iso_code": 604,
+                    "name": "Perú",
+                    "emoji": "🇵🇪",
+                    "tagline": "La despensa del Pacífico",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 5,
+                    "iso_code": 170,
+                    "name": "Colombia",
+                    "emoji": "🇨🇴",
+                    "tagline": "De la cordillera al Caribe",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 6,
+                    "iso_code": 152,
+                    "name": "Chile",
+                    "emoji": "🇨🇱",
+                    "tagline": "Entre la cordillera y el mar",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 7,
+                    "iso_code": 862,
+                    "name": "Venezuela",
+                    "emoji": "🇻🇪",
+                    "tagline": "Maíz, cacao y tradición",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 8,
+                    "iso_code": 218,
+                    "name": "Ecuador",
+                    "emoji": "🇪🇨",
+                    "tagline": "Costa, sierra y Amazonía en un solo plato",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 9,
+                    "iso_code": 68,
+                    "name": "Bolivia",
+                    "emoji": "🇧🇴",
+                    "tagline": "Sabores de altura",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 10,
+                    "iso_code": 600,
+                    "name": "Paraguay",
+                    "emoji": "🇵🇾",
+                    "tagline": "Tierra guaraní: mandioca y queso",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 11,
+                    "iso_code": 858,
+                    "name": "Uruguay",
+                    "emoji": "🇺🇾",
+                    "tagline": "Chivitos, mate y rambla",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 12,
+                    "iso_code": 320,
+                    "name": "Guatemala",
+                    "emoji": "🇬🇹",
+                    "tagline": "Herencia maya en cada recado",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 13,
+                    "iso_code": 192,
+                    "name": "Cuba",
+                    "emoji": "🇨🇺",
+                    "tagline": "Sofrito, son y fuego lento",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 14,
+                    "iso_code": 222,
+                    "name": "El Salvador",
+                    "emoji": "🇸🇻",
+                    "tagline": "Pupusas y curtido, orgullo nacional",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 15,
+                    "iso_code": 558,
+                    "name": "Nicaragua",
+                    "emoji": "🇳🇮",
+                    "tagline": "Maíz, gallo pinto y tradición",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 16,
+                    "iso_code": 188,
+                    "name": "Costa Rica",
+                    "emoji": "🇨🇷",
+                    "tagline": "Pura vida en la mesa",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 17,
+                    "iso_code": 340,
+                    "name": "Honduras",
+                    "emoji": "🇭🇳",
+                    "tagline": "Coco, caracol y baleadas",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 18,
+                    "iso_code": 591,
+                    "name": "Panamá",
+                    "emoji": "🇵🇦",
+                    "tagline": "Puente de mares y sabores",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 19,
+                    "iso_code": 214,
+                    "name": "República Dominicana",
+                    "emoji": "🇩🇴",
+                    "tagline": "Sazón caribeño con bandera propia",
+                    "recipe_count": 3
+                },
+                {
+                    "id": 20,
+                    "iso_code": 84,
+                    "name": "Belice",
+                    "emoji": "🇧🇿",
+                    "tagline": null,
+                    "recipe_count": 0
+                },
+                {
+                    "id": 21,
+                    "iso_code": 332,
+                    "name": "Haití",
+                    "emoji": "🇭🇹",
+                    "tagline": null,
+                    "recipe_count": 0
+                },
+                {
+                    "id": 22,
+                    "iso_code": 630,
+                    "name": "Puerto Rico",
+                    "emoji": "🇵🇷",
+                    "tagline": null,
+                    "recipe_count": 0
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "case": "register_username_invalido_422",
+    "request": {
+        "method": "POST",
+        "path": "/auth/register",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "username": "ab",
+            "password": "Fixture7!Pass2026"
+        }
+    },
+    "response": {
+        "status": 422,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": false,
+            "error": "El usuario debe tener entre 3 y 30 caracteres: letras, números o guión bajo."
+        }
+    }
+}

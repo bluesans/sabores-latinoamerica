@@ -1,0 +1,26 @@
+{
+    "case": "favorites_quitar",
+    "request": {
+        "method": "POST",
+        "path": "/favorites",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "recipe_id": 1
+        }
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true
+        }
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "case": "health",
+    "request": {
+        "method": "GET",
+        "path": "/health",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "api": true,
+            "db": true,
+            "time": "<TIMESTAMP>"
+        }
+    }
+}

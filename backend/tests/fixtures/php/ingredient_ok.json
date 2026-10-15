@@ -1,0 +1,61 @@
+{
+    "case": "ingredient_ok",
+    "request": {
+        "method": "GET",
+        "path": "/ingredients/1",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "ingredient": {
+                "id": 1,
+                "name": "Cerdo"
+            },
+            "recipes": [
+                {
+                    "recipe_id": 26,
+                    "recipe_name": "Fricasé Paceño",
+                    "difficulty": "medium",
+                    "country_id": 9,
+                    "country_name": "Bolivia",
+                    "emoji": "🇧🇴"
+                },
+                {
+                    "recipe_id": 51,
+                    "recipe_name": "Tapado Olanchano",
+                    "difficulty": "hard",
+                    "country_id": 17,
+                    "country_name": "Honduras",
+                    "emoji": "🇭🇳"
+                },
+                {
+                    "recipe_id": 1,
+                    "recipe_name": "Tacos al Pastor",
+                    "difficulty": "medium",
+                    "country_id": 1,
+                    "country_name": "México",
+                    "emoji": "🇲🇽"
+                },
+                {
+                    "recipe_id": 44,
+                    "recipe_name": "Nacatamal",
+                    "difficulty": "hard",
+                    "country_id": 15,
+                    "country_name": "Nicaragua",
+                    "emoji": "🇳🇮"
+                }
+            ]
+        }
+    }
+}

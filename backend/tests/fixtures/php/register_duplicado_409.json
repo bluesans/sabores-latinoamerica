@@ -1,0 +1,27 @@
+{
+    "case": "register_duplicado_409",
+    "request": {
+        "method": "POST",
+        "path": "/auth/register",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "username": "fixture7_user",
+            "password": "Fixture7!Pass2026"
+        }
+    },
+    "response": {
+        "status": 409,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": false,
+            "error": "Ese usuario ya existe. Probá con otro."
+        }
+    }
+}

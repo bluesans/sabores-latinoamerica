@@ -1,0 +1,24 @@
+{
+    "case": "refresh_sin_cookie_401",
+    "request": {
+        "method": "POST",
+        "path": "/auth/refresh",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 401,
+        "headers": {
+            "content-type": "application/json; charset=utf-8",
+            "set-cookie": ["sdl_refresh=; Path=/sabores-latinoamerica/api; Max-Age=0; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT"]
+        },
+        "body": {
+            "ok": false,
+            "error": "Sesión expirada."
+        }
+    }
+}

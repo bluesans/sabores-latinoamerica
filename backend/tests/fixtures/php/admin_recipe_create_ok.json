@@ -1,0 +1,32 @@
+{
+    "case": "admin_recipe_create_ok",
+    "request": {
+        "method": "POST",
+        "path": "/admin/recipes",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ADMIN_ACCESS_TOKEN>",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "name": "Fixture7 Receta QA",
+            "country_id": 4,
+            "description": "Fixture7: receta temporal de la matriz de paridad.",
+            "difficulty": "medium",
+            "time_minutes": "30",
+            "ingredients": ["Fixture7 Ingrediente A", "Fixture7 Ingrediente B"]
+        }
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "id": "<FIXTURE_RECIPE_ID>"
+        }
+    }
+}

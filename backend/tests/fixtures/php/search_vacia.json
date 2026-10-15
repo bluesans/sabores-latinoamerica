@@ -1,0 +1,28 @@
+{
+    "case": "search_vacia",
+    "request": {
+        "method": "GET",
+        "path": "/search",
+        "query": {
+            "q": ""
+        },
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "countries": [],
+            "recipes": [],
+            "ingredients": []
+        }
+    }
+}

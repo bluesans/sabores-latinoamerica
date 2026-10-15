@@ -1,0 +1,57 @@
+{
+    "case": "search_con_datos",
+    "request": {
+        "method": "GET",
+        "path": "/search",
+        "query": {
+            "q": "taco"
+        },
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "countries": [],
+            "recipes": [
+                {
+                    "id": 1,
+                    "name": "Tacos al Pastor",
+                    "country_id": 1,
+                    "country_name": "México",
+                    "emoji": "🇲🇽"
+                },
+                {
+                    "id": 13,
+                    "name": "Bandeja Paisa",
+                    "country_id": 5,
+                    "country_name": "Colombia",
+                    "emoji": "🇨🇴"
+                },
+                {
+                    "id": 22,
+                    "name": "Ceviche de Camarón",
+                    "country_id": 8,
+                    "country_name": "Ecuador",
+                    "emoji": "🇪🇨"
+                },
+                {
+                    "id": 53,
+                    "name": "Ropa Vieja Panameña",
+                    "country_id": 18,
+                    "country_name": "Panamá",
+                    "emoji": "🇵🇦"
+                }
+            ],
+            "ingredients": []
+        }
+    }
+}

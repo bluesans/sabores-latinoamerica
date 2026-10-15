@@ -1,0 +1,1713 @@
+{
+    "case": "admin_data_ok",
+    "request": {
+        "method": "GET",
+        "path": "/admin/data",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ADMIN_ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "recipes": [
+                {
+                    "id": 1,
+                    "country_id": 1,
+                    "name": "Tacos al Pastor",
+                    "description": "Icónico taco callejero con carne de cerdo marinada en chiles y achiote, cocida en trompo vertical. Se sirve con piña, cilantro y cebolla sobre tortilla de maíz.",
+                    "difficulty": "medium",
+                    "time_minutes": 120,
+                    "youtube_id": "MWo42SO1aOM",
+                    "country_name": "México",
+                    "ingredients": ["Achiote", "Cebolla", "Cerdo", "Chile guajillo", "Cilantro", "Limón", "Piña", "Tortilla de maíz"]
+                },
+                {
+                    "id": 2,
+                    "country_id": 1,
+                    "name": "Mole Poblano",
+                    "description": "Salsa compleja de más de 20 ingredientes: chiles secos, chocolate amargo, especias y semillas. Orgullo de la gastronomía mexicana, servido sobre pavo o pollo.",
+                    "difficulty": "hard",
+                    "time_minutes": 240,
+                    "youtube_id": "YtymYbCZzmM",
+                    "country_name": "México",
+                    "ingredients": ["Ajo", "Ajonjolí", "Chile ancho", "Chile mulato", "Chocolate", "Pavo", "Plátano macho", "Tomate"]
+                },
+                {
+                    "id": 3,
+                    "country_id": 1,
+                    "name": "Chiles en Nogada",
+                    "description": "Chile poblano relleno de picadillo de carne y frutas, cubierto con nogada (salsa de nuez de Castilla) y granada. Plato patriótico con los tres colores de México.",
+                    "difficulty": "hard",
+                    "time_minutes": 180,
+                    "youtube_id": "FKHWvnKQKmk",
+                    "country_name": "México",
+                    "ingredients": ["Carne molida", "Chile poblano", "Frutas secas", "Granada", "Nuez de Castilla", "Perejil"]
+                },
+                {
+                    "id": 4,
+                    "country_id": 2,
+                    "name": "Asado Argentino",
+                    "description": "Ritual cultural de cocción de carnes sobre parrilla a las brasas. Costillas, vacío, chorizos, morcillas y achuras cocinados lentamente con sal gruesa.",
+                    "difficulty": "medium",
+                    "time_minutes": 180,
+                    "youtube_id": "vxscY-dy9IU",
+                    "country_name": "Argentina",
+                    "ingredients": ["Carbón", "Chorizo criollo", "Costillas", "Morcilla", "Sal gruesa", "Vacío"]
+                },
+                {
+                    "id": 5,
+                    "country_id": 2,
+                    "name": "Empanadas Criollas",
+                    "description": "Masa horneada o frita rellena de carne picada con cebolla, pimentón, aceitunas y huevo duro. Cada provincia argentina tiene su estilo y cierre propio.",
+                    "difficulty": "medium",
+                    "time_minutes": 90,
+                    "youtube_id": "lqRFXOyiNr0",
+                    "country_name": "Argentina",
+                    "ingredients": ["Aceitunas", "Carne picada", "Cebolla", "Grasa vacuna", "Harina", "Huevo duro", "Pimentón"]
+                },
+                {
+                    "id": 6,
+                    "country_id": 2,
+                    "name": "Locro Criollo",
+                    "description": "Guiso espeso y reconfortante de maíz blanco, porotos, calabaza y carnes ahumadas. Plato del invierno y del 25 de Mayo, cocinado a fuego lento por horas.",
+                    "difficulty": "easy",
+                    "time_minutes": 180,
+                    "youtube_id": "vX0KYKAkBTU",
+                    "country_name": "Argentina",
+                    "ingredients": ["Calabaza", "Cebolla", "Chorizo colorado", "Maíz blanco", "Mondongo", "Porotos", "Tocino"]
+                },
+                {
+                    "id": 7,
+                    "country_id": 3,
+                    "name": "Feijoada",
+                    "description": "Plato nacional brasileño: frijoles negros guisados horas con diversas carnes de cerdo ahumadas. Se sirve con arroz, farofa, couve refogada y naranja.",
+                    "difficulty": "medium",
+                    "time_minutes": 300,
+                    "youtube_id": "Jsrzj9lGeVY",
+                    "country_name": "Brasil",
+                    "ingredients": ["Ajo", "Cebolla", "Costilla de cerdo", "Frijol negro", "Laurel", "Linguiça", "Naranja", "Tocino"]
+                },
+                {
+                    "id": 8,
+                    "country_id": 3,
+                    "name": "Pão de Queijo",
+                    "description": "Panecillos esponjosos de almidón de mandioca y queso minas, crujientes por fuera y suaves por dentro. Icono del desayuno en Minas Gerais.",
+                    "difficulty": "easy",
+                    "time_minutes": 45,
+                    "youtube_id": "noDZZXzImv8",
+                    "country_name": "Brasil",
+                    "ingredients": ["Aceite", "Almidón de mandioca", "Huevo", "Leche", "Queso minas", "Sal"]
+                },
+                {
+                    "id": 9,
+                    "country_id": 3,
+                    "name": "Brigadeiro",
+                    "description": "El dulce favorito de Brasil: bolitas cremosas de leche condensada y cacao, rodadas en granillo de chocolate. Infaltable en toda festa junina e infantil.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "T0DipnMrASQ",
+                    "country_name": "Brasil",
+                    "ingredients": ["Cacao en polvo", "Granillo de chocolate", "Leche condensada", "Mantequilla"]
+                },
+                {
+                    "id": 10,
+                    "country_id": 4,
+                    "name": "Ceviche Peruano",
+                    "description": "Pescado fresco marinado en limón con ají limo, cebolla morada y culantro. Servido con choclo desgranado y camote. Emblema de la gastronomía peruana.",
+                    "difficulty": "easy",
+                    "time_minutes": 25,
+                    "youtube_id": "oRw2YNE5kLU",
+                    "country_name": "Perú",
+                    "ingredients": ["Ají limo", "Camote", "Cebolla morada", "Choclo", "Corvina o lenguado", "Culantro", "Limón peruano"]
+                },
+                {
+                    "id": 11,
+                    "country_id": 4,
+                    "name": "Lomo Saltado",
+                    "description": "Salteado de tiras de lomo fino con tomate, cebolla roja, ají amarillo y sillao. Fusión criolla-oriental que se sirve con papas fritas y arroz blanco.",
+                    "difficulty": "medium",
+                    "time_minutes": 30,
+                    "youtube_id": "3VFCsPuR3Sg",
+                    "country_name": "Perú",
+                    "ingredients": ["Ají amarillo", "Arroz", "Cebolla roja", "Lomo fino", "Papa", "Sillao", "Tomate", "Vinagre"]
+                },
+                {
+                    "id": 12,
+                    "country_id": 4,
+                    "name": "Ají de Gallina",
+                    "description": "Cremoso guiso de pollo desmenuzado en salsa de ají amarillo, pan remojado en leche, nueces y queso. Plato criollo limeño de origen virreinal.",
+                    "difficulty": "medium",
+                    "time_minutes": 60,
+                    "youtube_id": "BYP9aoeWEw4",
+                    "country_name": "Perú",
+                    "ingredients": ["Ají amarillo", "Leche evaporada", "Nueces", "Pan de molde", "Pechuga de pollo", "Queso parmesano"]
+                },
+                {
+                    "id": 13,
+                    "country_id": 5,
+                    "name": "Bandeja Paisa",
+                    "description": "El plato mayor del eje cafetero: arroz, frijoles rojos, chicharrón, carne molida, chorizo, morcilla, huevo frito, aguacate y patacón. Un festín completo.",
+                    "difficulty": "hard",
+                    "time_minutes": 120,
+                    "youtube_id": "XeTuQ7UdA38",
+                    "country_name": "Colombia",
+                    "ingredients": ["Aguacate", "Arroz", "Carne molida", "Chicharrón", "Chorizo", "Frijoles rojos", "Huevo", "Plátano"]
+                },
+                {
+                    "id": 14,
+                    "country_id": 5,
+                    "name": "Ajiaco Bogotano",
+                    "description": "Sopa espesa con tres tipos de papa criolla, pollo desmenuzado, mazorca y guascas. El plato del alma bogotana, servido con crema de leche y alcaparras.",
+                    "difficulty": "medium",
+                    "time_minutes": 90,
+                    "youtube_id": "R2DAkW3N_JY",
+                    "country_name": "Colombia",
+                    "ingredients": ["Crema de leche", "Guascas", "Mazorca", "Papa criolla", "Papa pastusa", "Papa sabanera", "Pollo"]
+                },
+                {
+                    "id": 15,
+                    "country_id": 5,
+                    "name": "Arepa de Chócolo",
+                    "description": "Tortilla gruesa de maíz tierno dulce asada en budare. Acompañante universal de la mesa colombiana, rellena de queso derretido y mantequilla.",
+                    "difficulty": "easy",
+                    "time_minutes": 20,
+                    "youtube_id": "JLzbNGR8Sh4",
+                    "country_name": "Colombia",
+                    "ingredients": ["Azúcar", "Leche", "Maíz tierno", "Mantequilla", "Queso blanco", "Sal"]
+                },
+                {
+                    "id": 16,
+                    "country_id": 6,
+                    "name": "Cazuela de Vacuno",
+                    "description": "Sopa sustanciosa con trozo de carne de vacuno, zapallo, papas, choclo y porotos verdes en caldo aromático. Pilar de la comida casera chilena.",
+                    "difficulty": "easy",
+                    "time_minutes": 90,
+                    "youtube_id": "d6nXcyGGVqE",
+                    "country_name": "Chile",
+                    "ingredients": ["Choclo", "Orégano", "Papa", "Porotos verdes", "Vacuno", "Zanahoria", "Zapallo"]
+                },
+                {
+                    "id": 17,
+                    "country_id": 6,
+                    "name": "Empanada de Pino",
+                    "description": "Empanada horneada con relleno de carne molida sofrita con cebolla (pino), aceitunas, huevo duro y pasas. Símbolo gastronómico del 18 de Septiembre.",
+                    "difficulty": "medium",
+                    "time_minutes": 90,
+                    "youtube_id": "nCYcQAKQIOM",
+                    "country_name": "Chile",
+                    "ingredients": ["Aceitunas", "Carne molida", "Cebolla", "Harina", "Huevo duro", "Manteca", "Pasas"]
+                },
+                {
+                    "id": 18,
+                    "country_id": 6,
+                    "name": "Pastel de Choclo",
+                    "description": "Fuente de greda con relleno de pino y pollo cubierto de choclo molido con albahaca, azúcar y mantequilla. Clásico del verano chileno.",
+                    "difficulty": "medium",
+                    "time_minutes": 75,
+                    "youtube_id": "lKXvRuivFwo",
+                    "country_name": "Chile",
+                    "ingredients": ["Albahaca", "Azúcar", "Carne molida", "Cebolla", "Choclo", "Huevo duro", "Mantequilla", "Pollo"]
+                },
+                {
+                    "id": 19,
+                    "country_id": 7,
+                    "name": "Arepa Venezolana",
+                    "description": "Pan de maíz blanco precocido, dorado en budare o sartén. Se rellena con caraotas, carne mechada y queso amarillo. Base de toda mesa venezolana.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "kpZx53kkslw",
+                    "country_name": "Venezuela",
+                    "ingredients": ["Agua tibia", "Caraotas negras", "Carne mechada", "Harina PAN", "Queso amarillo", "Sal"]
+                },
+                {
+                    "id": 20,
+                    "country_id": 7,
+                    "name": "Pabellón Criollo",
+                    "description": "Plato nacional venezolano: caraotas negras, arroz blanco, carne de res mechada y tajadas de plátano maduro. Cuatro sabores en perfecta armonía criolla.",
+                    "difficulty": "medium",
+                    "time_minutes": 90,
+                    "youtube_id": "DbJ8-Uo2MOQ",
+                    "country_name": "Venezuela",
+                    "ingredients": ["Ají", "Ajo", "Arroz", "Caraotas negras", "Carne de res", "Cebolla", "Comino", "Plátano maduro"]
+                },
+                {
+                    "id": 21,
+                    "country_id": 7,
+                    "name": "Hallacas Navideñas",
+                    "description": "Hallaca venezolana de Navidad: masa de maíz pintada con onoto, rellena de guiso de carnes, aceitunas y alcaparras. Envuelta y cocida en hojas de plátano.",
+                    "difficulty": "hard",
+                    "time_minutes": 480,
+                    "youtube_id": "qZtBvmaOGdA",
+                    "country_name": "Venezuela",
+                    "ingredients": ["Aceitunas", "Alcaparras", "Carne res y cerdo", "Harina de maíz", "Hoja de plátano", "Pasas", "Pollo", "Tocino"]
+                },
+                {
+                    "id": 22,
+                    "country_id": 8,
+                    "name": "Ceviche de Camarón",
+                    "description": "Camarones cocidos marinados en limón y naranjilla con cebolla paiteña, tomate y cilantro. Servido frío con tostadas o patacones.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "s8Fmezppr8g",
+                    "country_name": "Ecuador",
+                    "ingredients": ["Ají", "Camarón", "Cebolla paiteña", "Cilantro", "Limón", "Naranjilla", "Sal", "Tomate"]
+                },
+                {
+                    "id": 23,
+                    "country_id": 8,
+                    "name": "Seco de Pollo",
+                    "description": "Guiso de pollo en salsa de cerveza negra, naranjilla y especias andinas. Se sirve con arroz amarillo, frijoles y aguacate en rodajas.",
+                    "difficulty": "medium",
+                    "time_minutes": 60,
+                    "youtube_id": "CJFdqk2HP4A",
+                    "country_name": "Ecuador",
+                    "ingredients": ["Ají amarillo", "Ajo", "Cebolla", "Cerveza negra", "Comino", "Culantro", "Naranjilla", "Pollo"]
+                },
+                {
+                    "id": 24,
+                    "country_id": 8,
+                    "name": "Llapingachos",
+                    "description": "Tortillas de papa con queso, doradas en manteca de chancho hasta formar costra. Se sirven con salsa de maní, huevo frito, chorizo y ensalada.",
+                    "difficulty": "medium",
+                    "time_minutes": 60,
+                    "youtube_id": "Un7WxYDq_4c",
+                    "country_name": "Ecuador",
+                    "ingredients": ["Achiote", "Cebolla", "Huevo", "Maní", "Manteca de chancho", "Papa", "Queso"]
+                },
+                {
+                    "id": 25,
+                    "country_id": 9,
+                    "name": "Salteña",
+                    "description": "Empanada boliviana ovalada y jugosa, rellena de carne, papas y arvejas en caldo gelificado con ají. El desayuno estrella de las ciudades bolivianas.",
+                    "difficulty": "hard",
+                    "time_minutes": 180,
+                    "youtube_id": "VydD2si0MwI",
+                    "country_name": "Bolivia",
+                    "ingredients": ["Aceitunas", "Ají colorado", "Arvejas", "Caldo gelificado", "Carne de res", "Harina", "Huevo", "Papa"]
+                },
+                {
+                    "id": 26,
+                    "country_id": 9,
+                    "name": "Fricasé Paceño",
+                    "description": "Sopa de cerdo en caldo amarillo de ají con mote, chuño y verduras. Plato festivo tradicional de los domingos en La Paz.",
+                    "difficulty": "medium",
+                    "time_minutes": 120,
+                    "youtube_id": "x0CNslZsF7M",
+                    "country_name": "Bolivia",
+                    "ingredients": ["Ají amarillo", "Ajo", "Cebolla", "Cerdo", "Chuño", "Hierbabuena", "Mote", "Orégano"]
+                },
+                {
+                    "id": 27,
+                    "country_id": 9,
+                    "name": "Pique Macho",
+                    "description": "Carne de res y salchicha picadas salteadas, sobre papas fritas, cubierto de locoto, tomate, cebolla y huevo duro. El rey de los fines de semana.",
+                    "difficulty": "easy",
+                    "time_minutes": 45,
+                    "youtube_id": "Y_Ckwty5dks",
+                    "country_name": "Bolivia",
+                    "ingredients": ["Carne de res", "Cebolla", "Huevo duro", "Locoto", "Mostaza", "Papa", "Salchicha", "Tomate"]
+                },
+                {
+                    "id": 28,
+                    "country_id": 10,
+                    "name": "Sopa Paraguaya",
+                    "description": "A pesar del nombre, es un pan denso de harina de maíz, queso Paraguay y cebolla horneado en tatakua. Acompañante infaltable del asado.",
+                    "difficulty": "medium",
+                    "time_minutes": 60,
+                    "youtube_id": "Vfj0J9oxCkM",
+                    "country_name": "Paraguay",
+                    "ingredients": ["Cebolla", "Harina de maíz", "Huevo", "Leche", "Mantequilla", "Queso Paraguay", "Sal"]
+                },
+                {
+                    "id": 29,
+                    "country_id": 10,
+                    "name": "Chipa Guazú",
+                    "description": "Pan festivo de almidón de mandioca, queso Paraguay y huevos, cocinado en horno de barro. Infaltable en Semana Santa y los viajes en bus.",
+                    "difficulty": "easy",
+                    "time_minutes": 45,
+                    "youtube_id": "ipBODTICzrE",
+                    "country_name": "Paraguay",
+                    "ingredients": ["Almidón de mandioca", "Anís", "Huevo", "Leche", "Mantequilla", "Queso Paraguay"]
+                },
+                {
+                    "id": 30,
+                    "country_id": 10,
+                    "name": "Mbejú",
+                    "description": "Torta crujiente de almidón de mandioca y queso fresca en sartén de hierro. Desayuno o merienda tradicional guaraní, acompañado de mate o cocido.",
+                    "difficulty": "easy",
+                    "time_minutes": 20,
+                    "youtube_id": "nB6UJUjea5Q",
+                    "country_name": "Paraguay",
+                    "ingredients": ["Agua tibia", "Almidón de mandioca", "Mantequilla", "Queso Paraguay", "Sal"]
+                },
+                {
+                    "id": 31,
+                    "country_id": 11,
+                    "name": "Chivito Uruguayo",
+                    "description": "El sándwich nacional: filete fino de ternera, jamón, queso, huevo, tomate y lechuga en pan brioche con mayonesa. Monumento gastronómico declarado patrimonio.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "pdNXrjhn0z4",
+                    "country_name": "Uruguay",
+                    "ingredients": ["Filete de ternera", "Huevo", "Jamón cocido", "Lechuga", "Mayonesa", "Pan", "Queso", "Tomate"]
+                },
+                {
+                    "id": 32,
+                    "country_id": 11,
+                    "name": "Asado Uruguayo",
+                    "description": "Tradición propia con vacío entero a la parrilla, corazón de cuadril y tira de asado corta. Cultura de reunión familiar alrededor del fuego y la brasa.",
+                    "difficulty": "medium",
+                    "time_minutes": 180,
+                    "youtube_id": "772DiAckQKo",
+                    "country_name": "Uruguay",
+                    "ingredients": ["Chorizo", "Cuadril", "Morcilla", "Sal gruesa", "Tira de asado", "Vacío"]
+                },
+                {
+                    "id": 33,
+                    "country_id": 11,
+                    "name": "Tortas Fritas",
+                    "description": "Masas de harina fritas en grasa vacuna, redondas con agujero central. La tradición dice que se comen con mate cuando llueve. Consuelo y hogar.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "0N5tx-KKoHg",
+                    "country_name": "Uruguay",
+                    "ingredients": ["Agua tibia", "Bicarbonato", "Grasa vacuna", "Harina", "Sal"]
+                },
+                {
+                    "id": 34,
+                    "country_id": 12,
+                    "name": "Pepián",
+                    "description": "Guiso ancestral maya con salsa espesa de pepitoria y ajonjolí tostados, chiles y especias. Plato nacional guatemalteco, declarado Patrimonio Cultural Inmaterial.",
+                    "difficulty": "hard",
+                    "time_minutes": 120,
+                    "youtube_id": "F96diq3p8lM",
+                    "country_name": "Guatemala",
+                    "ingredients": ["Ajo", "Ajonjolí", "Cebolla", "Chile guaque", "Miltomate", "Pepitoria", "Pollo", "Tomate"]
+                },
+                {
+                    "id": 35,
+                    "country_id": 12,
+                    "name": "Kak'ik de Pavo",
+                    "description": "Sopa ceremonial maya de pavo con chile cobanero, hierba santa y recado negro. Originaria de Alta Verapaz, Patrimonio Cultural de la Humanidad.",
+                    "difficulty": "hard",
+                    "time_minutes": 180,
+                    "youtube_id": "Kpbh2sFqRjA",
+                    "country_name": "Guatemala",
+                    "ingredients": ["Ajo", "Cebolla", "Chile cobanero", "Hierba santa", "Miltomate", "Pavo", "Recado", "Tomate"]
+                },
+                {
+                    "id": 36,
+                    "country_id": 12,
+                    "name": "Rellenitos de Plátano",
+                    "description": "Bolitas de plátano maduro rellenas de frijoles negros dulces y canela, fritas hasta dorar. Postre y antojito típico de calles y mercados guatemaltecos.",
+                    "difficulty": "easy",
+                    "time_minutes": 45,
+                    "youtube_id": "0ZKslDAwxE4",
+                    "country_name": "Guatemala",
+                    "ingredients": ["Aceite", "Azúcar", "Canela", "Frijoles negros", "Plátano macho maduro"]
+                },
+                {
+                    "id": 37,
+                    "country_id": 13,
+                    "name": "Ropa Vieja",
+                    "description": "Falda de res cocida y deshebrada en sofrito cubano de tomate, pimiento, ají y cebolla. El plato nacional de Cuba, lento, aromático y profundo.",
+                    "difficulty": "medium",
+                    "time_minutes": 120,
+                    "youtube_id": "oG0_sAbQoJU",
+                    "country_name": "Cuba",
+                    "ingredients": ["Ají pimiento", "Ajo", "Cebolla", "Comino", "Falda de res", "Laurel", "Pimiento", "Tomate"]
+                },
+                {
+                    "id": 38,
+                    "country_id": 13,
+                    "name": "Moros y Cristianos",
+                    "description": "Arroz negro cocido junto con frijoles negros, sofrito cubano y especias. Nombre histórico que simboliza la fusión de culturas en la isla caribeña.",
+                    "difficulty": "easy",
+                    "time_minutes": 60,
+                    "youtube_id": "ni8caneHNGw",
+                    "country_name": "Cuba",
+                    "ingredients": ["Aceite", "Ajo", "Arroz", "Cebolla", "Comino", "Frijoles negros", "Laurel", "Pimiento"]
+                },
+                {
+                    "id": 39,
+                    "country_id": 13,
+                    "name": "Lechón Asado",
+                    "description": "Cerdo entero marinado en mojo criollo (ajo, naranja agria, orégano) y asado lentamente. El plato de las grandes celebraciones familiares cubanas.",
+                    "difficulty": "hard",
+                    "time_minutes": 480,
+                    "youtube_id": "Rs6E-bJMtTI",
+                    "country_name": "Cuba",
+                    "ingredients": ["Aceite", "Ajo", "Cerdo entero", "Comino", "Naranja agria", "Orégano", "Sal"]
+                },
+                {
+                    "id": 40,
+                    "country_id": 14,
+                    "name": "Pupusas",
+                    "description": "Gruesas tortillas de masa de maíz rellenas de chicharrón molido, queso, frijoles o loroco. El platillo nacional, acompañado de curtido y salsa roja.",
+                    "difficulty": "medium",
+                    "time_minutes": 60,
+                    "youtube_id": "cqV-INtBwZ4",
+                    "country_name": "El Salvador",
+                    "ingredients": ["Chicharrón molido", "Curtido", "Frijoles refritos", "Loroco", "Masa de maíz", "Queso", "Sal"]
+                },
+                {
+                    "id": 41,
+                    "country_id": 14,
+                    "name": "Sopa de Pata",
+                    "description": "Caldo robusto de pata de res con maíz, yuca, ejotes, plátano verde y hierbas. Plato de fuerza que se come en celebraciones y fines de semana.",
+                    "difficulty": "medium",
+                    "time_minutes": 180,
+                    "youtube_id": "p3XHVK_qs5A",
+                    "country_name": "El Salvador",
+                    "ingredients": ["Cebolla", "Culantro", "Ejotes", "Maíz", "Pata de res", "Plátano verde", "Tomate", "Yuca"]
+                },
+                {
+                    "id": 42,
+                    "country_id": 14,
+                    "name": "Yuca con Chicharrón",
+                    "description": "Yuca hervida y frita acompañada de chicharrón de cerdo crujiente, curtido de repollo y salsa de tomate. El antojito salvadoreño más popular.",
+                    "difficulty": "easy",
+                    "time_minutes": 45,
+                    "youtube_id": "uPj5qYqY1H0",
+                    "country_name": "El Salvador",
+                    "ingredients": ["Cebolla", "Chicharrón de cerdo", "Limón", "Repollo", "Tomate", "Vinagre", "Yuca"]
+                },
+                {
+                    "id": 43,
+                    "country_id": 15,
+                    "name": "Gallo Pinto Nica",
+                    "description": "Arroz con frijoles rojos, cebolla, pimiento y culantro. El desayuno diario nicaragüense, Patrimonio Cultural Intangible. Simple, nutritivo e identitario.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "1FcVydCONdY",
+                    "country_name": "Nicaragua",
+                    "ingredients": ["Aceite", "Ajo", "Arroz", "Cebolla", "Culantro", "Frijoles rojos", "Pimiento", "Sal"]
+                },
+                {
+                    "id": 44,
+                    "country_id": 15,
+                    "name": "Nacatamal",
+                    "description": "Tamal gigante de masa de maíz con manteca, relleno de cerdo, arroz, papas y hierbabuena. Envuelto en hoja de plátano y cocido al vapor.",
+                    "difficulty": "hard",
+                    "time_minutes": 360,
+                    "youtube_id": "udN1jZAfkV0",
+                    "country_name": "Nicaragua",
+                    "ingredients": ["Arroz", "Cerdo", "Hierbabuena", "Hoja de plátano", "Manteca de cerdo", "Masa de maíz", "Papa", "Tomate"]
+                },
+                {
+                    "id": 45,
+                    "country_id": 15,
+                    "name": "Vigorón",
+                    "description": "Chicharrón de cerdo crujiente sobre yuca hervida y ensalada de repollo con tomate y vinagre. Servido sobre hoja de plátano en el mercado de Granada.",
+                    "difficulty": "easy",
+                    "time_minutes": 45,
+                    "youtube_id": "gTux0-zctlE",
+                    "country_name": "Nicaragua",
+                    "ingredients": ["Chicharrón de cerdo", "Limón", "Repollo", "Sal", "Tomate", "Vinagre", "Yuca"]
+                },
+                {
+                    "id": 46,
+                    "country_id": 16,
+                    "name": "Gallo Pinto Tico",
+                    "description": "Versión costarricense con frijoles negros, arroz, Salsa Lizano y culantro coyote. El desayuno más pura vida de Centroamérica, en la mesa de todos.",
+                    "difficulty": "easy",
+                    "time_minutes": 20,
+                    "youtube_id": "XFPqLOgn8-0",
+                    "country_name": "Costa Rica",
+                    "ingredients": ["Aceite", "Arroz", "Cebolla", "Culantro coyote", "Frijoles negros", "Pimiento", "Salsa Lizano"]
+                },
+                {
+                    "id": 47,
+                    "country_id": 16,
+                    "name": "Casado Costarricense",
+                    "description": "Plato completo del almuerzo: arroz, frijoles, ensalada, plátano maduro y una proteína. El plato del día más popular en sodas y restaurantes del país.",
+                    "difficulty": "easy",
+                    "time_minutes": 45,
+                    "youtube_id": "ogkJ5zdg9gs",
+                    "country_name": "Costa Rica",
+                    "ingredients": ["Arroz", "Frijoles negros", "Lechuga", "Picadillo", "Plátano maduro", "Pollo o carne", "Tomate"]
+                },
+                {
+                    "id": 48,
+                    "country_id": 16,
+                    "name": "Olla de Carne",
+                    "description": "Sopa dominical de res con mazorca, papa, yuca, plátano verde, zanahoria y culantro. El plato de reunión familiar del domingo en todos los hogares costarricenses.",
+                    "difficulty": "easy",
+                    "time_minutes": 120,
+                    "youtube_id": "Fsv6uv7t3uo",
+                    "country_name": "Costa Rica",
+                    "ingredients": ["Carne de res", "Culantro", "Mazorca", "Papa", "Plátano verde", "Sal", "Yuca", "Zanahoria"]
+                },
+                {
+                    "id": 49,
+                    "country_id": 17,
+                    "name": "Baleada Hondureña",
+                    "description": "Tortilla de harina de trigo gruesa con frijoles refritos, crema hondureña, queso seco y mantequilla. El street food más popular y querido de Honduras.",
+                    "difficulty": "easy",
+                    "time_minutes": 20,
+                    "youtube_id": "VijmDziZ_Dc",
+                    "country_name": "Honduras",
+                    "ingredients": ["Crema", "Frijoles refritos", "Huevo (opcional)", "Mantequilla", "Queso seco", "Tortilla de harina"]
+                },
+                {
+                    "id": 50,
+                    "country_id": 17,
+                    "name": "Sopa de Caracol",
+                    "description": "Sopa cremosa de leche de coco con caracol marino, yuca, plátano verde y verduras. Especialidad de la Costa Atlántica garífuna, fragante y exótica.",
+                    "difficulty": "medium",
+                    "time_minutes": 90,
+                    "youtube_id": "C9ltoUzrrp0",
+                    "country_name": "Honduras",
+                    "ingredients": ["Ajo", "Caracol marino", "Cebolla", "Chile", "Culantro", "Leche de coco", "Plátano verde", "Yuca"]
+                },
+                {
+                    "id": 51,
+                    "country_id": 17,
+                    "name": "Tapado Olanchano",
+                    "description": "Guiso de carne de res y cerdo con tubérculos y vegetales, cocinado tapado en horno de tierra. Plato festivo tradicional del interior hondureño.",
+                    "difficulty": "hard",
+                    "time_minutes": 240,
+                    "youtube_id": "_G-cqwzbLMY",
+                    "country_name": "Honduras",
+                    "ingredients": ["Carne de res", "Cebolla", "Cerdo", "Chile dulce", "Culantro", "Plátano", "Tomate", "Yuca"]
+                },
+                {
+                    "id": 52,
+                    "country_id": 18,
+                    "name": "Sancocho Panameño",
+                    "description": "Sopa de pollo de patio con ñame, otoe, maíz y culantro. El plato nacional de Panamá, preparado en fiestas y como cura del cansancio.",
+                    "difficulty": "easy",
+                    "time_minutes": 90,
+                    "youtube_id": "QohfKrKlgUc",
+                    "country_name": "Panamá",
+                    "ingredients": ["Ajo", "Cebolla", "Culantro", "Maíz", "Ñame", "Otoe", "Pollo de patio", "Sal"]
+                },
+                {
+                    "id": 53,
+                    "country_id": 18,
+                    "name": "Ropa Vieja Panameña",
+                    "description": "Versión panameña de la ropa vieja: carne desmenuzada en sofrito con ají chombo, tomate y cebolla. Se sirve con arroz con frijoles y patacones.",
+                    "difficulty": "medium",
+                    "time_minutes": 120,
+                    "youtube_id": "MaxfWKMUoRE",
+                    "country_name": "Panamá",
+                    "ingredients": ["Ají chombo", "Ajo", "Carne de res", "Cebolla", "Comino", "Culantro", "Sal", "Tomate"]
+                },
+                {
+                    "id": 54,
+                    "country_id": 18,
+                    "name": "Ceviche de Corvina",
+                    "description": "Ceviche panameño con corvina, apio, cebolla, ají chombo y abundante limón. Fresco y picante, servido en vasos plásticos con galletas de soda.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "XQ5m6h_ephM",
+                    "country_name": "Panamá",
+                    "ingredients": ["Ají chombo", "Apio", "Cebolla", "Corvina", "Culantro", "Limón", "Sal"]
+                },
+                {
+                    "id": 55,
+                    "country_id": 19,
+                    "name": "La Bandera Dominicana",
+                    "description": "El plato nacional: arroz blanco, habichuelas rojas y carne guisada con sofrito. Servida al mediodía en cada hogar dominicano, todos los días.",
+                    "difficulty": "medium",
+                    "time_minutes": 90,
+                    "youtube_id": "anp6MlFmk18",
+                    "country_name": "República Dominicana",
+                    "ingredients": ["Ajo", "Arroz", "Carne de res", "Cebolla", "Habichuelas rojas", "Orégano", "Pimiento", "Tomate"]
+                },
+                {
+                    "id": 56,
+                    "country_id": 19,
+                    "name": "Mangú con Los Tres Golpes",
+                    "description": "Puré de plátano verde suave, servido con cebolla morada en vinagre, huevo frito, queso frito y salami. El desayuno dominicano por excelencia.",
+                    "difficulty": "easy",
+                    "time_minutes": 30,
+                    "youtube_id": "jNC_2WfaedE",
+                    "country_name": "República Dominicana",
+                    "ingredients": ["Cebolla morada", "Huevo", "Mantequilla", "Plátano verde", "Queso blanco", "Sal", "Salami", "Vinagre"]
+                },
+                {
+                    "id": 57,
+                    "country_id": 19,
+                    "name": "Sancocho de Siete Carnes",
+                    "description": "Sopa festiva con siete tipos de carne, yuca, ñame, auyama, plátano y maíz. Se cocina solo para celebraciones, bodas y bautizos grandes.",
+                    "difficulty": "hard",
+                    "time_minutes": 240,
+                    "youtube_id": "X-w9fU7uPE8",
+                    "country_name": "República Dominicana",
+                    "ingredients": ["7 tipos de carne", "Ajo", "Auyama", "Cebolla", "Maíz", "Ñame", "Plátano verde", "Yuca"]
+                }
+            ],
+            "countries": [
+                {
+                    "id": 1,
+                    "name": "México",
+                    "emoji": "🇲🇽",
+                    "tagline": "Cocina mestiza: maíz, chile y comal"
+                },
+                {
+                    "id": 2,
+                    "name": "Argentina",
+                    "emoji": "🇦🇷",
+                    "tagline": "Brasa, pampa y bodega"
+                },
+                {
+                    "id": 3,
+                    "name": "Brasil",
+                    "emoji": "🇧🇷",
+                    "tagline": "Del sertão a Bahía"
+                },
+                {
+                    "id": 4,
+                    "name": "Perú",
+                    "emoji": "🇵🇪",
+                    "tagline": "La despensa del Pacífico"
+                },
+                {
+                    "id": 5,
+                    "name": "Colombia",
+                    "emoji": "🇨🇴",
+                    "tagline": "De la cordillera al Caribe"
+                },
+                {
+                    "id": 6,
+                    "name": "Chile",
+                    "emoji": "🇨🇱",
+                    "tagline": "Entre la cordillera y el mar"
+                },
+                {
+                    "id": 7,
+                    "name": "Venezuela",
+                    "emoji": "🇻🇪",
+                    "tagline": "Maíz, cacao y tradición"
+                },
+                {
+                    "id": 8,
+                    "name": "Ecuador",
+                    "emoji": "🇪🇨",
+                    "tagline": "Costa, sierra y Amazonía en un solo plato"
+                },
+                {
+                    "id": 9,
+                    "name": "Bolivia",
+                    "emoji": "🇧🇴",
+                    "tagline": "Sabores de altura"
+                },
+                {
+                    "id": 10,
+                    "name": "Paraguay",
+                    "emoji": "🇵🇾",
+                    "tagline": "Tierra guaraní: mandioca y queso"
+                },
+                {
+                    "id": 11,
+                    "name": "Uruguay",
+                    "emoji": "🇺🇾",
+                    "tagline": "Chivitos, mate y rambla"
+                },
+                {
+                    "id": 12,
+                    "name": "Guatemala",
+                    "emoji": "🇬🇹",
+                    "tagline": "Herencia maya en cada recado"
+                },
+                {
+                    "id": 13,
+                    "name": "Cuba",
+                    "emoji": "🇨🇺",
+                    "tagline": "Sofrito, son y fuego lento"
+                },
+                {
+                    "id": 14,
+                    "name": "El Salvador",
+                    "emoji": "🇸🇻",
+                    "tagline": "Pupusas y curtido, orgullo nacional"
+                },
+                {
+                    "id": 15,
+                    "name": "Nicaragua",
+                    "emoji": "🇳🇮",
+                    "tagline": "Maíz, gallo pinto y tradición"
+                },
+                {
+                    "id": 16,
+                    "name": "Costa Rica",
+                    "emoji": "🇨🇷",
+                    "tagline": "Pura vida en la mesa"
+                },
+                {
+                    "id": 17,
+                    "name": "Honduras",
+                    "emoji": "🇭🇳",
+                    "tagline": "Coco, caracol y baleadas"
+                },
+                {
+                    "id": 18,
+                    "name": "Panamá",
+                    "emoji": "🇵🇦",
+                    "tagline": "Puente de mares y sabores"
+                },
+                {
+                    "id": 19,
+                    "name": "República Dominicana",
+                    "emoji": "🇩🇴",
+                    "tagline": "Sazón caribeño con bandera propia"
+                },
+                {
+                    "id": 20,
+                    "name": "Belice",
+                    "emoji": "🇧🇿",
+                    "tagline": null
+                },
+                {
+                    "id": 21,
+                    "name": "Haití",
+                    "emoji": "🇭🇹",
+                    "tagline": null
+                },
+                {
+                    "id": 22,
+                    "name": "Puerto Rico",
+                    "emoji": "🇵🇷",
+                    "tagline": null
+                }
+            ],
+            "ingredients": [
+                {
+                    "id": 184,
+                    "name": "7 tipos de carne",
+                    "uses": 1
+                },
+                {
+                    "id": 50,
+                    "name": "Aceite",
+                    "uses": 6
+                },
+                {
+                    "id": 33,
+                    "name": "Aceitunas",
+                    "uses": 4
+                },
+                {
+                    "id": 3,
+                    "name": "Achiote",
+                    "uses": 2
+                },
+                {
+                    "id": 99,
+                    "name": "Agua tibia",
+                    "uses": 3
+                },
+                {
+                    "id": 78,
+                    "name": "Aguacate",
+                    "uses": 1
+                },
+                {
+                    "id": 105,
+                    "name": "Ají",
+                    "uses": 2
+                },
+                {
+                    "id": 65,
+                    "name": "Ají amarillo",
+                    "uses": 4
+                },
+                {
+                    "id": 179,
+                    "name": "Ají chombo",
+                    "uses": 2
+                },
+                {
+                    "id": 119,
+                    "name": "Ají colorado",
+                    "uses": 1
+                },
+                {
+                    "id": 58,
+                    "name": "Ají limo",
+                    "uses": 1
+                },
+                {
+                    "id": 148,
+                    "name": "Ají pimiento",
+                    "uses": 1
+                },
+                {
+                    "id": 15,
+                    "name": "Ajo",
+                    "uses": 16
+                },
+                {
+                    "id": 12,
+                    "name": "Ajonjolí",
+                    "uses": 2
+                },
+                {
+                    "id": 97,
+                    "name": "Albahaca",
+                    "uses": 1
+                },
+                {
+                    "id": 109,
+                    "name": "Alcaparras",
+                    "uses": 1
+                },
+                {
+                    "id": 46,
+                    "name": "Almidón de mandioca",
+                    "uses": 3
+                },
+                {
+                    "id": 128,
+                    "name": "Anís",
+                    "uses": 1
+                },
+                {
+                    "id": 181,
+                    "name": "Apio",
+                    "uses": 1
+                },
+                {
+                    "id": 69,
+                    "name": "Arroz",
+                    "uses": 9
+                },
+                {
+                    "id": 118,
+                    "name": "Arvejas",
+                    "uses": 1
+                },
+                {
+                    "id": 185,
+                    "name": "Auyama",
+                    "uses": 1
+                },
+                {
+                    "id": 88,
+                    "name": "Azúcar",
+                    "uses": 3
+                },
+                {
+                    "id": 136,
+                    "name": "Bicarbonato",
+                    "uses": 1
+                },
+                {
+                    "id": 53,
+                    "name": "Cacao en polvo",
+                    "uses": 1
+                },
+                {
+                    "id": 37,
+                    "name": "Calabaza",
+                    "uses": 1
+                },
+                {
+                    "id": 120,
+                    "name": "Caldo gelificado",
+                    "uses": 1
+                },
+                {
+                    "id": 111,
+                    "name": "Camarón",
+                    "uses": 1
+                },
+                {
+                    "id": 62,
+                    "name": "Camote",
+                    "uses": 1
+                },
+                {
+                    "id": 145,
+                    "name": "Canela",
+                    "uses": 1
+                },
+                {
+                    "id": 172,
+                    "name": "Caracol marino",
+                    "uses": 1
+                },
+                {
+                    "id": 101,
+                    "name": "Caraotas negras",
+                    "uses": 2
+                },
+                {
+                    "id": 28,
+                    "name": "Carbón",
+                    "uses": 1
+                },
+                {
+                    "id": 103,
+                    "name": "Carne de res",
+                    "uses": 7
+                },
+                {
+                    "id": 100,
+                    "name": "Carne mechada",
+                    "uses": 1
+                },
+                {
+                    "id": 18,
+                    "name": "Carne molida",
+                    "uses": 4
+                },
+                {
+                    "id": 31,
+                    "name": "Carne picada",
+                    "uses": 1
+                },
+                {
+                    "id": 108,
+                    "name": "Carne res y cerdo",
+                    "uses": 1
+                },
+                {
+                    "id": 6,
+                    "name": "Cebolla",
+                    "uses": 27
+                },
+                {
+                    "id": 59,
+                    "name": "Cebolla morada",
+                    "uses": 2
+                },
+                {
+                    "id": 113,
+                    "name": "Cebolla paiteña",
+                    "uses": 1
+                },
+                {
+                    "id": 64,
+                    "name": "Cebolla roja",
+                    "uses": 1
+                },
+                {
+                    "id": 1,
+                    "name": "Cerdo",
+                    "uses": 4
+                },
+                {
+                    "id": 149,
+                    "name": "Cerdo entero",
+                    "uses": 1
+                },
+                {
+                    "id": 114,
+                    "name": "Cerveza negra",
+                    "uses": 1
+                },
+                {
+                    "id": 76,
+                    "name": "Chicharrón",
+                    "uses": 1
+                },
+                {
+                    "id": 161,
+                    "name": "Chicharrón de cerdo",
+                    "uses": 2
+                },
+                {
+                    "id": 152,
+                    "name": "Chicharrón molido",
+                    "uses": 1
+                },
+                {
+                    "id": 174,
+                    "name": "Chile",
+                    "uses": 1
+                },
+                {
+                    "id": 10,
+                    "name": "Chile ancho",
+                    "uses": 1
+                },
+                {
+                    "id": 140,
+                    "name": "Chile cobanero",
+                    "uses": 1
+                },
+                {
+                    "id": 175,
+                    "name": "Chile dulce",
+                    "uses": 1
+                },
+                {
+                    "id": 2,
+                    "name": "Chile guajillo",
+                    "uses": 1
+                },
+                {
+                    "id": 138,
+                    "name": "Chile guaque",
+                    "uses": 1
+                },
+                {
+                    "id": 9,
+                    "name": "Chile mulato",
+                    "uses": 1
+                },
+                {
+                    "id": 17,
+                    "name": "Chile poblano",
+                    "uses": 1
+                },
+                {
+                    "id": 61,
+                    "name": "Choclo",
+                    "uses": 3
+                },
+                {
+                    "id": 11,
+                    "name": "Chocolate",
+                    "uses": 1
+                },
+                {
+                    "id": 77,
+                    "name": "Chorizo",
+                    "uses": 2
+                },
+                {
+                    "id": 39,
+                    "name": "Chorizo colorado",
+                    "uses": 1
+                },
+                {
+                    "id": 25,
+                    "name": "Chorizo criollo",
+                    "uses": 1
+                },
+                {
+                    "id": 122,
+                    "name": "Chuño",
+                    "uses": 1
+                },
+                {
+                    "id": 5,
+                    "name": "Cilantro",
+                    "uses": 2
+                },
+                {
+                    "id": 106,
+                    "name": "Comino",
+                    "uses": 6
+                },
+                {
+                    "id": 180,
+                    "name": "Corvina",
+                    "uses": 1
+                },
+                {
+                    "id": 56,
+                    "name": "Corvina o lenguado",
+                    "uses": 1
+                },
+                {
+                    "id": 42,
+                    "name": "Costilla de cerdo",
+                    "uses": 1
+                },
+                {
+                    "id": 24,
+                    "name": "Costillas",
+                    "uses": 1
+                },
+                {
+                    "id": 169,
+                    "name": "Crema",
+                    "uses": 1
+                },
+                {
+                    "id": 86,
+                    "name": "Crema de leche",
+                    "uses": 1
+                },
+                {
+                    "id": 134,
+                    "name": "Cuadril",
+                    "uses": 1
+                },
+                {
+                    "id": 60,
+                    "name": "Culantro",
+                    "uses": 10
+                },
+                {
+                    "id": 165,
+                    "name": "Culantro coyote",
+                    "uses": 1
+                },
+                {
+                    "id": 155,
+                    "name": "Curtido",
+                    "uses": 1
+                },
+                {
+                    "id": 159,
+                    "name": "Ejotes",
+                    "uses": 1
+                },
+                {
+                    "id": 146,
+                    "name": "Falda de res",
+                    "uses": 1
+                },
+                {
+                    "id": 129,
+                    "name": "Filete de ternera",
+                    "uses": 1
+                },
+                {
+                    "id": 41,
+                    "name": "Frijol negro",
+                    "uses": 1
+                },
+                {
+                    "id": 144,
+                    "name": "Frijoles negros",
+                    "uses": 4
+                },
+                {
+                    "id": 154,
+                    "name": "Frijoles refritos",
+                    "uses": 2
+                },
+                {
+                    "id": 75,
+                    "name": "Frijoles rojos",
+                    "uses": 2
+                },
+                {
+                    "id": 22,
+                    "name": "Frutas secas",
+                    "uses": 1
+                },
+                {
+                    "id": 20,
+                    "name": "Granada",
+                    "uses": 1
+                },
+                {
+                    "id": 55,
+                    "name": "Granillo de chocolate",
+                    "uses": 1
+                },
+                {
+                    "id": 30,
+                    "name": "Grasa vacuna",
+                    "uses": 2
+                },
+                {
+                    "id": 85,
+                    "name": "Guascas",
+                    "uses": 1
+                },
+                {
+                    "id": 182,
+                    "name": "Habichuelas rojas",
+                    "uses": 1
+                },
+                {
+                    "id": 29,
+                    "name": "Harina",
+                    "uses": 4
+                },
+                {
+                    "id": 107,
+                    "name": "Harina de maíz",
+                    "uses": 2
+                },
+                {
+                    "id": 98,
+                    "name": "Harina PAN",
+                    "uses": 1
+                },
+                {
+                    "id": 141,
+                    "name": "Hierba santa",
+                    "uses": 1
+                },
+                {
+                    "id": 123,
+                    "name": "Hierbabuena",
+                    "uses": 2
+                },
+                {
+                    "id": 110,
+                    "name": "Hoja de plátano",
+                    "uses": 2
+                },
+                {
+                    "id": 48,
+                    "name": "Huevo",
+                    "uses": 8
+                },
+                {
+                    "id": 171,
+                    "name": "Huevo (opcional)",
+                    "uses": 1
+                },
+                {
+                    "id": 34,
+                    "name": "Huevo duro",
+                    "uses": 4
+                },
+                {
+                    "id": 130,
+                    "name": "Jamón cocido",
+                    "uses": 1
+                },
+                {
+                    "id": 44,
+                    "name": "Laurel",
+                    "uses": 3
+                },
+                {
+                    "id": 49,
+                    "name": "Leche",
+                    "uses": 4
+                },
+                {
+                    "id": 52,
+                    "name": "Leche condensada",
+                    "uses": 1
+                },
+                {
+                    "id": 173,
+                    "name": "Leche de coco",
+                    "uses": 1
+                },
+                {
+                    "id": 74,
+                    "name": "Leche evaporada",
+                    "uses": 1
+                },
+                {
+                    "id": 131,
+                    "name": "Lechuga",
+                    "uses": 2
+                },
+                {
+                    "id": 8,
+                    "name": "Limón",
+                    "uses": 5
+                },
+                {
+                    "id": 57,
+                    "name": "Limón peruano",
+                    "uses": 1
+                },
+                {
+                    "id": 43,
+                    "name": "Linguiça",
+                    "uses": 1
+                },
+                {
+                    "id": 125,
+                    "name": "Locoto",
+                    "uses": 1
+                },
+                {
+                    "id": 63,
+                    "name": "Lomo fino",
+                    "uses": 1
+                },
+                {
+                    "id": 153,
+                    "name": "Loroco",
+                    "uses": 1
+                },
+                {
+                    "id": 157,
+                    "name": "Maíz",
+                    "uses": 3
+                },
+                {
+                    "id": 35,
+                    "name": "Maíz blanco",
+                    "uses": 1
+                },
+                {
+                    "id": 87,
+                    "name": "Maíz tierno",
+                    "uses": 1
+                },
+                {
+                    "id": 117,
+                    "name": "Maní",
+                    "uses": 1
+                },
+                {
+                    "id": 95,
+                    "name": "Manteca",
+                    "uses": 1
+                },
+                {
+                    "id": 163,
+                    "name": "Manteca de cerdo",
+                    "uses": 1
+                },
+                {
+                    "id": 116,
+                    "name": "Manteca de chancho",
+                    "uses": 1
+                },
+                {
+                    "id": 54,
+                    "name": "Mantequilla",
+                    "uses": 8
+                },
+                {
+                    "id": 151,
+                    "name": "Masa de maíz",
+                    "uses": 2
+                },
+                {
+                    "id": 132,
+                    "name": "Mayonesa",
+                    "uses": 1
+                },
+                {
+                    "id": 84,
+                    "name": "Mazorca",
+                    "uses": 2
+                },
+                {
+                    "id": 139,
+                    "name": "Miltomate",
+                    "uses": 2
+                },
+                {
+                    "id": 38,
+                    "name": "Mondongo",
+                    "uses": 1
+                },
+                {
+                    "id": 26,
+                    "name": "Morcilla",
+                    "uses": 2
+                },
+                {
+                    "id": 126,
+                    "name": "Mostaza",
+                    "uses": 1
+                },
+                {
+                    "id": 121,
+                    "name": "Mote",
+                    "uses": 1
+                },
+                {
+                    "id": 177,
+                    "name": "Ñame",
+                    "uses": 2
+                },
+                {
+                    "id": 45,
+                    "name": "Naranja",
+                    "uses": 1
+                },
+                {
+                    "id": 150,
+                    "name": "Naranja agria",
+                    "uses": 1
+                },
+                {
+                    "id": 112,
+                    "name": "Naranjilla",
+                    "uses": 2
+                },
+                {
+                    "id": 72,
+                    "name": "Nueces",
+                    "uses": 1
+                },
+                {
+                    "id": 19,
+                    "name": "Nuez de Castilla",
+                    "uses": 1
+                },
+                {
+                    "id": 94,
+                    "name": "Orégano",
+                    "uses": 4
+                },
+                {
+                    "id": 178,
+                    "name": "Otoe",
+                    "uses": 1
+                },
+                {
+                    "id": 133,
+                    "name": "Pan",
+                    "uses": 1
+                },
+                {
+                    "id": 71,
+                    "name": "Pan de molde",
+                    "uses": 1
+                },
+                {
+                    "id": 68,
+                    "name": "Papa",
+                    "uses": 7
+                },
+                {
+                    "id": 81,
+                    "name": "Papa criolla",
+                    "uses": 1
+                },
+                {
+                    "id": 80,
+                    "name": "Papa pastusa",
+                    "uses": 1
+                },
+                {
+                    "id": 82,
+                    "name": "Papa sabanera",
+                    "uses": 1
+                },
+                {
+                    "id": 96,
+                    "name": "Pasas",
+                    "uses": 2
+                },
+                {
+                    "id": 156,
+                    "name": "Pata de res",
+                    "uses": 1
+                },
+                {
+                    "id": 14,
+                    "name": "Pavo",
+                    "uses": 2
+                },
+                {
+                    "id": 70,
+                    "name": "Pechuga de pollo",
+                    "uses": 1
+                },
+                {
+                    "id": 137,
+                    "name": "Pepitoria",
+                    "uses": 1
+                },
+                {
+                    "id": 21,
+                    "name": "Perejil",
+                    "uses": 1
+                },
+                {
+                    "id": 167,
+                    "name": "Picadillo",
+                    "uses": 1
+                },
+                {
+                    "id": 32,
+                    "name": "Pimentón",
+                    "uses": 1
+                },
+                {
+                    "id": 147,
+                    "name": "Pimiento",
+                    "uses": 5
+                },
+                {
+                    "id": 4,
+                    "name": "Piña",
+                    "uses": 1
+                },
+                {
+                    "id": 79,
+                    "name": "Plátano",
+                    "uses": 2
+                },
+                {
+                    "id": 13,
+                    "name": "Plátano macho",
+                    "uses": 1
+                },
+                {
+                    "id": 143,
+                    "name": "Plátano macho maduro",
+                    "uses": 1
+                },
+                {
+                    "id": 104,
+                    "name": "Plátano maduro",
+                    "uses": 2
+                },
+                {
+                    "id": 160,
+                    "name": "Plátano verde",
+                    "uses": 5
+                },
+                {
+                    "id": 83,
+                    "name": "Pollo",
+                    "uses": 5
+                },
+                {
+                    "id": 176,
+                    "name": "Pollo de patio",
+                    "uses": 1
+                },
+                {
+                    "id": 166,
+                    "name": "Pollo o carne",
+                    "uses": 1
+                },
+                {
+                    "id": 36,
+                    "name": "Porotos",
+                    "uses": 1
+                },
+                {
+                    "id": 93,
+                    "name": "Porotos verdes",
+                    "uses": 1
+                },
+                {
+                    "id": 115,
+                    "name": "Queso",
+                    "uses": 3
+                },
+                {
+                    "id": 102,
+                    "name": "Queso amarillo",
+                    "uses": 1
+                },
+                {
+                    "id": 89,
+                    "name": "Queso blanco",
+                    "uses": 2
+                },
+                {
+                    "id": 47,
+                    "name": "Queso minas",
+                    "uses": 1
+                },
+                {
+                    "id": 127,
+                    "name": "Queso Paraguay",
+                    "uses": 3
+                },
+                {
+                    "id": 73,
+                    "name": "Queso parmesano",
+                    "uses": 1
+                },
+                {
+                    "id": 170,
+                    "name": "Queso seco",
+                    "uses": 1
+                },
+                {
+                    "id": 142,
+                    "name": "Recado",
+                    "uses": 1
+                },
+                {
+                    "id": 162,
+                    "name": "Repollo",
+                    "uses": 2
+                },
+                {
+                    "id": 51,
+                    "name": "Sal",
+                    "uses": 16
+                },
+                {
+                    "id": 27,
+                    "name": "Sal gruesa",
+                    "uses": 2
+                },
+                {
+                    "id": 183,
+                    "name": "Salami",
+                    "uses": 1
+                },
+                {
+                    "id": 124,
+                    "name": "Salchicha",
+                    "uses": 1
+                },
+                {
+                    "id": 164,
+                    "name": "Salsa Lizano",
+                    "uses": 1
+                },
+                {
+                    "id": 66,
+                    "name": "Sillao",
+                    "uses": 1
+                },
+                {
+                    "id": 135,
+                    "name": "Tira de asado",
+                    "uses": 1
+                },
+                {
+                    "id": 40,
+                    "name": "Tocino",
+                    "uses": 3
+                },
+                {
+                    "id": 16,
+                    "name": "Tomate",
+                    "uses": 16
+                },
+                {
+                    "id": 168,
+                    "name": "Tortilla de harina",
+                    "uses": 1
+                },
+                {
+                    "id": 7,
+                    "name": "Tortilla de maíz",
+                    "uses": 1
+                },
+                {
+                    "id": 23,
+                    "name": "Vacío",
+                    "uses": 2
+                },
+                {
+                    "id": 90,
+                    "name": "Vacuno",
+                    "uses": 1
+                },
+                {
+                    "id": 67,
+                    "name": "Vinagre",
+                    "uses": 4
+                },
+                {
+                    "id": 158,
+                    "name": "Yuca",
+                    "uses": 7
+                },
+                {
+                    "id": 92,
+                    "name": "Zanahoria",
+                    "uses": 2
+                },
+                {
+                    "id": 91,
+                    "name": "Zapallo",
+                    "uses": 1
+                }
+            ]
+        }
+    }
+}

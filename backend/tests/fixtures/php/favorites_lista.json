@@ -1,0 +1,34 @@
+{
+    "case": "favorites_lista",
+    "request": {
+        "method": "GET",
+        "path": "/favorites",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "favorites": [
+                {
+                    "id": 1,
+                    "name": "Tacos al Pastor",
+                    "difficulty": "medium",
+                    "time_minutes": 120,
+                    "country_id": 1,
+                    "country_name": "México",
+                    "emoji": "🇲🇽"
+                }
+            ]
+        }
+    }
+}

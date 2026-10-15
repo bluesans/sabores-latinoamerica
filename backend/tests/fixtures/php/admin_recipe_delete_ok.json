@@ -1,0 +1,23 @@
+{
+    "case": "admin_recipe_delete_ok",
+    "request": {
+        "method": "DELETE",
+        "path": "/admin/recipes/<FIXTURE_RECIPE_ID>abc",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ADMIN_ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true
+        }
+    }
+}

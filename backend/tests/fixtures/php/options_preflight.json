@@ -1,0 +1,20 @@
+{
+    "case": "options_preflight",
+    "request": {
+        "method": "OPTIONS",
+        "path": "/countries",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "text/html; charset=UTF-8"
+        },
+        "body": null
+    }
+}

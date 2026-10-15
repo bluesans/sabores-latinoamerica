@@ -1,0 +1,24 @@
+{
+    "case": "favorites_vacio",
+    "request": {
+        "method": "GET",
+        "path": "/favorites",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "favorites": []
+        }
+    }
+}

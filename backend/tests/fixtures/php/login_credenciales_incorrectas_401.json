@@ -1,0 +1,27 @@
+{
+    "case": "login_credenciales_incorrectas_401",
+    "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "username": "fixture7_user",
+            "password": "ClaveIncorrecta2026"
+        }
+    },
+    "response": {
+        "status": 401,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": false,
+            "error": "Usuario o contraseña incorrectos."
+        }
+    }
+}

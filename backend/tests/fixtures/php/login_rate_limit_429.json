@@ -1,0 +1,28 @@
+{
+    "case": "login_rate_limit_429",
+    "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "username": "fixture7_user",
+            "password": "ClaveIncorrecta2026"
+        }
+    },
+    "response": {
+        "status": 429,
+        "headers": {
+            "content-type": "application/json; charset=utf-8",
+            "retry-after": "<RETRY_AFTER>"
+        },
+        "body": {
+            "ok": false,
+            "error": "Demasiados intentos. Esperá unos minutos."
+        }
+    }
+}

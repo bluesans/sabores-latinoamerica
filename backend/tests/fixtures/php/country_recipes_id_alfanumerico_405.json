@@ -1,0 +1,25 @@
+{
+    "case": "country_recipes_id_alfanumerico_405",
+    "request": {
+        "method": "GET",
+        "path": "/countries/12abc/recipes",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 405,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": false,
+            "error": "Método HTTP no permitido.",
+            "id": "<ERROR_ID>"
+        }
+    }
+}

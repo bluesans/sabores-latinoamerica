@@ -1,0 +1,39 @@
+{
+    "case": "country_recipes_pagina_fuera_de_rango",
+    "request": {
+        "method": "GET",
+        "path": "/countries/4/recipes",
+        "query": {
+            "per_page": "2",
+            "page": "99"
+        },
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "authorization": "Bearer <ACCESS_TOKEN>"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": true,
+            "country": {
+                "id": 4,
+                "name": "Perú",
+                "emoji": "🇵🇪",
+                "tagline": "La despensa del Pacífico"
+            },
+            "recipes": [],
+            "pagination": {
+                "page": 99,
+                "per_page": 2,
+                "total": 3,
+                "total_pages": 2
+            }
+        }
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "case": "ruta_desconocida_405",
+    "request": {
+        "method": "GET",
+        "path": "/no-existe-este-path",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0"
+        },
+        "cookies": {},
+        "body": null
+    },
+    "response": {
+        "status": 405,
+        "headers": {
+            "content-type": "application/json; charset=utf-8"
+        },
+        "body": {
+            "ok": false,
+            "error": "Método HTTP no permitido.",
+            "id": "<ERROR_ID>"
+        }
+    }
+}

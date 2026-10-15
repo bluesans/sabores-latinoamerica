@@ -1,0 +1,30 @@
+{
+    "case": "admin_login_ok",
+    "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "query": {},
+        "headers": {
+            "user-agent": "fixtures7-parity/1.0",
+            "content-type": "application/json"
+        },
+        "cookies": {},
+        "body": {
+            "username": "fixture7_admin",
+            "password": "Fixture7!Admin2026"
+        }
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "content-type": "application/json; charset=utf-8",
+            "set-cookie": ["sdl_refresh=<REFRESH_TOKEN>; Path=/sabores-latinoamerica/api; Max-Age=604800; HttpOnly; SameSite=Strict"]
+        },
+        "body": {
+            "ok": true,
+            "username": "fixture7_admin",
+            "role": "admin",
+            "access": "<ACCESS_TOKEN>"
+        }
+    }
+}
