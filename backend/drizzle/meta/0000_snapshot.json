@@ -1,0 +1,521 @@
+{
+    "version": "5",
+    "dialect": "mysql",
+    "id": "e6817f06-a5ca-48fc-a600-1320ef04b6f8",
+    "prevId": "00000000-0000-0000-0000-000000000000",
+    "tables": {
+        "countries": {
+            "name": "countries",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "iso_code": {
+                    "name": "iso_code",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "name": {
+                    "name": "name",
+                    "type": "varchar(100)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "emoji": {
+                    "name": "emoji",
+                    "type": "varchar(10)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "tagline": {
+                    "name": "tagline",
+                    "type": "varchar(150)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {
+                "countries_id": {
+                    "name": "countries_id",
+                    "columns": ["id"]
+                }
+            },
+            "uniqueConstraints": {
+                "uq_iso_code": {
+                    "name": "uq_iso_code",
+                    "columns": ["iso_code"]
+                }
+            },
+            "checkConstraint": {}
+        },
+        "favorites": {
+            "name": "favorites",
+            "columns": {
+                "user_id": {
+                    "name": "user_id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "recipe_id": {
+                    "name": "recipe_id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "datetime",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "current_timestamp()"
+                }
+            },
+            "indexes": {
+                "idx_favorites_recipe": {
+                    "name": "idx_favorites_recipe",
+                    "columns": ["recipe_id"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "favorites_user_id_users_id_fk": {
+                    "name": "favorites_user_id_users_id_fk",
+                    "tableFrom": "favorites",
+                    "tableTo": "users",
+                    "columnsFrom": ["user_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "restrict"
+                },
+                "favorites_recipe_id_recipes_id_fk": {
+                    "name": "favorites_recipe_id_recipes_id_fk",
+                    "tableFrom": "favorites",
+                    "tableTo": "recipes",
+                    "columnsFrom": ["recipe_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "restrict"
+                }
+            },
+            "compositePrimaryKeys": {
+                "favorites_user_id_recipe_id_pk": {
+                    "name": "favorites_user_id_recipe_id_pk",
+                    "columns": ["user_id", "recipe_id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "checkConstraint": {}
+        },
+        "ingredients": {
+            "name": "ingredients",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "name": {
+                    "name": "name",
+                    "type": "varchar(200)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {
+                "ingredients_id": {
+                    "name": "ingredients_id",
+                    "columns": ["id"]
+                }
+            },
+            "uniqueConstraints": {
+                "uq_ing_name": {
+                    "name": "uq_ing_name",
+                    "columns": ["name"]
+                }
+            },
+            "checkConstraint": {}
+        },
+        "login_attempts": {
+            "name": "login_attempts",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "bigint unsigned",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "ip": {
+                    "name": "ip",
+                    "type": "varchar(45)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "username": {
+                    "name": "username",
+                    "type": "varchar(30)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "''"
+                },
+                "action": {
+                    "name": "action",
+                    "type": "enum('login','register','refresh')",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'login'"
+                },
+                "attempted_at": {
+                    "name": "attempted_at",
+                    "type": "datetime",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "current_timestamp()"
+                }
+            },
+            "indexes": {
+                "idx_login_attempts_ip_time": {
+                    "name": "idx_login_attempts_ip_time",
+                    "columns": ["ip", "attempted_at"],
+                    "isUnique": false
+                },
+                "idx_login_attempts_username": {
+                    "name": "idx_login_attempts_username",
+                    "columns": ["username"],
+                    "isUnique": false
+                },
+                "idx_login_attempts_action_ip_time": {
+                    "name": "idx_login_attempts_action_ip_time",
+                    "columns": ["action", "ip", "attempted_at"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {
+                "login_attempts_id": {
+                    "name": "login_attempts_id",
+                    "columns": ["id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "checkConstraint": {}
+        },
+        "recipe_ingredient": {
+            "name": "recipe_ingredient",
+            "columns": {
+                "recipe_id": {
+                    "name": "recipe_id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "ingredient_id": {
+                    "name": "ingredient_id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "recipe_ingredient_recipe_id_recipes_id_fk": {
+                    "name": "recipe_ingredient_recipe_id_recipes_id_fk",
+                    "tableFrom": "recipe_ingredient",
+                    "tableTo": "recipes",
+                    "columnsFrom": ["recipe_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "restrict"
+                },
+                "recipe_ingredient_ingredient_id_ingredients_id_fk": {
+                    "name": "recipe_ingredient_ingredient_id_ingredients_id_fk",
+                    "tableFrom": "recipe_ingredient",
+                    "tableTo": "ingredients",
+                    "columnsFrom": ["ingredient_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "restrict"
+                }
+            },
+            "compositePrimaryKeys": {
+                "recipe_ingredient_recipe_id_ingredient_id_pk": {
+                    "name": "recipe_ingredient_recipe_id_ingredient_id_pk",
+                    "columns": ["recipe_id", "ingredient_id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "checkConstraint": {}
+        },
+        "recipes": {
+            "name": "recipes",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "country_id": {
+                    "name": "country_id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "name": {
+                    "name": "name",
+                    "type": "varchar(200)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "description": {
+                    "name": "description",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "difficulty": {
+                    "name": "difficulty",
+                    "type": "enum('easy','medium','hard')",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "time_minutes": {
+                    "name": "time_minutes",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "youtube_id": {
+                    "name": "youtube_id",
+                    "type": "varchar(30)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "idx_recipes_country_name": {
+                    "name": "idx_recipes_country_name",
+                    "columns": ["country_id", "name"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "recipes_country_id_countries_id_fk": {
+                    "name": "recipes_country_id_countries_id_fk",
+                    "tableFrom": "recipes",
+                    "tableTo": "countries",
+                    "columnsFrom": ["country_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "restrict",
+                    "onUpdate": "restrict"
+                }
+            },
+            "compositePrimaryKeys": {
+                "recipes_id": {
+                    "name": "recipes_id",
+                    "columns": ["id"]
+                }
+            },
+            "uniqueConstraints": {},
+            "checkConstraint": {}
+        },
+        "sessions": {
+            "name": "sessions",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "bigint",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "user_id": {
+                    "name": "user_id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "token": {
+                    "name": "token",
+                    "type": "char(64)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "datetime",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "current_timestamp()"
+                },
+                "expires_at": {
+                    "name": "expires_at",
+                    "type": "datetime",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "revoked_at": {
+                    "name": "revoked_at",
+                    "type": "datetime",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "ip": {
+                    "name": "ip",
+                    "type": "varchar(45)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "user_agent": {
+                    "name": "user_agent",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "idx_sessions_user": {
+                    "name": "idx_sessions_user",
+                    "columns": ["user_id"],
+                    "isUnique": false
+                },
+                "idx_sessions_user_revoked": {
+                    "name": "idx_sessions_user_revoked",
+                    "columns": ["user_id", "revoked_at"],
+                    "isUnique": false
+                }
+            },
+            "foreignKeys": {
+                "sessions_user_id_users_id_fk": {
+                    "name": "sessions_user_id_users_id_fk",
+                    "tableFrom": "sessions",
+                    "tableTo": "users",
+                    "columnsFrom": ["user_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "restrict"
+                }
+            },
+            "compositePrimaryKeys": {
+                "sessions_id": {
+                    "name": "sessions_id",
+                    "columns": ["id"]
+                }
+            },
+            "uniqueConstraints": {
+                "uq_token": {
+                    "name": "uq_token",
+                    "columns": ["token"]
+                }
+            },
+            "checkConstraint": {}
+        },
+        "users": {
+            "name": "users",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "int",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": true
+                },
+                "username": {
+                    "name": "username",
+                    "type": "varchar(30)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "password": {
+                    "name": "password",
+                    "type": "varchar(255)",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "role": {
+                    "name": "role",
+                    "type": "enum('user','admin')",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'user'"
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "datetime",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "current_timestamp()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {
+                "users_id": {
+                    "name": "users_id",
+                    "columns": ["id"]
+                }
+            },
+            "uniqueConstraints": {
+                "uq_username": {
+                    "name": "uq_username",
+                    "columns": ["username"]
+                }
+            },
+            "checkConstraint": {}
+        }
+    },
+    "views": {},
+    "_meta": {
+        "schemas": {},
+        "tables": {},
+        "columns": {}
+    },
+    "internal": {
+        "tables": {},
+        "indexes": {}
+    }
+}
