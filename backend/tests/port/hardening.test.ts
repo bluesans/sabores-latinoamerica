@@ -43,7 +43,6 @@ const PENDING: ReadonlyArray<readonly [string, string]> = [
     ['testByCountryWithoutParamsReturnsAllWithPaginationMeta', 'todo 17'],
     ['testByCountryPageTwoDiffersFromPageOne', 'todo 17'],
     ['testRoutesConstrainPublicIdsButNotAdminGroup', 'todos 17 y 19'],
-    ['testAuthMiddleware401CarriesWwwAuthenticate', 'todo 13'],
     ['testSearchLimitedResultsAreDeterministicallyOrdered', 'todo 17']
 ];
 
@@ -70,6 +69,14 @@ describe('HardeningTest (PHP)', () => {
         expect(response.statusCode).toBe(200);
         expect(body.time).toMatch(/^\d{4}-\d{2}-\d{2}T/);
         expect(String(body.time).endsWith('+00:00')).toBe(true);
+    });
+
+    it('testAuthMiddleware401CarriesWwwAuthenticate', async () => {
+        const response = await makeApp().inject({ method: 'GET', url: `${API}/auth/check` });
+
+        expect(response.statusCode).toBe(401);
+        expect(response.headers['www-authenticate']).toBe('Bearer');
+        expect(response.json()).toEqual({ ok: false, error: 'Necesitás iniciar sesión.' });
     });
 
     for (const [name, closing] of PENDING) {

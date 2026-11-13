@@ -17,15 +17,18 @@
  * (9-19) con su contrato real; inventar respuestas rompería la paridad.
  */
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyServerOptions } from 'fastify';
+import type { Pool } from 'mysql2/promise';
+import { registerAuthGuard } from './auth/guard.js';
 import { registerJwt } from './auth/jwt.js';
 import type { AppConfig } from './config.js';
 import { applyCorsHeaders } from './http/cors.js';
 import { buildErrorPayload, httpRoutingError, resolveErrorStatus } from './http/error-envelope.js';
-import { type HealthDatabase, registerHealthRoutes } from './routes/health.js';
+import { registerAuthRoutes } from './routes/auth.js';
+import { registerHealthRoutes } from './routes/health.js';
 
 export type CreateAppOptions = Readonly<{
     config: AppConfig;
-    db: HealthDatabase;
+    db: Pool;
     logger?: FastifyServerOptions['logger'];
 }>;
 
@@ -61,6 +64,7 @@ export function createApp(options: CreateAppOptions): FastifyInstance {
     });
 
     registerJwt(app, config);
+    registerAuthGuard(app);
 
     // CORS se aplica al final: cubre 200, errores y preflight por igual.
     // Estilo callback (4 args): un hook sincrónico de 3 args deja el inject colgado.
@@ -104,6 +108,7 @@ export function createApp(options: CreateAppOptions): FastifyInstance {
     app.register(
         async instance => {
             registerHealthRoutes(instance, db);
+            registerAuthRoutes(instance, config, db);
         },
         { prefix: config.basePath }
     );

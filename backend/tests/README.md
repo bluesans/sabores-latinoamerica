@@ -20,27 +20,29 @@ duplicar estado ni reducir cobertura.
 |---|---|---:|---:|---:|---|
 | `Integration/AdminSessionsTest.php` | `port/admin-sessions.test.ts` | 14 | 2 | 2 (`tests/sessions.test.ts`) | 10 (19, 14) |
 | `Integration/AdminValidationTest.php` | `port/admin-validation.test.ts` | 25 | 0 | 0 | 25 (19) |
-| `Integration/AuthServiceTest.php` | `port/auth-service.test.ts` | 4 | 0 | 1 (`tests/rate-limit.test.ts`) | 3 (13, 14) |
-| `Integration/CookieFlowTest.php` | `port/cookie-flow.test.ts` | 7 | 0 | 3 (`tests/sessions.test.ts`, `tests/rate-limit.test.ts`) | 4 (14) |
+| `Integration/AuthServiceTest.php` | `port/auth-service.test.ts` | 4 | 2 | 1 (`tests/rate-limit.test.ts`) | 1 (14) |
+| `Integration/CookieFlowTest.php` | `port/cookie-flow.test.ts` | 7 | 1 | 3 (`tests/sessions.test.ts`, `tests/rate-limit.test.ts`) | 3 (14) |
 | `Integration/ErrorIdTest.php` | `port/error-id.test.ts` | 2 | 2 | 0 | 0 |
-| `Integration/HardeningTest.php` | `port/hardening.test.ts` | 14 | 3 | 0 | 11 (17, 18, 13, 19) |
+| `Integration/HardeningTest.php` | `port/hardening.test.ts` | 14 | 4 | 0 | 10 (17, 18, 19) |
 | `Integration/RemainingFlowTest.php` | `port/remaining-flow.test.ts` | 14 | 3 | 0 | 11 (17, 18, 20) |
 | `Integration/SearchEscapeTest.php` | `port/search-escape.test.ts` | 4 | 0 | 0 | 4 (17) |
 | `Integration/SmokeTest.php` | `port/smoke.test.ts` | 1 | 1 | 0 | 0 |
 | `Integration/StatsCountryTest.php` | `port/stats-country.test.ts` | 2 | 0 | 0 | 2 (17) |
 | `Integration/TransactionSweepTest.php` | `port/transaction-sweep.test.ts` | 2 | 1 | 0 | 1 (19) |
 | `Unit/JwtTest.php` | `port/jwt.test.ts` | 8 | 8 (+2 de reloj) | 0 | 0 |
-| `Unit/ValidationTest.php` | `port/validation.test.ts` | 13 | 0 | 0 | 13 (13) |
-| **Total** | | **110** | **20** | **6** | **84** |
+| `Unit/ValidationTest.php` | `port/validation.test.ts` | 13 | 13 | 0 | 0 |
+| **Total** | | **110** | **37** | **6** | **67** |
 
 Notas de mapeo:
 
 - **AdminSessions**: la truncación de user-agent y la persistencia de IP/UA en rotación se validan en `tests/sessions.test.ts`; el throttle de refresh y el logout bajo throttle se portaron a nivel service (repo + rate limit).
 - **CookieFlow**: rotación y reuse-detection se validan en `tests/sessions.test.ts`; el 11.º login fallido en `tests/rate-limit.test.ts`. Falta la capa HTTP (todo 14).
-- **AuthService**: el 6.º register está cubierto por la simulación de `tests/rate-limit.test.ts`.
+- **AuthService**: register y duplicado 409 portados en el todo 13; el login roundtrip queda para el todo 14. El 6.º register está cubierto por la simulación de `tests/rate-limit.test.ts`.
+- **CookieFlow**: register (cookie + body sin refresh) portado en el todo 13; rotación y reuse-detection en `tests/sessions.test.ts`; el 11.º login fallido en `tests/rate-limit.test.ts`. Login/logout/tampered faltan con la capa HTTP del todo 14.
 - **TransactionSweep**: el caso de cascada se porta a nivel DB (el contrato real es `ON DELETE CASCADE`); el 404 depende del controller admin (todo 19).
 - **JwtTest**: se agregaron los bordes que exige el todo 12 (±5s válidos / ±15s inválidos), además de los 8 casos originales.
-- `Validation` no tiene módulo todavía; se implementa en el todo 13.
+- **Validation**: los 13 casos quedaron verdes en el todo 13 al portar `Validation.php`.
+- El contrato HTTP de register/check se prueba además en `tests/auth-register-check.test.ts` contra las fixtures doradas.
 
 ## Ejecución
 
