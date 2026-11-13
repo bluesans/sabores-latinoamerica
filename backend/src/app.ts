@@ -16,6 +16,8 @@
  * No se registran stubs de rutas de negocio: cada grupo llega en su todo
  * (9-19) con su contrato real; inventar respuestas rompería la paridad.
  */
+
+import cookie from '@fastify/cookie';
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import type { Pool } from 'mysql2/promise';
 import { registerAuthGuard } from './auth/guard.js';
@@ -63,8 +65,28 @@ export function createApp(options: CreateAppOptions): FastifyInstance {
         ...(options.logger === undefined ? {} : { logger: options.logger })
     });
 
+    // Slim parsea JSON de forma laxa: body vacío -> null; JSON roto -> 400.
+    // El parser default de Fastify devuelve 400 por body vacío y saltearía
+    // el clear-cookie de logout/refresh.
+    app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, body, done) => {
+        const raw = typeof body === 'string' ? body : body.toString('utf8');
+
+        if (raw === '') {
+            done(null, null);
+
+            return;
+        }
+
+        try {
+            done(null, JSON.parse(raw));
+        } catch {
+            done(Object.assign(new Error('Malformed JSON data'), { statusCode: 400 }));
+        }
+    });
+
     registerJwt(app, config);
     registerAuthGuard(app);
+    app.register(cookie);
 
     // CORS se aplica al final: cubre 200, errores y preflight por igual.
     // Estilo callback (4 args): un hook sincrónico de 3 args deja el inject colgado.

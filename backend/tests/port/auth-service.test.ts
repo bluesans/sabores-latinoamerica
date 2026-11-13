@@ -10,7 +10,7 @@ import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app.js';
 import { verifyPassword } from '../../src/auth/password.js';
-import { registerUser } from '../../src/auth/service.js';
+import { loginUser, registerUser } from '../../src/auth/service.js';
 import { loadConfig } from '../../src/config.js';
 import { createTestPool, reloadTestSchema } from '../support/test-db.js';
 
@@ -74,5 +74,30 @@ describe('AuthServiceTest (PHP)', () => {
         }
     });
 
-    it.todo('testLoginAfterRegistrationVerifiesPasswordRoundtrip — lo cierra el todo 14');
+    it('testLoginAfterRegistrationVerifiesPasswordRoundtrip', async () => {
+        const config = loadConfig();
+
+        await registerUser(app, pool, config, { username: 'qa_login_user', password: PASSWORD, ip: '203.0.113.10' });
+
+        const login = await loginUser(app, pool, config, { username: 'qa_login_user', password: PASSWORD, ip: '203.0.113.10' });
+
+        expect(login.ok).toBe(true);
+
+        if (!login.ok) {
+            return;
+        }
+
+        expect(login.status).toBe(200);
+        expect(login.body).toMatchObject({ ok: true, username: 'qa_login_user', role: 'user' });
+        expect(login.body.access).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+
+        const bad = await loginUser(app, pool, config, { username: 'qa_login_user', password: 'Incorrecta1', ip: '203.0.113.10' });
+
+        expect(bad.ok).toBe(false);
+
+        if (!bad.ok) {
+            expect(bad.status).toBe(401);
+            expect(bad.body).toEqual({ ok: false, error: 'Usuario o contraseña incorrectos.' });
+        }
+    });
 });

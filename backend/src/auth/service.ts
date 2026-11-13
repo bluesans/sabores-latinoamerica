@@ -9,10 +9,10 @@
 import type { FastifyInstance } from 'fastify';
 import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import type { AppConfig } from '../config.js';
-import { checkRegisterRateDetails, rateLimitMessage, recordRegisterAttempt } from '../rate-limit/attempts.js';
-import { createSession } from '../sessions/repository.js';
+import { checkLoginRateDetails, checkRefreshRateDetails, checkRegisterRateDetails, rateLimitMessage, recordFailedLogin, recordFailedRefresh, recordRegisterAttempt } from '../rate-limit/attempts.js';
+import { createSession, rotateRefreshToken } from '../sessions/repository.js';
 import { issueAccessToken } from './jwt.js';
-import { hashPassword } from './password.js';
+import { hashPassword, passwordNeedsRehash, verifyPassword } from './password.js';
 import { passwordError, username as validUsername } from './validation.js';
 
 export type RegisterInput = Readonly<{
@@ -36,6 +36,24 @@ export type ServiceFailure = Readonly<{
 }>;
 
 export type RegisterResult = RegisterSuccess | ServiceFailure;
+
+export type LoginResult =
+    | Readonly<{
+          ok: true;
+          status: 200;
+          body: { ok: true; username: string; role: string; access: string };
+          refreshToken: string;
+      }>
+    | ServiceFailure;
+
+export type RefreshResult =
+    | Readonly<{
+          ok: true;
+          status: 200;
+          body: { ok: true; access: string };
+          refreshToken: string;
+      }>
+    | ServiceFailure;
 
 export type CheckedUser = Readonly<{
     username: string;
@@ -103,6 +121,83 @@ export async function registerUser(app: FastifyInstance, pool: Pool, config: App
         body: { ok: true, username, role: 'user', access },
         refreshToken
     };
+}
+
+/**
+ * `AuthService::login`: rate-limit login -> SELECT user -> password_verify ->
+ * rehash-on-login -> sesión/refresh -> access. El v1 NO pasa user-agent en
+ * login, así que la sesión queda con user_agent NULL.
+ */
+export async function loginUser(app: FastifyInstance, pool: Pool, config: AppConfig, input: RegisterInput): Promise<LoginResult> {
+    const username = input.username.trim();
+    const rate = await checkLoginRateDetails(pool, input.ip);
+
+    if (!rate.allowed) {
+        return failure(rateLimitMessage('login'), 429, { 'Retry-After': String(rate.retryAfter) });
+    }
+
+    const [rows] = await pool.execute<RowDataPacket[]>('SELECT id, username, password, role FROM users WHERE username = ?', [username]);
+    const user = rows[0];
+
+    if (user === undefined || !(await verifyPassword(input.password, String(user['password'] ?? '')))) {
+        await recordFailedLogin(pool, input.ip, username);
+
+        return failure('Usuario o contraseña incorrectos.', 401);
+    }
+
+    const passwordHash = String(user['password'] ?? '');
+
+    if (passwordNeedsRehash(passwordHash)) {
+        await pool.execute('UPDATE users SET password = ? WHERE id = ?', [await hashPassword(input.password), Number(user['id'])]);
+    }
+
+    const userId = Number(user['id'] ?? 0);
+
+    if (userId <= 0) {
+        return failure('No se pudo iniciar sesión.', 500);
+    }
+
+    const finalUsername = String(user['username'] ?? '');
+    const role = String(user['role'] ?? 'user');
+    const refreshToken = await createSession(pool, { userId, sessionDays: config.sessionDays, ip: input.ip, userAgent: null });
+    const access = issueAccessToken(app, { id: userId, username: finalUsername, role }, config.jwtTtl);
+
+    return { ok: true, status: 200, body: { ok: true, username: finalUsername, role, access }, refreshToken };
+}
+
+/**
+ * `AuthService::refresh`: rate-limit refresh -> rotación transaccional (con
+ * reuse detection) -> access + refresh nuevo. Cualquier fallo registra el
+ * intento y devuelve 401 "Sesión expirada." (la cookie la limpia la ruta).
+ */
+export async function refreshSession(app: FastifyInstance, pool: Pool, config: AppConfig, input: Readonly<{ token: string; ip: string; userAgent: string | null }>): Promise<RefreshResult> {
+    const rate = await checkRefreshRateDetails(pool, input.ip);
+
+    if (!rate.allowed) {
+        return failure(rateLimitMessage('refresh'), 429, { 'Retry-After': String(rate.retryAfter) });
+    }
+
+    if (input.token === '') {
+        await recordFailedRefresh(pool, input.ip);
+
+        return failure('Sesión expirada.', 401);
+    }
+
+    const rotation = await rotateRefreshToken(pool, input.token, {
+        sessionDays: config.sessionDays,
+        ip: input.ip,
+        userAgent: input.userAgent
+    });
+
+    if (!rotation.ok) {
+        await recordFailedRefresh(pool, input.ip);
+
+        return failure('Sesión expirada.', 401);
+    }
+
+    const access = issueAccessToken(app, rotation.user, config.jwtTtl);
+
+    return { ok: true, status: 200, body: { ok: true, access }, refreshToken: rotation.refreshToken };
 }
 
 /** `AuthController::check`: usuario vigente en DB o 401. */
