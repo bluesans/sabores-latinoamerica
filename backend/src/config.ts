@@ -122,7 +122,12 @@ const envSchema = z.object({
         .string({ error: 'se esperaba un string' })
         .refine(value => value === '' || value === '*' || isExactOrigin(value), { error: "debe ser '', '*' o un origen exacto (p. ej. https://tudominio.com)" })
         .default(''),
-    COOKIE_SECURE: z.enum(['auto', '1', '0'], { error: "debe ser 'auto', '1' o '0'" }).default('auto'),
+    COOKIE_SECURE: z
+        .string({ error: 'se esperaba un string' })
+        .default('auto')
+        // El v1 acepta 'true' como sinónimo de '1' (Cookies::secure).
+        .transform(value => (value === 'true' ? '1' : value))
+        .pipe(z.enum(['auto', '1', '0'], { error: "debe ser 'auto', '1' o '0'" })),
     APP_DEBUG: z.enum(['0', '1'], { error: "debe ser '0' o '1'" }).default('0'),
     PORT: envInt().min(1, { error: 'fuera de rango (1-65535)' }).max(65535, { error: 'fuera de rango (1-65535)' }).default(3001),
     BASE_PATH: z

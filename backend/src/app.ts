@@ -17,6 +17,7 @@
  * (9-19) con su contrato real; inventar respuestas rompería la paridad.
  */
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyServerOptions } from 'fastify';
+import { registerJwt } from './auth/jwt.js';
 import type { AppConfig } from './config.js';
 import { applyCorsHeaders } from './http/cors.js';
 import { buildErrorPayload, httpRoutingError, resolveErrorStatus } from './http/error-envelope.js';
@@ -58,6 +59,8 @@ export function createApp(options: CreateAppOptions): FastifyInstance {
         trustProxy: config.trustProxy,
         ...(options.logger === undefined ? {} : { logger: options.logger })
     });
+
+    registerJwt(app, config);
 
     // CORS se aplica al final: cubre 200, errores y preflight por igual.
     // Estilo callback (4 args): un hook sincrónico de 3 args deja el inject colgado.

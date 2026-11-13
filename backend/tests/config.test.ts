@@ -92,6 +92,11 @@ describe('parseConfig', () => {
             expect(parseConfig({ ...REQUIRED_ONLY, BASE_PATH: '/otro-prefijo' }).cookiePath).toBe('/otro-prefijo');
         });
 
+        it("COOKIE_SECURE='true' se normaliza a '1' (paridad Cookies.php)", () => {
+            expect(parseConfig({ ...REQUIRED_ONLY, COOKIE_SECURE: 'true' }).cookieSecure).toBe('1');
+            expect(parseConfig({ ...REQUIRED_ONLY, COOKIE_SECURE: 'auto' }).cookieSecure).toBe('auto');
+        });
+
         it('devuelve una config congelada', () => {
             expect(Object.isFrozen(parseConfig(FULL_ENV))).toBe(true);
         });
