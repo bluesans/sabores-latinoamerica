@@ -11,15 +11,21 @@ import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import type { AppConfig } from '../config.js';
 import { checkLoginRateDetails, checkRefreshRateDetails, checkRegisterRateDetails, rateLimitMessage, recordFailedLogin, recordFailedRefresh, recordRegisterAttempt } from '../rate-limit/attempts.js';
 import { createSession, rotateRefreshToken } from '../sessions/repository.js';
+import { CONSENT_REQUIRED_MESSAGE, CONSENT_VERSION, type ConsentInput, hasFullConsent } from './consent.js';
 import { issueAccessToken } from './jwt.js';
 import { hashPassword, passwordNeedsRehash, verifyPassword } from './password.js';
 import { passwordError, username as validUsername } from './validation.js';
 
-export type RegisterInput = Readonly<{
+export type LoginInput = Readonly<{
     username: string;
     password: string;
     ip: string;
 }>;
+
+export type RegisterInput = LoginInput &
+    Readonly<{
+        consents?: ConsentInput;
+    }>;
 
 export type RegisterSuccess = Readonly<{
     ok: true;
@@ -84,13 +90,24 @@ export async function registerUser(app: FastifyInstance, pool: Pool, config: App
         return failure(passwordProblem, 422);
     }
 
+    const consents: ConsentInput = input.consents ?? { acceptTerms: false, acceptPrivacy: false, ageConfirmed: false };
+    const fullConsent = hasFullConsent(consents);
+
+    if (config.consentStrict && !fullConsent) {
+        return failure(CONSENT_REQUIRED_MESSAGE, 400);
+    }
+
     // La cuota se consume recién con datos válidos (anti self-DoS del PHP).
     await recordRegisterAttempt(pool, input.ip, username);
 
     let userId: number;
 
     try {
-        const [result] = await pool.execute<ResultSetHeader>('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', [username, await hashPassword(input.password), 'user']);
+        // Con los tres consentimientos se persisten versión/fecha/edad; sin
+        // ellos las columnas quedan NULL (retrocompatible).
+        const [result] = fullConsent
+            ? await pool.execute<ResultSetHeader>('INSERT INTO users (username, password, role, consent_version, consented_at, age_confirmed) VALUES (?, ?, ?, ?, NOW(), 1)', [username, await hashPassword(input.password), 'user', CONSENT_VERSION])
+            : await pool.execute<ResultSetHeader>('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', [username, await hashPassword(input.password), 'user']);
 
         userId = result.insertId;
     } catch (error) {
@@ -128,7 +145,7 @@ export async function registerUser(app: FastifyInstance, pool: Pool, config: App
  * rehash-on-login -> sesión/refresh -> access. El v1 NO pasa user-agent en
  * login, así que la sesión queda con user_agent NULL.
  */
-export async function loginUser(app: FastifyInstance, pool: Pool, config: AppConfig, input: RegisterInput): Promise<LoginResult> {
+export async function loginUser(app: FastifyInstance, pool: Pool, config: AppConfig, input: LoginInput): Promise<LoginResult> {
     const username = input.username.trim();
     const rate = await checkLoginRateDetails(pool, input.ip);
 

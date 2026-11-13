@@ -7,6 +7,8 @@
 - `tests/auth-core.test.ts` — JWT, bcrypt, cookies y refresh token, con cross-check PHP↔Node (todo 9).
 - `tests/sessions.test.ts` — repositorio de sesiones sobre `sabores_node_test` (todo 10).
 - `tests/rate-limit.test.ts` — rate limiting sobre `login_attempts` (todo 11).
+- `tests/consent.test.ts` — migración 003 y `CONSENT_STRICT` (todo 15).
+- `tests/migration-003.test.ts` — 003 incremental sobre 000-002 con datos (todo 15).
 - `tests/port/**` — port 1:1 de la suite PHP (este todo 12).
 
 ## Port de la suite PHP (todo 12)

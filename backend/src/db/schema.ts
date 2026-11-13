@@ -1,7 +1,8 @@
 /**
  * Esquema Drizzle de la base viva, producto de `npx drizzle-kit pull` (0.31.11
  * contra MariaDB 10.4) y REVISADO A MANO contra `db/migrations/000_install.sql`,
- * `001_sessions_ip_ua.sql` y `002_attempt_refresh_action.sql`.
+ * `001_sessions_ip_ua.sql`, `002_attempt_refresh_action.sql` y
+ * `003_consents.sql`.
  *
  * Correcciones al código generado (quirk de la introspección en MariaDB):
  * - El pull OMITE primary keys → se declaran a mano (`primaryKey()` y el
@@ -19,7 +20,7 @@
  * `dateStrings: true`): `'YYYY-MM-DD HH:MM:SS'`, sin objetos Date.
  */
 import { sql } from 'drizzle-orm';
-import { bigint, char, datetime, index, int, mysqlEnum, mysqlTable, primaryKey, text, unique, varchar } from 'drizzle-orm/mysql-core';
+import { bigint, boolean, char, datetime, index, int, mysqlEnum, mysqlTable, primaryKey, text, unique, varchar } from 'drizzle-orm/mysql-core';
 
 export const countries = mysqlTable(
     'countries',
@@ -40,6 +41,9 @@ export const users = mysqlTable(
         username: varchar({ length: 30 }).notNull(),
         password: varchar({ length: 255 }).notNull(),
         role: mysqlEnum(['user', 'admin']).default('user').notNull(),
+        consentVersion: varchar('consent_version', { length: 20 }),
+        consentedAt: datetime('consented_at', { mode: 'string' }),
+        ageConfirmed: boolean('age_confirmed'),
         createdAt: datetime('created_at', { mode: 'string' }).default(sql`current_timestamp()`).notNull()
     },
     table => [unique('uq_username').on(table.username)]
@@ -68,7 +72,7 @@ export const loginAttempts = mysqlTable(
         id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
         ip: varchar({ length: 45 }).notNull(),
         username: varchar({ length: 30 }).default('').notNull(),
-        action: mysqlEnum(['login', 'register', 'refresh']).default('login').notNull(),
+        action: mysqlEnum(['login', 'register', 'refresh', 'delete']).default('login').notNull(),
         attemptedAt: datetime('attempted_at', { mode: 'string' }).default(sql`current_timestamp()`).notNull()
     },
     table => [index('idx_login_attempts_ip_time').on(table.ip, table.attemptedAt), index('idx_login_attempts_username').on(table.username), index('idx_login_attempts_action_ip_time').on(table.action, table.ip, table.attemptedAt)]

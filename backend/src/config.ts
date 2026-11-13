@@ -62,6 +62,8 @@ export type AppConfig = Readonly<{
     corsOrigin: string;
     cookieSecure: CookieSecureMode;
     appDebug: AppDebugFlag;
+    /** `true` cuando `CONSENT_STRICT=1`: register exige los tres consentimientos. */
+    consentStrict: boolean;
     /** Puerto interno de Node (Apache proxya hacia acá en el cutover). */
     port: number;
     /** Prefijo público bajo el que Node sirve la API (mismo que el PHP v1). */
@@ -129,6 +131,7 @@ const envSchema = z.object({
         .transform(value => (value === 'true' ? '1' : value))
         .pipe(z.enum(['auto', '1', '0'], { error: "debe ser 'auto', '1' o '0'" })),
     APP_DEBUG: z.enum(['0', '1'], { error: "debe ser '0' o '1'" }).default('0'),
+    CONSENT_STRICT: z.enum(['0', '1'], { error: "debe ser '0' o '1'" }).default('0'),
     PORT: envInt().min(1, { error: 'fuera de rango (1-65535)' }).max(65535, { error: 'fuera de rango (1-65535)' }).default(3001),
     BASE_PATH: z
         .string({ error: 'se esperaba un string' })
@@ -191,6 +194,7 @@ export function parseConfig(env: Record<string, string | undefined>): AppConfig 
         corsOrigin: values.CORS_ORIGIN,
         cookieSecure: values.COOKIE_SECURE,
         appDebug: values.APP_DEBUG,
+        consentStrict: values.CONSENT_STRICT === '1',
         port: values.PORT,
         basePath: values.BASE_PATH,
         cookiePath: values.COOKIE_PATH ?? values.BASE_PATH,

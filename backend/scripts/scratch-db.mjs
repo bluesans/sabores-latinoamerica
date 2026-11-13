@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Recrea la base scratch `sabores_node_test` desde cero aplicando, EN ORDEN,
- * las migraciones canónicas de `db/migrations/` (000, 001, 002).
+ * las migraciones canónicas de `db/migrations/` (000, 001, 002 y 003).
  *
  * Uso: node scripts/scratch-db.mjs [--db=sabores_node_test]
  *
@@ -14,7 +14,7 @@ import mysql from 'mysql2/promise';
 
 const DEFAULT_DB_NAME = 'sabores_node_test';
 const SAFE_DB_NAME = /^[A-Za-z0-9_]+_test$/;
-const MIGRATION_FILES = ['000_install.sql', '001_sessions_ip_ua.sql', '002_attempt_refresh_action.sql'];
+const MIGRATION_FILES = ['000_install.sql', '001_sessions_ip_ua.sql', '002_attempt_refresh_action.sql', '003_consents.sql'];
 
 loadDotenv({ path: new URL('../.env', import.meta.url), quiet: true });
 

@@ -42,12 +42,26 @@ function cookieRefreshToken(request: FastifyRequest): string {
     return typeof value === 'string' ? value : '';
 }
 
+/** `(bool)$b[$key]` estricto: solo el booleano JSON `true` cuenta. */
+function bodyBoolean(body: unknown, key: string): boolean {
+    if (typeof body !== 'object' || body === null) {
+        return false;
+    }
+
+    return (body as Record<string, unknown>)[key] === true;
+}
+
 export function registerAuthRoutes(app: FastifyInstance, config: AppConfig, pool: Pool): void {
     app.post('/auth/register', async (request, reply) => {
         const result = await registerUser(app, pool, config, {
             username: bodyString(request.body, 'username'),
             password: bodyString(request.body, 'password'),
-            ip: clientIp(request, config.trustProxy)
+            ip: clientIp(request, config.trustProxy),
+            consents: {
+                acceptTerms: bodyBoolean(request.body, 'accept_terms'),
+                acceptPrivacy: bodyBoolean(request.body, 'accept_privacy'),
+                ageConfirmed: bodyBoolean(request.body, 'age_confirmed')
+            }
         });
 
         if (!result.ok) {

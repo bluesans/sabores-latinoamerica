@@ -12,33 +12,38 @@ import type { AppConfig } from '../../src/config.js';
 export const TEST_DB_NAME = 'sabores_node_test';
 
 const SAFE_DB_NAME = /^[A-Za-z0-9_]+_test$/;
-const MIGRATION_FILES = ['000_install.sql', '001_sessions_ip_ua.sql', '002_attempt_refresh_action.sql'];
+const MIGRATION_FILES = ['000_install.sql', '001_sessions_ip_ua.sql', '002_attempt_refresh_action.sql', '003_consents.sql'];
 const MIGRATIONS_DIR = fileURLToPath(new URL('../../../db/migrations/', import.meta.url));
 
-function assertScratchName(): void {
-    if (!SAFE_DB_NAME.test(TEST_DB_NAME)) {
-        throw new Error(`ABORTADO: "${TEST_DB_NAME}" no termina en "_test".`);
+export function assertTestDatabaseName(dbName: string): void {
+    if (!SAFE_DB_NAME.test(dbName)) {
+        throw new Error(`ABORTADO: "${dbName}" no termina en "_test".`);
     }
 }
 
-/** Pool contra la base scratch (host/user/pass salen de backend/.env). */
-export function createTestPool(config: AppConfig): Pool {
-    assertScratchName();
+/** Pool contra una base scratch (host/user/pass salen de backend/.env). */
+export function createTestPoolFor(config: AppConfig, dbName: string): Pool {
+    assertTestDatabaseName(dbName);
 
     return mysql.createPool({
         host: config.dbHost,
         user: config.dbUser,
         password: config.dbPass,
-        database: TEST_DB_NAME,
+        database: dbName,
         charset: 'utf8mb4_general_ci',
         dateStrings: true,
         connectionLimit: 10
     });
 }
 
-/** DROP/CREATE + migraciones 000, 001 y 002, en orden (equivalente a scratch-db.mjs). */
-export async function reloadTestSchema(config: AppConfig): Promise<void> {
-    assertScratchName();
+/** Pool contra la base scratch canónica. */
+export function createTestPool(config: AppConfig): Pool {
+    return createTestPoolFor(config, TEST_DB_NAME);
+}
+
+/** Crea una base scratch desde cero aplicando los archivos indicados, en orden. */
+export async function recreateTestDatabase(config: AppConfig, dbName: string, files: readonly string[]): Promise<void> {
+    assertTestDatabaseName(dbName);
 
     const connection = await mysql.createConnection({
         host: config.dbHost,
@@ -49,15 +54,59 @@ export async function reloadTestSchema(config: AppConfig): Promise<void> {
     });
 
     try {
-        await connection.query(`DROP DATABASE IF EXISTS \`${TEST_DB_NAME}\``);
-        await connection.query(`CREATE DATABASE \`${TEST_DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-        await connection.query(`USE \`${TEST_DB_NAME}\``);
+        await connection.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
+        await connection.query(`CREATE DATABASE \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+        await connection.query(`USE \`${dbName}\``);
 
-        for (const file of MIGRATION_FILES) {
+        for (const file of files) {
             const migration = await readFile(`${MIGRATIONS_DIR}${file}`, 'utf8');
             await connection.query(migration);
         }
     } finally {
         await connection.end();
     }
+}
+
+/** Aplica un archivo de migración a una base scratch existente. */
+export async function applyMigrationFile(config: AppConfig, dbName: string, file: string): Promise<void> {
+    assertTestDatabaseName(dbName);
+
+    const connection = await mysql.createConnection({
+        host: config.dbHost,
+        user: config.dbUser,
+        password: config.dbPass,
+        database: dbName,
+        charset: 'utf8mb4_general_ci',
+        multipleStatements: true
+    });
+
+    try {
+        const migration = await readFile(`${MIGRATIONS_DIR}${file}`, 'utf8');
+        await connection.query(migration);
+    } finally {
+        await connection.end();
+    }
+}
+
+/** Borra una base scratch (solo nombres *_test). */
+export async function dropTestDatabase(config: AppConfig, dbName: string): Promise<void> {
+    assertTestDatabaseName(dbName);
+
+    const connection = await mysql.createConnection({
+        host: config.dbHost,
+        user: config.dbUser,
+        password: config.dbPass,
+        charset: 'utf8mb4_general_ci'
+    });
+
+    try {
+        await connection.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
+    } finally {
+        await connection.end();
+    }
+}
+
+/** DROP/CREATE + migraciones 000-003, en orden (equivalente a scratch-db.mjs). */
+export async function reloadTestSchema(config: AppConfig): Promise<void> {
+    await recreateTestDatabase(config, TEST_DB_NAME, MIGRATION_FILES);
 }
