@@ -19,7 +19,7 @@ import type { AppConfig } from '../config.js';
 
 export type RateLimitExecutor = Pick<PoolConnection, 'execute'>;
 
-export type RateLimitAction = 'login' | 'register' | 'refresh';
+export type RateLimitAction = 'login' | 'register' | 'refresh' | 'delete';
 
 export type RateLimitResult = Readonly<{
     allowed: boolean;
@@ -40,7 +40,8 @@ type RateRow = RowDataPacket & {
 export const RATE_LIMITS: Readonly<Record<RateLimitAction, RateLimitRule>> = {
     login: { maxAttempts: 10, windowMinutes: 5, message: 'Demasiados intentos. Esperá unos minutos.' },
     register: { maxAttempts: 5, windowMinutes: 15, message: 'Demasiados registros desde esta conexión. Esperá unos minutos.' },
-    refresh: { maxAttempts: 10, windowMinutes: 5, message: 'Demasiados intentos. Esperá unos minutos.' }
+    refresh: { maxAttempts: 10, windowMinutes: 5, message: 'Demasiados intentos. Esperá unos minutos.' },
+    delete: { maxAttempts: 5, windowMinutes: 15, message: 'Demasiados intentos. Esperá unos minutos.' }
 };
 
 /** Mensaje de paridad para el 429 de la acción. */
@@ -108,6 +109,10 @@ export function checkRefreshRateDetails(executor: RateLimitExecutor, ip: string)
     return checkRateDetails(executor, ip, 'refresh');
 }
 
+export function checkDeleteRateDetails(executor: RateLimitExecutor, ip: string): Promise<RateLimitResult> {
+    return checkRateDetails(executor, ip, 'delete');
+}
+
 export function recordFailedLogin(executor: RateLimitExecutor, ip: string, username: string): Promise<void> {
     return recordAttempt(executor, ip, username, 'login');
 }
@@ -118,6 +123,10 @@ export function recordRegisterAttempt(executor: RateLimitExecutor, ip: string, u
 
 export function recordFailedRefresh(executor: RateLimitExecutor, ip: string): Promise<void> {
     return recordAttempt(executor, ip, '', 'refresh');
+}
+
+export function recordDeleteAttempt(executor: RateLimitExecutor, ip: string, username: string): Promise<void> {
+    return recordAttempt(executor, ip, username, 'delete');
 }
 
 /**

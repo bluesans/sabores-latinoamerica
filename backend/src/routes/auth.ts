@@ -6,7 +6,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool } from 'mysql2/promise';
 import { clearedRefreshCookieForRequest, REFRESH_COOKIE_NAME, refreshCookieForRequest } from '../auth/cookies.js';
 import { bearerToken, requireAuth } from '../auth/guard.js';
-import { findUserForCheck, loginUser, refreshSession, registerUser } from '../auth/service.js';
+import { deleteAccount, findUserForCheck, loginUser, refreshSession, registerUser } from '../auth/service.js';
 import type { AppConfig } from '../config.js';
 import { clientIp } from '../rate-limit/attempts.js';
 import { logoutSession } from '../sessions/repository.js';
@@ -127,6 +127,32 @@ export function registerAuthRoutes(app: FastifyInstance, config: AppConfig, pool
         }
 
         reply.header('set-cookie', refreshCookieForRequest(config, request, result.refreshToken));
+
+        return reply.send(result.body);
+    });
+
+    app.delete('/auth/account', { preHandler: requireAuth(app) }, async (request, reply) => {
+        const authUser = request.authUser;
+
+        if (authUser === null) {
+            return reply.code(401).header('www-authenticate', 'Bearer').send({ ok: false, error: 'Necesitás iniciar sesión.' });
+        }
+
+        const result = await deleteAccount(pool, {
+            userId: authUser.id,
+            password: bodyString(request.body, 'password'),
+            ip: clientIp(request, config.trustProxy)
+        });
+
+        if (!result.ok) {
+            for (const [name, value] of Object.entries(result.headers)) {
+                reply.header(name, value);
+            }
+
+            return reply.code(result.status).send(result.body);
+        }
+
+        reply.header('set-cookie', clearedRefreshCookieForRequest(config, request));
 
         return reply.send(result.body);
     });

@@ -9,7 +9,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import type { AppConfig } from '../config.js';
-import { checkLoginRateDetails, checkRefreshRateDetails, checkRegisterRateDetails, rateLimitMessage, recordFailedLogin, recordFailedRefresh, recordRegisterAttempt } from '../rate-limit/attempts.js';
+import { checkDeleteRateDetails, checkLoginRateDetails, checkRefreshRateDetails, checkRegisterRateDetails, rateLimitMessage, recordDeleteAttempt, recordFailedLogin, recordFailedRefresh, recordRegisterAttempt } from '../rate-limit/attempts.js';
 import { createSession, rotateRefreshToken } from '../sessions/repository.js';
 import { CONSENT_REQUIRED_MESSAGE, CONSENT_VERSION, type ConsentInput, hasFullConsent } from './consent.js';
 import { issueAccessToken } from './jwt.js';
@@ -26,6 +26,12 @@ export type RegisterInput = LoginInput &
     Readonly<{
         consents?: ConsentInput;
     }>;
+
+export type DeleteAccountInput = Readonly<{
+    userId: number;
+    password: string;
+    ip: string;
+}>;
 
 export type RegisterSuccess = Readonly<{
     ok: true;
@@ -58,6 +64,14 @@ export type RefreshResult =
           status: 200;
           body: { ok: true; access: string };
           refreshToken: string;
+      }>
+    | ServiceFailure;
+
+export type DeleteAccountResult =
+    | Readonly<{
+          ok: true;
+          status: 200;
+          body: { ok: true };
       }>
     | ServiceFailure;
 
@@ -215,6 +229,69 @@ export async function refreshSession(app: FastifyInstance, pool: Pool, config: A
     const access = issueAccessToken(app, rotation.user, config.jwtTtl);
 
     return { ok: true, status: 200, body: { ok: true, access }, refreshToken: rotation.refreshToken };
+}
+
+/**
+ * `DELETE /auth/account` (compliance #20, sin equivalente PHP): re-ingreso de
+ * password + guard del último admin + borrado transaccional. Las FK de
+ * sessions/favorites son ON DELETE CASCADE (000_install.sql).
+ */
+export async function deleteAccount(pool: Pool, input: DeleteAccountInput): Promise<DeleteAccountResult> {
+    const rate = await checkDeleteRateDetails(pool, input.ip);
+
+    if (!rate.allowed) {
+        return failure(rateLimitMessage('delete'), 429, { 'Retry-After': String(rate.retryAfter) });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [rows] = await connection.execute<RowDataPacket[]>('SELECT id, username, password, role FROM users WHERE id = ? FOR UPDATE', [input.userId]);
+        const user = rows[0];
+
+        if (user === undefined) {
+            await connection.rollback();
+
+            return failure('Usuario no encontrado.', 401);
+        }
+
+        const username = String(user['username'] ?? '');
+
+        if (!(await verifyPassword(input.password, String(user['password'] ?? '')))) {
+            await connection.rollback();
+            await recordDeleteAttempt(pool, input.ip, username);
+
+            return failure('Contraseña incorrecta.', 403);
+        }
+
+        if (String(user['role'] ?? 'user') === 'admin') {
+            // Locking read de TODOS los admins: el count y el delete son atómicos.
+            const [admins] = await connection.execute<RowDataPacket[]>('SELECT id FROM users WHERE role = ? FOR UPDATE', ['admin']);
+
+            if (admins.length <= 1) {
+                await connection.rollback();
+
+                return failure('No podés eliminar la última cuenta de administrador.', 409);
+            }
+        }
+
+        await connection.execute('DELETE FROM users WHERE id = ?', [input.userId]);
+        await connection.commit();
+
+        return { ok: true, status: 200, body: { ok: true } };
+    } catch (error) {
+        try {
+            await connection.rollback();
+        } catch {
+            // Transacción ya cerrada.
+        }
+
+        throw error;
+    } finally {
+        connection.release();
+    }
 }
 
 /** `AuthController::check`: usuario vigente en DB o 401. */

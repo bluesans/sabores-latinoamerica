@@ -9,6 +9,7 @@
 - `tests/rate-limit.test.ts` — rate limiting sobre `login_attempts` (todo 11).
 - `tests/consent.test.ts` — migración 003 y `CONSENT_STRICT` (todo 15).
 - `tests/migration-003.test.ts` — 003 incremental sobre 000-002 con datos (todo 15).
+- `tests/account-delete.test.ts` — DELETE /auth/account (todo 16).
 - `tests/port/**` — port 1:1 de la suite PHP (este todo 12).
 
 ## Port de la suite PHP (todo 12)
