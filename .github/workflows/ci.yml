@@ -37,6 +37,50 @@ jobs:
       - run: composer stan -- --no-progress
         working-directory: api
 
+  backend-node:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Crear DB e importar migraciones en orden
+        run: |
+          docker exec -i ${{ job.services.mariadb.id }} mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS sabores_latinoamerica CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+          for file in db/migrations/000_install.sql db/migrations/001_sessions_ip_ua.sql db/migrations/002_attempt_refresh_action.sql db/migrations/003_consents.sql; do
+            docker exec -i ${{ job.services.mariadb.id }} mysql -uroot -proot --default-character-set=utf8mb4 sabores_latinoamerica < "$file"
+          done
+      - run: npm ci
+        working-directory: backend
+      - run: npm run test
+        working-directory: backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: sabores_latinoamerica
+          DB_USER: root
+          DB_PASS: root
+          JWT_SECRET: ci-backend-node-secret-0123456789abcdef0123456789abcdef
+      - run: npm run lint
+        working-directory: backend
+      - run: npm run typecheck
+        working-directory: backend
+      - run: npm run openapi:check
+        working-directory: backend
+
   frontend:
     runs-on: ubuntu-latest
     steps:

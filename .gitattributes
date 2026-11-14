@@ -5,3 +5,7 @@
 *.mjs text eol=lf
 *.json text eol=lf
 *.ts text eol=lf
+
+# Backend Node y frontend React: LF determinista en todo el árbol.
+backend/** text eol=lf
+frontend/** text eol=lf
