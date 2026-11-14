@@ -47,12 +47,7 @@ function healthApp(db: { query(sql: string): Promise<unknown> }): FastifyInstanc
     return createApp({ config: loadConfig(), db: db as unknown as Pool });
 }
 
-const PENDING: ReadonlyArray<readonly [string, string]> = [
-    ['testCliCreatesAdminOnFreshSchema', 'todo 20'],
-    ['testCliSecondRunWithoutForceKeepsHashUntouched', 'todo 20'],
-    ['testCliForceRotatesPasswordHash', 'todo 20'],
-    ['testCliRefusesToPromoteExistingUserRoleAccount', 'todo 20']
-];
+const PENDING: ReadonlyArray<readonly [string, string]> = [];
 
 describe('RemainingFlowTest (PHP)', () => {
     it('testByCountryReturnsCountryBlockAndRecipesWithIngredients', async () => {
