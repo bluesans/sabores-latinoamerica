@@ -25,6 +25,7 @@ const BASE_ENV: Record<string, string> = {
 let pool: Pool;
 let app: FastifyInstance;
 let access = '';
+let adminAccess = '';
 
 beforeAll(async () => {
     const config = loadConfig();
@@ -37,6 +38,12 @@ beforeAll(async () => {
     const registered = await app.inject({ method: 'POST', url: `${API}/auth/register`, payload: { username: 'hardening_user', password: 'Temporal123' } });
 
     access = String(registered.json().access);
+
+    await pool.execute("UPDATE users SET role = 'admin' WHERE username = 'hardening_user'");
+
+    const login = await app.inject({ method: 'POST', url: `${API}/auth/login`, payload: { username: 'hardening_user', password: 'Temporal123' } });
+
+    adminAccess = String(login.json().access);
 }, 60000);
 
 afterAll(async () => {
@@ -54,7 +61,7 @@ function stubApp(overrides: Record<string, string> = {}): FastifyInstance {
     return createApp({ config, db: { execute: async () => [[], []], query: async () => [[{ '1': 1 }], []] } as unknown as Pool });
 }
 
-const PENDING: ReadonlyArray<readonly [string, string]> = [['testRoutesConstrainPublicIdsButNotAdminGroup', 'todo 19 (parte admin)']];
+const PENDING: ReadonlyArray<readonly [string, string]> = [];
 
 describe('HardeningTest (PHP)', () => {
     it('testByCountryNonNumericIdReturns400 -> 405 HTTP (waiver de routing)', async () => {
@@ -191,6 +198,19 @@ describe('HardeningTest (PHP)', () => {
         const ids = withData.recipes.map((recipe: { id: number }) => recipe.id);
 
         expect(ids).toEqual([...ids].sort((a, b) => a - b));
+    });
+
+    it('testRoutesConstrainPublicIdsButNotAdminGroup', async () => {
+        expect((await app.inject({ method: 'GET', url: `${API}/countries/12abc/recipes`, headers: auth() })).statusCode).toBe(405);
+        expect((await app.inject({ method: 'GET', url: `${API}/ingredients/12abc`, headers: auth() })).statusCode).toBe(405);
+
+        // Admin sin regex: recipes castea (int), countries valida positiveInt.
+        const created = await app.inject({ method: 'POST', url: `${API}/admin/recipes`, headers: { authorization: `Bearer ${adminAccess}` }, payload: { name: 'Hardening cast probe', country_id: 1 } });
+        const id = Number(created.json().id);
+
+        expect((await app.inject({ method: 'DELETE', url: `${API}/admin/recipes/${id}abc`, headers: { authorization: `Bearer ${adminAccess}` } })).statusCode).toBe(200);
+        expect((await app.inject({ method: 'PUT', url: `${API}/admin/countries/12abc`, headers: { authorization: `Bearer ${adminAccess}` }, payload: {} })).statusCode).toBe(400);
+        expect((await app.inject({ method: 'DELETE', url: `${API}/admin/sessions/12abc`, headers: { authorization: `Bearer ${adminAccess}` } })).statusCode).toBe(405);
     });
 
     for (const [name, closing] of PENDING) {

@@ -25,6 +25,7 @@ const UNKNOWN_TOKEN = 'de'.repeat(32);
 
 let pool: Pool;
 let app: FastifyInstance;
+let adminAccess = '';
 
 beforeAll(async () => {
     const config = loadConfig();
@@ -33,6 +34,14 @@ beforeAll(async () => {
     pool = createTestPool(config);
     app = createApp({ config, db: pool });
     await app.ready();
+
+    await app.inject({ method: 'POST', url: `${API}/auth/register`, payload: { username: 'admin_port', password: 'Temporal123' } });
+
+    await pool.execute("UPDATE users SET role = 'admin' WHERE username = 'admin_port'");
+
+    const login = await app.inject({ method: 'POST', url: `${API}/auth/login`, payload: { username: 'admin_port', password: 'Temporal123' } });
+
+    adminAccess = String(login.json().access);
 }, 60000);
 
 afterAll(async () => {
@@ -74,17 +83,15 @@ async function refreshLikeService(token: string): Promise<{ status: number; retr
     return { status: 200 };
 }
 
-const PENDING: ReadonlyArray<readonly [string, string]> = [
-    ['testSaveRecipeUnknownIdReturns404WithoutOrphans', 'todo 19'],
-    ['testSaveRecipeIngredientNameOver200IsRejectedWith422', 'todo 19'],
-    ['testSaveCountryInvalidIdReturns400', 'todo 19'],
-    ['testRenameIngredientInvalidIdReturns400', 'todo 19'],
-    ['testDeleteIngredientInvalidIdReturns400', 'todo 19'],
-    ['testListKeepsResponseShape', 'todo 19'],
-    ['testSessionsListReturnsJoinedRows', 'todo 19'],
-    ['testRevokeSessionSoftRevokesAndSecondRevokeIs404', 'todo 19'],
-    ['testRevokeSessionUnknownIdReturns404AndBadIdReturns400', 'todo 19']
-];
+const PENDING: ReadonlyArray<readonly [string, string]> = [];
+
+function adminAuth(): { authorization: string } {
+    return { authorization: `Bearer ${adminAccess}` };
+}
+
+async function adminInject(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, payload?: unknown): Promise<Awaited<ReturnType<FastifyInstance['inject']>>> {
+    return app.inject({ method, url: `${API}${url}`, headers: adminAuth(), ...(payload === undefined ? {} : { payload: payload as object }) });
+}
 
 describe('AdminSessionsTest (PHP)', () => {
     it('testUnknownTokenRefreshThrottleReturns429WithRetryAfter', async () => {
@@ -151,6 +158,96 @@ describe('AdminSessionsTest (PHP)', () => {
     });
 
     for (const [name, closing] of PENDING) {
-        it.todo(`${name} — lo cierra el ${closing}`);
+        it.todo(`${name} - lo cierra el ${closing}`);
     }
+
+    it('testSaveRecipeUnknownIdReturns404WithoutOrphans', async () => {
+        const response = await adminInject('POST', '/admin/recipes', { id: 99999, name: 'Port Probe', country_id: 1, ingredients: ['Port Orphan'] });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.json()).toEqual({ ok: false, error: 'Receta no encontrada.' });
+
+        const [orphans] = await pool.execute<RowDataPacket[]>("SELECT COUNT(*) AS total FROM ingredients WHERE name = 'Port Orphan'");
+
+        expect(Number(orphans[0]?.total)).toBe(0);
+    });
+
+    it('testSaveRecipeIngredientNameOver200IsRejectedWith422', async () => {
+        const response = await adminInject('POST', '/admin/recipes', { name: 'Port Probe', country_id: 1, ingredients: ['x'.repeat(201)] });
+
+        expect(response.statusCode).toBe(422);
+        expect(response.json().errors).toEqual({ ingredients: 'El nombre del ingrediente no puede superar los 200 caracteres.' });
+    });
+
+    it('testSaveCountryInvalidIdReturns400', async () => {
+        const response = await adminInject('PUT', '/admin/countries/0', {});
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json()).toEqual({ ok: false, error: 'ID inválido.' });
+    });
+
+    it('testRenameIngredientInvalidIdReturns400', async () => {
+        expect((await adminInject('PUT', '/admin/ingredients/0', { name: 'Probe' })).json()).toEqual({ ok: false, error: 'ID inválido.' });
+    });
+
+    it('testDeleteIngredientInvalidIdReturns400', async () => {
+        expect((await adminInject('DELETE', '/admin/ingredients/0')).json()).toEqual({ ok: false, error: 'ID inválido.' });
+    });
+
+    it('testListKeepsResponseShape', async () => {
+        const response = await adminInject('GET', '/admin/data');
+        const body = response.json();
+
+        expect(response.statusCode).toBe(200);
+        expect(Object.keys(body).sort()).toEqual(['countries', 'ingredients', 'ok', 'recipes']);
+        expect(body.recipes).toHaveLength(57);
+        expect(body.countries).toHaveLength(22);
+        expect(body.ingredients).toHaveLength(185);
+        expect(Object.keys(body.recipes[0]).sort()).toEqual(['country_id', 'country_name', 'description', 'difficulty', 'id', 'ingredients', 'name', 'time_minutes', 'youtube_id']);
+    });
+
+    it('testSessionsListReturnsJoinedRows', async () => {
+        const [user] = await pool.execute<ResultSetHeader>('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['port_session_user', 'x', 'user']);
+        const first = await createSession(pool, { userId: user.insertId, sessionDays: 7, ip: '10.0.0.1', userAgent: 'ua-1' });
+        const second = await createSession(pool, { userId: user.insertId, sessionDays: 7, ip: '10.0.0.2', userAgent: null });
+
+        const response = await adminInject('GET', '/admin/sessions');
+        const rows = response.json().sessions;
+        const tokens = new Set([hashRefreshToken(first), hashRefreshToken(second)]);
+
+        expect(response.statusCode).toBe(200);
+        expect(rows.length).toBe(2);
+
+        for (const row of rows) {
+            expect(Object.keys(row).sort()).toEqual(['created_at', 'expires_at', 'id', 'ip', 'revoked_at', 'user_agent', 'username']);
+            expect(row.username).toBe('port_session_user');
+            expect(row.revoked_at).toBeNull();
+        }
+
+        expect(tokens.size).toBe(2);
+    });
+
+    it('testRevokeSessionSoftRevokesAndSecondRevokeIs404', async () => {
+        const [user] = await pool.execute<ResultSetHeader>('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', ['port_revoke_user', 'x', 'user']);
+        await createSession(pool, { userId: user.insertId, sessionDays: 7, ip: '10.0.0.1', userAgent: null });
+
+        const list = await adminInject('GET', '/admin/sessions');
+        const id = list.json().sessions[0].id;
+
+        expect((await adminInject('DELETE', `/admin/sessions/${id}`)).json()).toEqual({ ok: true });
+
+        const [rows] = await pool.execute<RowDataPacket[]>('SELECT revoked_at FROM sessions WHERE id = ?', [id]);
+
+        expect(rows[0]?.revoked_at).not.toBeNull();
+
+        const again = await adminInject('DELETE', `/admin/sessions/${id}`);
+
+        expect(again.statusCode).toBe(404);
+        expect(again.json()).toEqual({ ok: false, error: 'Sesión no encontrada.' });
+    });
+
+    it('testRevokeSessionUnknownIdReturns404AndBadIdReturns400', async () => {
+        expect((await adminInject('DELETE', '/admin/sessions/99999')).json()).toEqual({ ok: false, error: 'Sesión no encontrada.' });
+        expect((await adminInject('DELETE', '/admin/sessions/0')).json()).toEqual({ ok: false, error: 'ID inválido.' });
+    });
 });

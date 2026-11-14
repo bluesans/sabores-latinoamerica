@@ -25,6 +25,7 @@ import { registerJwt } from './auth/jwt.js';
 import type { AppConfig } from './config.js';
 import { applyCorsHeaders } from './http/cors.js';
 import { buildErrorPayload, httpRoutingError, resolveErrorStatus } from './http/error-envelope.js';
+import { registerAdminRoutes } from './routes/admin.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerFavoriteRoutes } from './routes/favorites.js';
 import { registerHealthRoutes } from './routes/health.js';
@@ -135,6 +136,7 @@ export function createApp(options: CreateAppOptions): FastifyInstance {
             registerAuthRoutes(instance, config, db);
             registerResourceRoutes(instance, db);
             registerFavoriteRoutes(instance, db);
+            registerAdminRoutes(instance, db);
         },
         { prefix: config.basePath }
     );
