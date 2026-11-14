@@ -2,19 +2,21 @@
 
 [![CI](https://github.com/bluesans/sabores-latinoamerica/actions/workflows/ci.yml/badge.svg)](https://github.com/bluesans/sabores-latinoamerica/actions/workflows/ci.yml)
 
-Atlas gastronómico interactivo (front vanilla JS + Vue 3 para el panel de admin,
-API REST en PHP con **Slim 4**, base de datos MySQL).
+Atlas gastronómico interactivo (frontend v1 vanilla JS + Vue 3 para el panel de
+admin; backend **Node 24 + Fastify + MySQL** desde F1). El PHP original quedó
+retirado, sin servir, en `legacy/php-api/`.
 
 ## Backend Node (F1, sirviendo vía Apache)
 
 El backend de F1 vive en `backend/` (Node 24 + Fastify + MySQL) y es el que
 responde hoy en `http://localhost/sabores-latinoamerica/api` a través del
-`ProxyPass` de Apache. El PHP de `api/` queda como legado hasta el retiro.
+`ProxyPass` de Apache. El PHP v1 quedó retirado en `legacy/php-api/` (bloqueado
+por `.htaccess`; no se sirve).
 
 ```bash
 cd backend
 npm ci
-cp .env.example .env     # completar DB_*, JWT_SECRET (mismo que api/.env), ADMIN_*
+cp .env.example .env     # completar DB_*, JWT_SECRET, ADMIN_*
 npm run build
 npm start                # escucha en 127.0.0.1:3001 (loopback)
 ```
@@ -53,24 +55,26 @@ responder 200 y `sessions.ip` debe guardar la IP que Apache envía en
    Si la base no existe, creala primero. El script apunta a una base **vacía**:
    si ya tiene tablas, MySQL corta la importación con `ERROR 1050` a propósito
    (convención en `db/migrations/README.md`).
-3. Instalá las dependencias del backend (necesitás [Composer](https://getcomposer.org)):
+3. Instalá las dependencias del backend Node:
    ```
-   cd sabores-latinoamerica/api
-   composer install
+   cd sabores-latinoamerica/backend
+   npm ci
    ```
-4. Copiá `api/.env.example` a `api/.env` y completalo: usuario/clave de MySQL,
-   `JWT_SECRET` (una clave larga y aleatoria propia) y `ADMIN_USER`/`ADMIN_PASS`
-   para la cuenta admin inicial. Si servís por HTTPS, revisá también `COOKIE_SECURE`.
-5. Sembrá la cuenta admin (desde `api/`):
+4. Copiá `backend/.env.example` a `backend/.env` y completalo: usuario/clave de
+   MySQL, `JWT_SECRET` (una clave larga y aleatoria propia), `ADMIN_USER`/`ADMIN_PASS`
+   y `TRUST_PROXY=127.0.0.1` si Apache proxya. Si servís por HTTPS, revisá también `COOKIE_SECURE`.
+5. Compilá y sembrá la cuenta admin:
    ```
-   php bin/create-admin.php
+   npm run build
+   npm start                # en otra consola, deja el backend en 127.0.0.1:3001
+   npm run create-admin     # con el backend detenido o en otra consola
    ```
-   Corrélo **una sola vez**; si más adelante querés rotar esa contraseña, usá `--force`.
+   `create-admin` es idempotente; `-- --force` rota la contraseña.
 6. Entrá a: http://localhost/sabores-latinoamerica/ e iniciá sesión con la cuenta
-   admin que sembraste en el paso anterior.
+   admin que sembraste.
 
 > **Nota:** el registro web crea siempre usuarios comunes (`role=user`). El rol
-> `admin` solo lo otorga `bin/create-admin.php`.
+> `admin` solo lo otorga `npm run create-admin`.
 
 ## Arquitectura
 
@@ -79,10 +83,11 @@ responder 200 y `sessions.ip` debe guardar la IP que Apache envía en
   más un componente **Vue 3** versionado localmente en `js/vendor/` (sin build step)
   para el panel de administración (`js/admin.js`). Toda la comunicación con el
   backend pasa por `js/api.js`.
-- **Backend**: API REST construida con **Slim 4** (`api/index.php` es el front controller,
-  las rutas están en `api/routes.php`, los controladores en `api/src/Controllers`).
-  Requiere `composer install` para traer las dependencias (`slim/slim`, `slim/psr7`,
-  `vlucas/phpdotenv`).
+- **Backend**: API REST en **Node 24 + Fastify 5** (`backend/src`, rutas en
+  `backend/src/routes`, datos con `mysql2` + Drizzle). El PHP Slim 4 original está
+  en `legacy/php-api/` como referencia histórica y no se sirve.
+- **Legacy**: `legacy/php-api/` (PHP + Composer) y, tras F2, `legacy/frontend-v1/`.
+  Apache bloquea todo `legacy/` con 403.
 - **Auth**: access JWT de corta duración (15 min) que vive **solo en memoria** del navegador, más un refresh token aleatorio guardado hasheado (SHA-256) en la tabla
   `sessions` y entregado como cookie `HttpOnly` / `SameSite=Strict` (`sdl_refresh`), con rotación en cada refresh y detección de reutilización.
   Middleware `AuthMiddleware`/`AdminMiddleware` protegen las rutas.
@@ -104,7 +109,7 @@ responder 200 y `sessions.ip` debe guardar la IP que Apache envía en
 - Los cambios de esquema van como migraciones numeradas en `db/migrations/`
   (convención en `db/migrations/README.md`); los dumps y patches históricos
   quedaron archivados, solo lectura, en `db/legacy/`.
-- El archivo `api/.env` **no se versiona** (está en `.gitignore`). Nunca subas tu
+- Los archivos `backend/.env` y `legacy/php-api/.env` **no se versionan**. Nunca subas tu
   `JWT_SECRET` real ni credenciales de base de datos al repositorio.
 
 ## Scripts y checks
@@ -114,8 +119,8 @@ cd backend && npm test              # suite Node (Vitest, requiere MySQL)
 cd backend && npm run lint
 cd backend && npm run typecheck
 cd backend && npm run openapi:check
-cd api && php vendor/bin/phpunit    # legado PHP (120 tests, hasta el retiro)
-cd api && composer stan             # legado PHP (hasta el retiro)
+cd legacy/php-api && php vendor/bin/phpunit  # legado PHP (no corre en CI)
+cd legacy/php-api && composer stan           # legado PHP (no corre en CI)
 npm run test:js                     # 58 tests JS v1
 npm run lint                        # biome check
 npm run check                       # tsc --noEmit
@@ -123,5 +128,6 @@ npm run test:e2e                    # smoke UI contra XAMPP
 npm run test:e2e:api                # flujo API request-only (E2E_API configurable)
 ```
 
-El CI (`.github/workflows/ci.yml`) corre todo lo anterior en cada push,
+El CI (`.github/workflows/ci.yml`) corre `backend-node` y `frontend` en cada push,
 menos el E2E (necesita el XAMPP local; correlo a mano antes de pushear cambios grandes).
+El job PHP fue retirado junto con la API v1.

@@ -11,17 +11,17 @@ declare(strict_types=1);
  *   {"action":"verify-hash","password":"<texto>","hash":"<bcrypt>"}
  *
  * Responde SIEMPRE JSON UTF-8 por STDOUT: {"ok":true,"result":...} o
- * {"ok":false,"error":"..."}. Carga `api/.env` (mismo JWT_SECRET que backend)
+ * {"ok":false,"error":"..."}. Carga `legacy/php-api/.env` (mismo JWT_SECRET que backend)
  * y usa las clases REALES del v1 (`App\Support\Jwt`), no una reimplementación.
  */
 use App\Support\Jwt;
 
 $root = dirname(__DIR__, 3);
 
-require $root . '/api/vendor/autoload.php';
+require $root . '/legacy/php-api/vendor/autoload.php';
 
-if (file_exists($root . '/api/.env')) {
-    Dotenv\Dotenv::createImmutable($root . '/api')->load();
+if (file_exists($root . '/legacy/php-api/.env')) {
+    Dotenv\Dotenv::createImmutable($root . '/legacy/php-api')->load();
 }
 
 try {

@@ -6,3 +6,10 @@
     Header unset X-Powered-By
     Header always unset X-Powered-By
 </IfModule>
+
+# El backend PHP v1 y el frontend v1 retirados viven bajo legacy/.
+# Bloquear todo el árbol para que no se sirvan fuentes, .env ni vendor.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^legacy(?:/|$) - [F,L,NC]
+</IfModule>

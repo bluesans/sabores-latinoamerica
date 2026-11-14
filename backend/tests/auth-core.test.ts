@@ -3,12 +3,12 @@
  *
  * Cubre JWT (claims, exp/iat y leeway, token_type, alg y firma), cookies de
  * refresh (atributos por escenario http/https), hashing bcrypt y el
- * cross-check BIDIRECCIONAL real contra `api/` (PHP CLI):
+ * cross-check BIDIRECCIONAL real contra `legacy/php-api/` (PHP CLI):
  * - token PHP -> valida en Node; token Node -> valida en PHP;
  * - hash `$2y$` de PHP -> verifica en Node; hash `$2b$` de Node -> verifica en PHP;
  * - passwords multibyte en ambos sentidos.
  *
- * El cross-check se saltea solo si no hay `php`, `api/vendor` o `api/.env`
+ * El cross-check se saltea solo si no hay `php`, `legacy/php-api/vendor` o `legacy/php-api/.env`
  * (p. ej. CI del backend antes del todo 25); localmente es un gate bloqueante.
  */
 import { spawnSync } from 'node:child_process';
@@ -340,7 +340,7 @@ describe('cookie de refresh (paridad Cookies.php)', () => {
 
 const PHP_BIN = process.env.PHP_BIN ?? 'php';
 const BRIDGE_PATH = fileURLToPath(new URL('./fixtures/php-verify-token.php', import.meta.url));
-const API_ENV_PATH = fileURLToPath(new URL('../../api/.env', import.meta.url));
+const API_ENV_PATH = fileURLToPath(new URL('../../legacy/php-api/.env', import.meta.url));
 const BACKEND_ENV_PATH = fileURLToPath(new URL('../.env', import.meta.url));
 
 const phpProbe = spawnSync(PHP_BIN, ['-v'], { encoding: 'utf8', windowsHide: true });
@@ -367,7 +367,7 @@ function callPhp(payload: Record<string, unknown>): PhpBridgeResponse {
 }
 
 describe.skipIf(!bridgeAvailable)('cross-check PHP<->Node', () => {
-    it('backend/.env reusa el JWT_SECRET de api/.env', () => {
+    it('backend/.env reusa el JWT_SECRET de legacy/php-api/.env', () => {
         const config = loadConfig();
         const apiEnv = parseDotenv(readFileSync(API_ENV_PATH));
 

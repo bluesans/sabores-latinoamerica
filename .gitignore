@@ -6,6 +6,11 @@
 /.playwright-mcp/
 node_modules/
 
+# Runtime logs / pid del backend Node
+/backend/server.out.log
+/backend/server.err.log
+/backend/server.pid
+
 # Misc
 .DS_Store
 Thumbs.db

@@ -8,7 +8,7 @@
 // matriz contra otra base URL (p. ej. el server Node) y comparar fixture por
 // fixture con diff legible.
 //
-// La matriz cubre TODAS las rutas de api/routes.php, incluidos los quirks:
+// La matriz cubre TODAS las rutas de legacy/php-api/routes.php, incluidos los quirks:
 // 401 sin token, 403 no-admin, 405 por método/path, OPTIONS 200 sin body,
 // GET / → 404, envelope global {ok:false,error,id}, 409 duplicado, 422 de
 // validación, ids (0→400, garbage→404, '12abc'→12), paginación, búsqueda y
@@ -52,7 +52,7 @@ const COOKIE_VALUE_RE = /^(sdl_refresh=)[0-9a-f]{64}/;
 // ---------------------------------------------------------------------------
 
 function loadEnvFile() {
-    const raw = readFileSync(resolve(REPO_ROOT, 'api', '.env'), 'utf8');
+    const raw = readFileSync(resolve(REPO_ROOT, 'legacy', 'php-api', '.env'), 'utf8');
     const values = {};
     for (const line of raw.split(/\r?\n/)) {
         const match = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(line.trim());
@@ -69,14 +69,14 @@ function loadEnvFile() {
 function checkPremises(envFile) {
     const problems = [];
     if (envFile.APP_DEBUG !== '0') {
-        problems.push(`APP_DEBUG debe ser "0" (valor en api/.env: ${envFile.APP_DEBUG ?? 'ausente'}).`);
+        problems.push(`APP_DEBUG debe ser "0" (valor en legacy/php-api/.env: ${envFile.APP_DEBUG ?? 'ausente'}).`);
     }
     if ((envFile.CORS_ORIGIN ?? '') !== '') {
-        problems.push(`CORS_ORIGIN debe estar vacío (valor en api/.env: ${envFile.CORS_ORIGIN}).`);
+        problems.push(`CORS_ORIGIN debe estar vacío (valor en legacy/php-api/.env: ${envFile.CORS_ORIGIN}).`);
     }
     const cookieSecure = envFile.COOKIE_SECURE ?? 'auto';
     if (cookieSecure !== 'auto') {
-        problems.push(`COOKIE_SECURE debe ser "auto" o estar ausente (valor en api/.env: ${cookieSecure}).`);
+        problems.push(`COOKIE_SECURE debe ser "auto" o estar ausente (valor en legacy/php-api/.env: ${cookieSecure}).`);
     }
     if (problems.length > 0) {
         throw new Error(`Premisas de entorno inválidas — no se capturó nada:\n - ${problems.join('\n - ')}`);
@@ -127,7 +127,7 @@ function verifyClean(db) {
 }
 
 function createAdminFixture() {
-    const output = execFileSync(PHP_BIN, [resolve(REPO_ROOT, 'api', 'bin', 'create-admin.php')], {
+    const output = execFileSync(PHP_BIN, [resolve(REPO_ROOT, 'legacy', 'php-api', 'bin', 'create-admin.php')], {
         cwd: REPO_ROOT,
         env: { ...process.env, ADMIN_USER: FIXTURE_ADMIN, ADMIN_PASS: FIXTURE_ADMIN_PASS },
         encoding: 'utf8'
