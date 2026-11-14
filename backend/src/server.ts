@@ -8,10 +8,11 @@
 import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { closePool, getPool } from './db/pool.js';
+import { loggerOptions } from './http/logger.js';
 
 const config = loadConfig();
 // `warn`: errores sí, requests (URL/IP) no: el PHP tampoco los loguea.
-const app = createApp({ config, db: getPool(), logger: { level: 'warn' } });
+const app = createApp({ config, db: getPool(), logger: loggerOptions });
 
 async function shutdown(signal: string): Promise<void> {
     app.log.info({ signal }, 'cerrando backend');

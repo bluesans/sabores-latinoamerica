@@ -15,6 +15,7 @@
 - `tests/admin.test.ts` — admin: guards, data, CRUD, validaciones y sesiones (todo 19).
 - `tests/create-admin.test.ts` — CLI create-admin: creación, idempotencia, --force y rechazo de rol user (todo 20).
 - `tests/openapi.test.ts` — export OpenAPI determinista y cobertura de rutas (todo 21).
+- `tests/redaction.test.ts` — redacción de password/cookie/authorization en logs (todo 24).
 - `tests/port/**` — port 1:1 de la suite PHP (este todo 12).
 
 ## Port de la suite PHP (todo 12)

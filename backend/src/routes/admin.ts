@@ -9,6 +9,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { requireAuth } from '../auth/guard.js';
 import { difficulty, positiveInt, youtubeId } from '../auth/validation.js';
+import { redactText } from '../http/redact.js';
 
 type IdParams = { id: string };
 
@@ -291,7 +292,7 @@ export function registerAdminRoutes(app: FastifyInstance, pool: Pool): void {
             return reply.send({ ok: true, id: recipeId });
         } catch (error) {
             await connection.rollback();
-            request.log.error(`[AdminController::saveRecipe] ${String(error)}`);
+            request.log.error(`[AdminController::saveRecipe] ${redactText(String(error))}`);
 
             return reply.code(500).send({ ok: false, error: 'Error interno del servidor.' });
         } finally {
@@ -379,7 +380,7 @@ export function registerAdminRoutes(app: FastifyInstance, pool: Pool): void {
                 return reply.code(409).send({ ok: false, error: 'Ese nombre ya existe.' });
             }
 
-            request.log.error(`[AdminController::renameIngredient] ${String(error)}`);
+            request.log.error(`[AdminController::renameIngredient] ${redactText(String(error))}`);
 
             return reply.code(500).send({ ok: false, error: 'Error interno del servidor.' });
         }
