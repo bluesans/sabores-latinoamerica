@@ -111,5 +111,5 @@ test('teardown: cerrar browser', async () => {
 });
 
 // CLEANUP (fuera del browser, con acceso a MySQL):
-//   DELETE FROM users WHERE username LIKE 'e2e\_smoke\_%';
+//   DELETE FROM users WHERE username LIKE 'e2e\_smoke\_%' OR username LIKE 'e2e\_api\_%';
 // Las sessions caen por ON DELETE CASCADE. login_attempts es telemetria y se purga sola.
