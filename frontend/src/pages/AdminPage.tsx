@@ -217,8 +217,21 @@ export function AdminPage() {
 
   const changeTab = (next: Tab) => {
     if (dirty && !window.confirm('Hay cambios sin guardar. ¿Descartarlos?')) return;
-    setDirty(false);
     setDraft(null);
+    if (data) {
+      setCountryDrafts(
+        Object.fromEntries(
+          data.countries.map((country) => [
+            country.id,
+            { emoji: country.emoji ?? '', tagline: country.tagline ?? '' },
+          ]),
+        ),
+      );
+      setIngredientNames(
+        Object.fromEntries(data.ingredients.map((ingredient) => [ingredient.id, ingredient.name])),
+      );
+    }
+    setDirty(false);
     setTab(next);
   };
 
@@ -604,6 +617,7 @@ export function AdminPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Cambios sin guardar"
+            data-lenis-prevent
           >
             <h4 className="ing-title">Cambios sin guardar</h4>
             <p className="ing-sub">Si salís ahora, las ediciones de esta pantalla se pierden.</p>

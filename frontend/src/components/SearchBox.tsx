@@ -114,6 +114,7 @@ export function SearchBox() {
           id="search-results"
           role="listbox"
           aria-label="Resultados de búsqueda"
+          data-lenis-prevent
         >
           {flat.length === 0 ? (
             <div className="s-empty">Sin resultados 🤷</div>

@@ -236,7 +236,7 @@ export function MapView({ countries, selectedCountryId, onSelect, onEscape }: Ma
   const endPointer = (event: ReactPointerEvent<SVGSVGElement>, isUp: boolean) => {
     pointers.current.delete(event.pointerId);
     if (pointers.current.size < 2) pinchPrev.current = null;
-    if (isUp && drag.current && drag.current.moved <= 4 && downCountry.current) {
+    if (isUp && drag.current && drag.current.moved <= 5 && downCountry.current) {
       const country = downCountry.current;
       const entry = rendered.find((item) => item.info.dbId === country.id);
       if (entry) select(entry, countryRefs.current.get(entry.info.iso) ?? null);

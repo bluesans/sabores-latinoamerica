@@ -31,7 +31,10 @@ export function RootLayout() {
   const needsAuth = !isPublic;
 
   useEffect(() => {
-    if (status === 'guest') queryClient.clear();
+    if (status === 'guest') {
+      void queryClient.cancelQueries();
+      queryClient.clear();
+    }
   }, [status, queryClient]);
 
   useEffect(() => {

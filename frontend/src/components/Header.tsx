@@ -77,6 +77,7 @@ function AccountDeleteDialog({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label="Eliminar cuenta"
         ref={cardRef}
+        data-lenis-prevent
       >
         <button
           className="modal-close"
