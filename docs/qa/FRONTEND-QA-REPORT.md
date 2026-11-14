@@ -37,10 +37,10 @@ Capturas de trabajo (no versionadas por tamaño): `.playwright-mcp/f2-desktop-14
 ## 4. Evidencia automatizada
 
 ```
-frontend: npx vitest run              -> 8 files / 24 tests passed
-frontend: npx playwright test          -> 7 passed, 1 skipped (admin sin credenciales)
+frontend: npx vitest run              -> 11 files / 29 tests passed
+frontend: npx playwright test          -> 7 passed, 1 skipped (admin sin credenciales; default contra build/preview)
 frontend: admin con usuario temporal   -> 1 passed (4 solapas, guardado sin reload, dirty-guard)
-frontend: axe wcag22aa                 -> 0 violaciones en home, auth, legales y admin restringido
+frontend: axe wcag22aa                 -> 0 violaciones en home (360/768/1440), auth, 6 legales y admin restringido
 frontend: scripts/check-contrast.mjs   -> 19/19 pares AA
 frontend: npm run build                -> exit 0
 cutover Apache                         -> home React 200, deep-link 200, /api 200, legacy 403

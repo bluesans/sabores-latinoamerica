@@ -18,9 +18,9 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
           <div className="state-error" role="alert">
             <span className="state-error-ico">⚠️</span>
             <p>Algo salió mal al mostrar esta pantalla.</p>
-            <button className="btn-retry" type="button" onClick={() => window.location.reload()}>
-              ↻ Recargar
-            </button>
+            <a className="btn-retry" href={import.meta.env.BASE_URL}>
+              ← Volver al inicio
+            </a>
           </div>
         </div>
       );

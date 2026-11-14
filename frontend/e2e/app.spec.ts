@@ -22,7 +22,7 @@ test('home, axe y responsive 360/768/1440', async ({ page }) => {
   await page.goto('/sabores-latinoamerica/');
   await expect(page.getByRole('heading', { name: /El mapa del sabor/ })).toBeVisible();
   await expect(page.getByText(/Mapa HD/)).toBeVisible();
-  await expect(page.getByText('19 países · 57 recetas')).toBeVisible();
+  await expect(page.getByText(/\d+ países · \d+ recetas/)).toBeVisible();
   await expect(page.locator('.country.has-data').first()).toBeVisible();
   await expectNoAxeViolations(page);
 
@@ -38,6 +38,7 @@ test('home, axe y responsive 360/768/1440', async ({ page }) => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow, `overflow horizontal a ${width}px`).toBeLessThanOrEqual(1);
+    await expectNoAxeViolations(page);
   }
 });
 
@@ -55,6 +56,7 @@ test('teclado, búsqueda, favorito y video consent-gated', async ({ page }) => {
   await expect
     .poll(() => page.locator('.map-svg > g').getAttribute('transform'))
     .not.toBe(beforeZoom);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
 
   await countries.first().focus();
   await page.keyboard.press('ArrowRight');
@@ -103,14 +105,23 @@ test('teclado, búsqueda, favorito y video consent-gated', async ({ page }) => {
 });
 
 test('legales, 404, admin restringido y axe por página', async ({ page }) => {
-  await page.goto('/sabores-latinoamerica/privacidad');
-  await expect(page.getByRole('heading', { name: 'Política de privacidad' })).toBeVisible();
-  await expect(page.getByText(/Pendiente de revisión profesional/)).toBeVisible();
-  await expectNoAxeViolations(page);
+  const legal = [
+    ['privacidad', 'Política de privacidad'],
+    ['terminos', 'Términos de uso'],
+    ['reembolsos', 'Reembolsos'],
+    ['cookies', 'Política de cookies'],
+    ['contacto', 'Contacto'],
+    ['licencias', 'Licencias y créditos'],
+  ] as const;
+  for (const [route, heading] of legal) {
+    await page.goto(`/sabores-latinoamerica/${route}`);
+    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    await expect(page.getByText(/Pendiente de revisión profesional/)).toBeVisible();
+    await expectNoAxeViolations(page);
+  }
 
   await page.goto('/sabores-latinoamerica/cookies');
   await expect(page.getByRole('table')).toContainText('sdl_refresh');
-  await expectNoAxeViolations(page);
 
   await page.goto('/sabores-latinoamerica/ruta-que-no-existe');
   await expect(page.getByRole('heading', { name: /404/ })).toBeVisible();

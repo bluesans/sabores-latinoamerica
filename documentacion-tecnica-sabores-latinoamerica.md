@@ -1,6 +1,6 @@
 # Sabores de Latinoamérica — Documentación técnica completa
 
-> **Actualización F1 (2026-11):** el backend vigente es Node 24 + Fastify en `backend/` y Apache lo sirve en `/sabores-latinoamerica/api`. El PHP Slim 4 descripto en este documento fue retirado a `legacy/php-api/` (bloqueado por `.htaccess`); las rutas `api/...` que aparecen abajo son históricas y hoy equivalen a `legacy/php-api/...`. El frontend v1 sigue vigente hasta el cutover F2.
+> **Actualización F2 (2026-11):** el frontend vigente es React 19 + Vite en `frontend/` y Apache sirve el build con SPA fallback en `/sabores-latinoamerica/`; el frontend vanilla + Vue descripto abajo fue retirado a `legacy/frontend-v1/` (403). El backend vigente es Node 24 + Fastify en `backend/`; el PHP Slim 4 fue retirado a `legacy/php-api/`. Las rutas y módulos `api/...` y `js/...` de este documento son históricos.
 
 > **Propósito de este documento:** explicar el proyecto de punta a punta -arquitectura, base de datos, cada endpoint de la API, cada módulo del frontend, el flujo de autenticación y un recorrido de uso real- para que alguien (persona o IA) sin ningún contexto previo pueda entenderlo y trabajar sobre él sin tener que leer todo el código fuente primero. Todos los ejemplos (JSON, SQL, datos) están tomados del código y los datos reales del proyecto.
 

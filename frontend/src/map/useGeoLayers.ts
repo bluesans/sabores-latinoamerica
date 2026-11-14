@@ -41,14 +41,14 @@ export function useGeoLayers(): GeoState {
 
     async function load() {
       let topo: TopoJSON | null = null;
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        try {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
           const parsed: unknown = JSON.parse(cached);
           if (isTopo(parsed)) topo = parsed;
-        } catch {
-          topo = null;
         }
+      } catch {
+        topo = null;
       }
       let hd = Boolean(topo);
       if (!topo) {

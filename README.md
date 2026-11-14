@@ -161,7 +161,7 @@ cd backend && npm run typecheck
 cd backend && npm run openapi:check
 cd backend && npm run create-admin
 
-cd frontend && npm test             # Vitest + RTL (24 tests)
+cd frontend && npm test             # Vitest + RTL (29 tests)
 cd frontend && npm run typecheck
 cd frontend && npm run lint         # Biome
 cd frontend && npm run build

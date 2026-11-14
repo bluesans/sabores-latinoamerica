@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
@@ -21,12 +22,17 @@ const PUBLIC_PREFIXES = [
 export function RootLayout() {
   const { status } = useAuth();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const previousPath = useRef(location.pathname);
 
   const isPublic = PUBLIC_PREFIXES.some(
     (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`),
   );
   const needsAuth = !isPublic;
+
+  useEffect(() => {
+    if (status === 'guest') queryClient.clear();
+  }, [status, queryClient]);
 
   useEffect(() => {
     if (previousPath.current === location.pathname) return;

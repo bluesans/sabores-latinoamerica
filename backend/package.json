@@ -10,7 +10,7 @@
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
         "start": "node dist/server.js",
-        "test": "vitest run --passWithNoTests",
+        "test": "vitest run",
         "test:fixtures": "node tests/fixtures/diff.mjs",
         "lint": "biome check .",
         "typecheck": "tsc --noEmit",

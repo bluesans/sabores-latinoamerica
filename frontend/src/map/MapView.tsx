@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import type { Country } from '../api/types';
+import { prefersReducedMotion } from '../lib/motion';
 import { renderCountries, VB_H, VB_W } from './geo';
 import { useGeoLayers } from './useGeoLayers';
 
@@ -27,10 +28,6 @@ interface MapViewProps {
 const IDENTITY: View = { k: 1, x: 0, y: 0 };
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
 
 export function MapView({ countries, selectedCountryId, onSelect, onEscape }: MapViewProps) {
   const { geo, hd, loading } = useGeoLayers();
@@ -239,7 +236,7 @@ export function MapView({ countries, selectedCountryId, onSelect, onEscape }: Ma
   const endPointer = (event: ReactPointerEvent<SVGSVGElement>, isUp: boolean) => {
     pointers.current.delete(event.pointerId);
     if (pointers.current.size < 2) pinchPrev.current = null;
-    if (isUp && drag.current && drag.current.moved <= 5 && downCountry.current) {
+    if (isUp && drag.current && drag.current.moved <= 4 && downCountry.current) {
       const country = downCountry.current;
       const entry = rendered.find((item) => item.info.dbId === country.id);
       if (entry) select(entry, countryRefs.current.get(entry.info.iso) ?? null);
@@ -307,7 +304,7 @@ export function MapView({ countries, selectedCountryId, onSelect, onEscape }: Ma
 
   return (
     <>
-      <div className="map-shell" ref={shellRef} tabIndex={-1} id="mapShell">
+      <div className="map-shell" ref={shellRef} tabIndex={-1} id="mapShell" data-lenis-prevent>
         <svg
           ref={svgRef}
           className={`map-svg${dragging ? ' dragging' : ''}${view.k >= 1.8 ? ' zoomed' : ''}${selectedCountryId !== null ? ' has-active' : ''}`}
@@ -464,7 +461,7 @@ export function MapView({ countries, selectedCountryId, onSelect, onEscape }: Ma
                       textAnchor="middle"
                       transform={`translate(${point[0]},${point[1]}) scale(${1 / view.k})`}
                     >
-                      {entry.info.n}
+                      {entry.info.name}
                     </text>
                   );
                 })}

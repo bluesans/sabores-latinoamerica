@@ -80,7 +80,7 @@ No se recolectan emails, teléfonos, ubicación precisa ni datos de pago. No hay
 ## 7. Evidencia ejecutable
 
 ```
-frontend: npm test                    -> 8 files / 24 tests passed
+frontend: npm test                    -> 11 files / 29 tests passed
 frontend: npm run build               -> exit 0
 frontend: npm run typecheck           -> exit 0
 frontend: npx biome check .           -> exit 0 (solo warnings de estilo preexistentes)

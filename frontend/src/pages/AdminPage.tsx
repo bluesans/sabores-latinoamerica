@@ -1,8 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useBeforeUnload, useBlocker } from 'react-router';
 import { api } from '../api/client';
-import type { AdminCountry, AdminIngredient, AdminRecipe, AdminSession } from '../api/types';
+import type {
+  AdminCountry,
+  AdminData,
+  AdminIngredient,
+  AdminRecipe,
+  AdminSession,
+} from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../ui/ToastProvider';
 
@@ -32,6 +38,23 @@ function emptyRecipe(countryId: number): RecipeDraft {
   };
 }
 
+function hasDirtyDrafts(
+  data: AdminData | undefined,
+  countryDrafts: Record<number, { emoji: string; tagline: string }>,
+  ingredientNames: Record<number, string>,
+): boolean {
+  if (!data) return false;
+  const countriesDirty = data.countries.some((country) => {
+    const draft = countryDrafts[country.id];
+    if (!draft) return false;
+    return draft.emoji !== (country.emoji ?? '') || draft.tagline !== (country.tagline ?? '');
+  });
+  const ingredientsDirty = data.ingredients.some(
+    (ingredient) => (ingredientNames[ingredient.id] ?? ingredient.name) !== ingredient.name,
+  );
+  return countriesDirty || ingredientsDirty;
+}
+
 export function AdminPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -43,6 +66,7 @@ export function AdminPage() {
     Record<number, { emoji: string; tagline: string }>
   >({});
   const [ingredientNames, setIngredientNames] = useState<Record<number, string>>({});
+  const draftsInitialized = useRef(false);
   const blocker = useBlocker(dirty);
 
   useBeforeUnload(
@@ -70,8 +94,14 @@ export function AdminPage() {
 
   const data = dataQuery.data;
 
+  const refreshDirty = () => {
+    const fresh = queryClient.getQueryData<AdminData>(['admin-data']);
+    setDirty(hasDirtyDrafts(fresh, countryDrafts, ingredientNames));
+  };
+
   useEffect(() => {
-    if (!data) return;
+    if (!data || draftsInitialized.current) return;
+    draftsInitialized.current = true;
     setCountryDrafts(
       Object.fromEntries(
         data.countries.map((country) => [
@@ -101,11 +131,11 @@ export function AdminPage() {
           .filter(Boolean),
       }),
     onSuccess: async () => {
-      setDirty(false);
       setDraft(null);
       await queryClient.invalidateQueries({ queryKey: ['admin-data'] });
       await queryClient.invalidateQueries({ queryKey: ['countries'] });
       await queryClient.invalidateQueries({ queryKey: ['stats'] });
+      refreshDirty();
       toast('Receta guardada ✅');
     },
     onError: (error) => toast(error.message),
@@ -114,10 +144,10 @@ export function AdminPage() {
   const deleteRecipe = useMutation({
     mutationFn: (id: number) => api.adminDeleteRecipe(id),
     onSuccess: async () => {
-      setDirty(false);
       await queryClient.invalidateQueries({ queryKey: ['admin-data'] });
       await queryClient.invalidateQueries({ queryKey: ['countries'] });
       await queryClient.invalidateQueries({ queryKey: ['stats'] });
+      refreshDirty();
       toast('Receta eliminada');
     },
     onError: (error) => toast(error.message),
@@ -133,9 +163,9 @@ export function AdminPage() {
       });
     },
     onSuccess: async () => {
-      setDirty(false);
       await queryClient.invalidateQueries({ queryKey: ['admin-data'] });
       await queryClient.invalidateQueries({ queryKey: ['countries'] });
+      refreshDirty();
       toast('País actualizado ✅');
     },
     onError: (error) => toast(error.message),
@@ -145,8 +175,8 @@ export function AdminPage() {
     mutationFn: (ingredient: AdminIngredient) =>
       api.adminRenameIngredient(ingredient.id, ingredientNames[ingredient.id] ?? ingredient.name),
     onSuccess: async () => {
-      setDirty(false);
       await queryClient.invalidateQueries({ queryKey: ['admin-data'] });
+      refreshDirty();
       toast('Ingrediente renombrado ✅');
     },
     onError: (error) => toast(error.message),
@@ -155,8 +185,8 @@ export function AdminPage() {
   const deleteIngredient = useMutation({
     mutationFn: (id: number) => api.adminDeleteIngredient(id),
     onSuccess: async () => {
-      setDirty(false);
       await queryClient.invalidateQueries({ queryKey: ['admin-data'] });
+      refreshDirty();
       toast('Ingrediente eliminado');
     },
     onError: (error) => toast(error.message),

@@ -116,6 +116,7 @@ export function IngredientModalProvider({ children }: { children: ReactNode }) {
             role="dialog"
             aria-modal="true"
             aria-label="Recetas con este ingrediente"
+            data-lenis-prevent
           >
             <button
               className="modal-close"

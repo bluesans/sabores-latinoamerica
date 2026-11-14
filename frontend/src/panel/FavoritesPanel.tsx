@@ -8,6 +8,7 @@ import { formatTime } from '../lib/format';
 
 export function FavoritesPanel({ onClose }: { onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  const openerRef = useRef<Element | null>(document.activeElement);
   const navigate = useNavigate();
   const query = useQuery({ queryKey: ['favorites'], queryFn: () => api.favorites(), retry: 1 });
 
@@ -17,7 +18,13 @@ export function FavoritesPanel({ onClose }: { onClose: () => void }) {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      const opener = openerRef.current;
+      if (opener instanceof HTMLElement || opener instanceof SVGElement) {
+        opener.focus({ preventScroll: true });
+      }
+    };
   }, [onClose]);
 
   const favorites = query.data?.favorites ?? [];
@@ -30,7 +37,7 @@ export function FavoritesPanel({ onClose }: { onClose: () => void }) {
         aria-label="Cerrar panel"
         onClick={onClose}
       />
-      <aside className="panel open" aria-label="Mis favoritos">
+      <aside className="panel open" aria-label="Mis favoritos" data-lenis-prevent>
         <button
           className="panel-close"
           type="button"

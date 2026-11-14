@@ -1,5 +1,5 @@
-import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
+import { gsap, prefersReducedMotion } from '../lib/motion';
 
 export function AnimatedNumber({ value }: { value: number }) {
   const ref = useRef<HTMLSpanElement | null>(null);
@@ -7,7 +7,7 @@ export function AnimatedNumber({ value }: { value: number }) {
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (prefersReducedMotion()) {
       element.textContent = String(value);
       return;
     }

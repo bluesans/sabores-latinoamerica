@@ -158,6 +158,7 @@ export function MapPage() {
 
       {countryId !== null ? (
         <CountryPanel
+          key={countryId}
           countryId={countryId}
           focusRecipeId={focusRecipeId}
           opener={openerRef.current}

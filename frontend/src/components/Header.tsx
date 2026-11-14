@@ -14,6 +14,7 @@ function AccountDeleteDialog({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('');
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const openerRef = useRef<Element | null>(document.activeElement);
 
   const mutation = useMutation({
     mutationFn: () => deleteAccount(password),
@@ -49,7 +50,13 @@ function AccountDeleteDialog({ onClose }: { onClose: () => void }) {
       }
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      const opener = openerRef.current;
+      if (opener instanceof HTMLElement || opener instanceof SVGElement) {
+        opener.focus({ preventScroll: true });
+      }
+    };
   }, [onClose]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {

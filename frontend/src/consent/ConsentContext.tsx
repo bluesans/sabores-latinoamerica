@@ -31,7 +31,11 @@ function isValid(value: unknown): value is ConsentRecord {
   if (typeof record.timestamp !== 'number') return false;
   if (typeof record.categories !== 'object' || record.categories === null) return false;
   const categories = record.categories as Record<string, unknown>;
-  return categories.necessary === true && typeof categories.thirdParty === 'boolean';
+  return (
+    categories.necessary === true &&
+    typeof categories.functional === 'boolean' &&
+    typeof categories.thirdParty === 'boolean'
+  );
 }
 
 export function readConsent(now = Date.now()): ConsentRecord | null {

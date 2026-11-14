@@ -52,6 +52,8 @@ export function CountryPanel({ countryId, focusRecipeId, opener, onClose }: Coun
     return () => {
       if (opener instanceof HTMLElement || opener instanceof SVGElement) {
         opener.focus({ preventScroll: true });
+      } else {
+        document.getElementById('mapShell')?.focus({ preventScroll: true });
       }
     };
   }, [opener]);
@@ -88,7 +90,7 @@ export function CountryPanel({ countryId, focusRecipeId, opener, onClose }: Coun
         aria-label="Cerrar panel"
         onClick={onClose}
       />
-      <aside className="panel open" aria-label="Recetas del país">
+      <aside className="panel open" aria-label="Recetas del país" data-lenis-prevent>
         <button
           className="panel-close"
           type="button"

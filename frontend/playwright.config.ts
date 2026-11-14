@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5174/sabores-latinoamerica/';
+const defaultBaseURL = 'http://localhost:4173/sabores-latinoamerica/';
+const baseURL = process.env.E2E_BASE_URL ?? defaultBaseURL;
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,8 +23,8 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: 'npm run dev -- --port 5174',
-        url: 'http://localhost:5174/sabores-latinoamerica/',
+        command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+        url: defaultBaseURL,
         reuseExistingServer: true,
         timeout: 120_000,
       },

@@ -16,12 +16,12 @@ export function SearchBox() {
 
   useEffect(() => {
     const trimmed = query.trim();
+    const current = ++sequence.current;
     if (trimmed.length < 2) {
       setResults(null);
       setOpen(false);
       return;
     }
-    const current = ++sequence.current;
     const timer = window.setTimeout(() => {
       api
         .search(trimmed)
