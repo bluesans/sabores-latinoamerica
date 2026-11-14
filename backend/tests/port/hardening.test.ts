@@ -61,8 +61,6 @@ function stubApp(overrides: Record<string, string> = {}): FastifyInstance {
     return createApp({ config, db: { execute: async () => [[], []], query: async () => [[{ '1': 1 }], []] } as unknown as Pool });
 }
 
-const PENDING: ReadonlyArray<readonly [string, string]> = [];
-
 describe('HardeningTest (PHP)', () => {
     it('testByCountryNonNumericIdReturns400 -> 405 HTTP (waiver de routing)', async () => {
         for (const id of ['abc', '12abc', '-3', '1.5']) {
@@ -212,8 +210,4 @@ describe('HardeningTest (PHP)', () => {
         expect((await app.inject({ method: 'PUT', url: `${API}/admin/countries/12abc`, headers: { authorization: `Bearer ${adminAccess}` }, payload: {} })).statusCode).toBe(400);
         expect((await app.inject({ method: 'DELETE', url: `${API}/admin/sessions/12abc`, headers: { authorization: `Bearer ${adminAccess}` } })).statusCode).toBe(405);
     });
-
-    for (const [name, closing] of PENDING) {
-        it.todo(`${name} — lo cierra el ${closing}`);
-    }
 });

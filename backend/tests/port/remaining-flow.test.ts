@@ -47,8 +47,6 @@ function healthApp(db: { query(sql: string): Promise<unknown> }): FastifyInstanc
     return createApp({ config: loadConfig(), db: db as unknown as Pool });
 }
 
-const PENDING: ReadonlyArray<readonly [string, string]> = [];
-
 describe('RemainingFlowTest (PHP)', () => {
     it('testByCountryReturnsCountryBlockAndRecipesWithIngredients', async () => {
         const response = await app.inject({ method: 'GET', url: `${API}/countries/4/recipes`, headers: auth() });
@@ -179,8 +177,4 @@ describe('RemainingFlowTest (PHP)', () => {
             await deadApp.close();
         }
     });
-
-    for (const [name, closing] of PENDING) {
-        it.todo(`${name} — lo cierra el ${closing}`);
-    }
 });

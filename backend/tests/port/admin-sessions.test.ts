@@ -83,8 +83,6 @@ async function refreshLikeService(token: string): Promise<{ status: number; retr
     return { status: 200 };
 }
 
-const PENDING: ReadonlyArray<readonly [string, string]> = [];
-
 function adminAuth(): { authorization: string } {
     return { authorization: `Bearer ${adminAccess}` };
 }
@@ -156,10 +154,6 @@ describe('AdminSessionsTest (PHP)', () => {
 
         expect(rows[0]?.user_agent).toBe('');
     });
-
-    for (const [name, closing] of PENDING) {
-        it.todo(`${name} - lo cierra el ${closing}`);
-    }
 
     it('testSaveRecipeUnknownIdReturns404WithoutOrphans', async () => {
         const response = await adminInject('POST', '/admin/recipes', { id: 99999, name: 'Port Probe', country_id: 1, ingredients: ['Port Orphan'] });
