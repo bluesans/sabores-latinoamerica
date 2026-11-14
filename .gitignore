@@ -22,3 +22,6 @@ Thumbs.db
 /frontend/.env
 /frontend/.e2e-state.json
 /frontend/.e2e-user.json
+
+# TypeScript build info
+*.tsbuildinfo

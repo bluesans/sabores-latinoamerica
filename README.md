@@ -2,16 +2,24 @@
 
 [![CI](https://github.com/bluesans/sabores-latinoamerica/actions/workflows/ci.yml/badge.svg)](https://github.com/bluesans/sabores-latinoamerica/actions/workflows/ci.yml)
 
-Atlas gastronómico interactivo (frontend v1 vanilla JS + Vue 3 para el panel de
-admin; backend **Node 24 + Fastify + MySQL** desde F1). El PHP original quedó
-retirado, sin servir, en `legacy/php-api/`.
+Atlas gastronómico interactivo: **frontend React 19 + Vite** y **backend Node 24
++ Fastify + MySQL**. El sitio actual se sirve como SPA en
+`http://localhost/sabores-latinoamerica/` y consume la API en
+`/sabores-latinoamerica/api`. El PHP y el frontend vanilla originales quedaron
+retirados, sin servir, en `legacy/php-api/` y `legacy/frontend-v1/`.
+
+## Qué hay en el repo
+
+| Carpeta | Contenido |
+|---|---|
+| `backend/` | API Node/Fastify, Drizzle/mysql2, tests Vitest, OpenAPI, CLI admin |
+| `frontend/` | SPA React 19 + Vite, tests Vitest/RTL, e2e Playwright + axe |
+| `db/migrations/` | Esquema canónico y migraciones aditivas 000–003 |
+| `docs/legal/` | Auditoría de compliance (20/20) y textos legales |
+| `e2e/` | Flujos API request-only (siguen vigentes) |
+| `legacy/` | PHP v1 y frontend vanilla v1, bloqueados por Apache con 403 |
 
 ## Backend Node (F1, sirviendo vía Apache)
-
-El backend de F1 vive en `backend/` (Node 24 + Fastify + MySQL) y es el que
-responde hoy en `http://localhost/sabores-latinoamerica/api` a través del
-`ProxyPass` de Apache. El PHP v1 quedó retirado en `legacy/php-api/` (bloqueado
-por `.htaccess`; no se sirve).
 
 ```bash
 cd backend
@@ -21,113 +29,150 @@ npm run build
 npm start                # escucha en 127.0.0.1:3001 (loopback)
 ```
 
-- **Parar**: `Ctrl+C` en la consola o terminar el proceso `node dist/server.js`.
+- **Parar**: `Ctrl+C` o terminar `node dist/server.js` (PID en `backend/server.pid` si usás el arranque documentado).
 - **Health**: `GET /sabores-latinoamerica/api/health` (200 con `db:true`).
 - **Admin inicial**: `npm run create-admin` (lee `ADMIN_USER`/`ADMIN_PASS` de `backend/.env`; `-- --force` rota la clave).
 - **Tests**: `npm test`, `npm run lint`, `npm run typecheck`, `npm run openapi:check`.
-- **Requisito de proxy**: `backend/.env` debe tener `TRUST_PROXY=127.0.0.1`. No usar `true`/`1`: solo se confía en el loopback de Apache.
+- **Proxy**: `backend/.env` debe tener `TRUST_PROXY=127.0.0.1`; no usar `true`/`1`.
+- **Consentimiento**: `CONSENT_STRICT=1` exige los tres checks en el registro web (F2). Los usuarios legacy pueden tener las columnas de consentimiento en `NULL`.
 
-### Cutover / rollback (F1)
+## Frontend React (F2)
 
-El snippet de Apache está en `C:\xampp\apache\conf\httpd.conf`:
+```bash
+cd frontend
+npm ci                  # frontend/.npmrc fija legacy-peer-deps por el peer de openapi-typescript
+npm run dev             # http://localhost:5173/sabores-latinoamerica/
+npm test                # Vitest + RTL
+npm run lint            # Biome
+npm run typecheck
+npm run build           # dist/
+npm run api:types       # regenera src/api/types.d.ts desde backend/openapi.json
+npm run e2e             # Playwright + axe (requiere API/DB y consentimiento)
+```
+
+- **Dev**: Vite proxya `/sabores-latinoamerica/api` a `http://localhost`, así que
+  alcanza con tener Apache + Node corriendo.
+- **Base**: `vite.config.ts` usa `base: '/sabores-latinoamerica/'`; el router usa
+  el mismo basename. `VITE_API_BASE` se puede sobreescribir en `frontend/.env`.
+- **Datos**: los topojson de Natural Earth están vendorizados en
+  `frontend/public/data/` (50m con fallback 110m + siluetas locales). No hay
+  requests al CDN en runtime.
+- **Consentimiento**: `sdl_consent` en `localStorage` (versión, timestamp y
+  categorías), re-consulta a los 183 días. El video de YouTube solo se carga con
+  `thirdParty=true` y click explícito, usando `youtube-nocookie.com`.
+
+## Puesta en marcha (XAMPP)
+
+1. Copiá la carpeta `sabores-latinoamerica/` dentro de `htdocs/`.
+2. Importá el esquema canónico `db/migrations/000_install.sql` en una base vacía
+   (phpMyAdmin → Importar, o `mysql -u root -p --default-character-set=utf8mb4
+   sabores_latinoamerica < db/migrations/000_install.sql`). Aplicá luego 001–003.
+3. Instalá backend y frontend: `cd backend && npm ci`; `cd ../frontend && npm ci`.
+4. Copiá `backend/.env.example` a `backend/.env` y completá MySQL, `JWT_SECRET`
+   (mínimo 32 caracteres), `ADMIN_USER`/`ADMIN_PASS`, `TRUST_PROXY=127.0.0.1`.
+5. Compilá y arrancá el backend; sembrá el admin:
+   ```bash
+   cd backend
+   npm run build
+   npm start                # otra consola
+   npm run create-admin
+   ```
+6. Compilá el frontend: `cd frontend && npm run build`.
+7. Entrá a `http://localhost/sabores-latinoamerica/` e iniciá sesión.
+
+> El registro web crea siempre usuarios comunes (`role=user`). El rol `admin`
+> solo lo otorga `npm run create-admin`.
+
+## Apache: cutover y rollback
+
+El `httpd.conf` de XAMPP tiene dos bloques. F1 (API):
 
 ```apache
 ProxyPass /sabores-latinoamerica/api http://127.0.0.1:3001/sabores-latinoamerica/api
 ProxyPassReverse /sabores-latinoamerica/api http://127.0.0.1:3001/sabores-latinoamerica/api
 ```
 
-**Rollback de un paso**: comentar esas dos líneas, reiniciar Apache
-(`httpd -k restart`) y verificar que el PHP vuelve a servir (un `DELETE
-/auth/account` sin token da `405` en PHP y `401` en Node). Para re-flipear,
-descomentar y reiniciar. Con el proxy activo, el `health` de Apache debe
-responder 200 y `sessions.ip` debe guardar la IP que Apache envía en
-`X-Forwarded-For` (en local el cliente es 127.0.0.1).
+F2 (SPA + fallback de deep-links + bloqueo de legacy):
 
-## Puesta en marcha (con XAMPP)
+```apache
+Alias /sabores-latinoamerica/ "C:/xampp/htdocs/sabores-latinoamerica/frontend/dist/"
+<Directory "C:/xampp/htdocs/sabores-latinoamerica/frontend/dist">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+    RewriteEngine On
+    RewriteRule ^legacy(?:/|$) - [F,L,NC]
+    FallbackResource /sabores-latinoamerica/index.html
+</Directory>
+```
 
-1. Copiá la carpeta `sabores-latinoamerica/` dentro de `htdocs/`.
-2. Importá el esquema canónico `db/migrations/000_install.sql`:
-   - phpMyAdmin → pestaña **Importar** → elegí `db/migrations/000_install.sql`, o
-   - consola (desde la raíz del proyecto):
-     ```
-     mysql -u root -p --default-character-set=utf8mb4 sabores_latinoamerica < db/migrations/000_install.sql
-     ```
-   Si la base no existe, creala primero. El script apunta a una base **vacía**:
-   si ya tiene tablas, MySQL corta la importación con `ERROR 1050` a propósito
-   (convención en `db/migrations/README.md`).
-3. Instalá las dependencias del backend Node:
-   ```
-   cd sabores-latinoamerica/backend
-   npm ci
-   ```
-4. Copiá `backend/.env.example` a `backend/.env` y completalo: usuario/clave de
-   MySQL, `JWT_SECRET` (una clave larga y aleatoria propia), `ADMIN_USER`/`ADMIN_PASS`
-   y `TRUST_PROXY=127.0.0.1` si Apache proxya. Si servís por HTTPS, revisá también `COOKIE_SECURE`.
-5. Compilá y sembrá la cuenta admin:
-   ```
-   npm run build
-   npm start                # en otra consola, deja el backend en 127.0.0.1:3001
-   npm run create-admin     # con el backend detenido o en otra consola
-   ```
-   `create-admin` es idempotente; `-- --force` rota la contraseña.
-6. Entrá a: http://localhost/sabores-latinoamerica/ e iniciá sesión con la cuenta
-   admin que sembraste.
+**Rollback F2 de un paso**: restaurá
+`C:\xampp\apache\conf\httpd.conf.sabores-pre-f2.bak` (o comentá el bloque
+`Alias`/`Directory`), `httpd -k restart` y verificá que vuelve el v1
+(`authScreen` en el HTML). Para re-flipear, restaurá
+`httpd.conf.sabores-f2.bak`. El proxy `/api` sigue ganando sobre el Alias.
 
-> **Nota:** el registro web crea siempre usuarios comunes (`role=user`). El rol
-> `admin` solo lo otorga `npm run create-admin`.
+**Rollback F1**: comentá las dos líneas `ProxyPass` y reiniciá Apache; el PHP
+legacy no está servido por la regla `.htaccess`/Rewrite, así que el rollback real
+de F1 es restaurar el backup previo. El health debe dar 200 y
+`sessions.ip` guarda la IP que Apache envía en `X-Forwarded-For`.
 
 ## Arquitectura
 
-- **Frontend**: HTML + CSS + JS vanilla como módulos ES (`js/app.js` importa el resto:
-  `js/map.js`, `js/panel.js`, `js/auth.js`, `js/util/dom.js`, `js/ui/toast.js`)
-  más un componente **Vue 3** versionado localmente en `js/vendor/` (sin build step)
-  para el panel de administración (`js/admin.js`). Toda la comunicación con el
-  backend pasa por `js/api.js`.
-- **Backend**: API REST en **Node 24 + Fastify 5** (`backend/src`, rutas en
-  `backend/src/routes`, datos con `mysql2` + Drizzle). El PHP Slim 4 original está
-  en `legacy/php-api/` como referencia histórica y no se sirve.
-- **Legacy**: `legacy/php-api/` (PHP + Composer) y, tras F2, `legacy/frontend-v1/`.
-  Apache bloquea todo `legacy/` con 403.
-- **Auth**: access JWT de corta duración (15 min) que vive **solo en memoria** del navegador, más un refresh token aleatorio guardado hasheado (SHA-256) en la tabla
-  `sessions` y entregado como cookie `HttpOnly` / `SameSite=Strict` (`sdl_refresh`), con rotación en cada refresh y detección de reutilización.
-  Middleware `AuthMiddleware`/`AdminMiddleware` protegen las rutas.
+- **Frontend**: React 19 + TypeScript + Vite; React Router (rutas reales
+  `/pais/:id`, legales, `/admin`), TanStack Query, GSAP (contadores),
+  Lenis (scroll suave, respeta `prefers-reduced-motion`). El mapa es SVG propio
+  con topojson vendorizado, proyección mercator, point-in-polygon y centroides
+  portados 1:1 del v1; incluye gestures (pan/zoom/pinch), roving tabindex APG y
+  una lista alternativa de países.
+- **Backend**: API REST en `backend/src` (Fastify 5, rutas en `routes/`, datos
+  `mysql2` + Drizzle). OpenAPI versionado en `backend/openapi.json`.
+- **Auth**: access JWT de 15 min solo en memoria; refresh token aleatorio
+  hasheado (SHA-256) en `sessions`, cookie `sdl_refresh` HttpOnly /
+  SameSite=Strict, rotación y detección de reutilización. `DELETE /auth/account`
+  borra cuenta, sesiones y favoritos con guard de último admin.
+- **Legacy**: `legacy/php-api/` y `legacy/frontend-v1/`; Apache responde 403 para
+  `/legacy/*` (regla del `.htaccess` y del bloque F2).
 
 ## Notas
 
-- Seguridad de sesión: el access token nunca se persiste (nada en `localStorage`), el refresh viaja en una cookie `HttpOnly`
-  que JavaScript no puede leer, y los rate limits de login/registro/refresh responden `429` con header `Retry-After`.
-  El flujo completo está en la sección 8 de `documentacion-tecnica-sabores-latinoamerica.md`.
-- El panel admin tiene una pestaña **Sesiones** (`GET/DELETE /admin/sessions`): lista sesiones activas
-  con usuario, IP y user-agent, y permite revocarlas una por una.
-- `GET /countries/{id}/recipes` acepta `?page=N&per_page=M` (máx 100) y siempre devuelve
-  `pagination:{page,per_page,total,total_pages}`; sin parámetros devuelve todo como antes.
-- Los ids de ruta son numéricos (`{id:[0-9]+}`); un id malformado responde `400`, uno inexistente `404`.
-- Los países "apagados" del mapa son los que no tienen recetas en la BD
-  (Belice, Haití, Puerto Rico). Agregá recetas y se encienden solos.
-- Las estadísticas las calcula `StatsController` con consultas propias (misma matemática
-  que la vista `v_estadisticas`, pero sin depender de que la vista exista).
-- Los cambios de esquema van como migraciones numeradas en `db/migrations/`
-  (convención en `db/migrations/README.md`); los dumps y patches históricos
-  quedaron archivados, solo lectura, en `db/legacy/`.
-- Los archivos `backend/.env` y `legacy/php-api/.env` **no se versionan**. Nunca subas tu
-  `JWT_SECRET` real ni credenciales de base de datos al repositorio.
+- El access token nunca se persiste; el refresh vive en una cookie HttpOnly. Los
+  rate limits de login/registro/refresh/borrado responden `429` con `Retry-After`.
+- Admin: pestaña **Sesiones** con usuario, IP y user-agent; revocación individual
+  y dirty-guard in-app (nunca `location.reload`).
+- Paginación: `GET /countries/{id}/recipes?page=N&per_page=M` devuelve
+  `pagination:{page,per_page,total,total_pages}`; sin parámetros devuelve todo.
+- Los países sin recetas (Belice, Haití, Puerto Rico) se muestran apagados y se
+  encienden al cargarles recetas.
+- Migraciones numeradas en `db/migrations/` (forward-only); los dumps históricos
+  quedaron en `db/legacy/` como lectura.
+- `backend/.env`, `frontend/.env` y `legacy/php-api/.env` no se versionan. No
+  subas secretos ni credenciales.
+- Compliance: `docs/legal/COMPLIANCE-AUDIT.md` (20/20 ítems, evidencia y riesgos
+  residuales). Los datos del titular son placeholders en
+  `frontend/src/content/legal/owner.ts` y requieren revisión profesional.
 
 ## Scripts y checks
 
 ```bash
-cd backend && npm test              # suite Node (Vitest, requiere MySQL)
+cd backend && npm test              # Vitest (requiere MySQL)
 cd backend && npm run lint
 cd backend && npm run typecheck
 cd backend && npm run openapi:check
-cd legacy/php-api && php vendor/bin/phpunit  # legado PHP (no corre en CI)
-cd legacy/php-api && composer stan           # legado PHP (no corre en CI)
-npm run test:js                     # 58 tests JS v1
-npm run lint                        # biome check
-npm run check                       # tsc --noEmit
-npm run test:e2e                    # smoke UI contra XAMPP
+cd backend && npm run create-admin
+
+cd frontend && npm test             # Vitest + RTL (24 tests)
+cd frontend && npm run typecheck
+cd frontend && npm run lint         # Biome
+cd frontend && npm run build
+cd frontend && npm run e2e          # Playwright + axe (7 tests + admin opcional)
+cd frontend && npm run contrast     # 19 pares AA
+
 npm run test:e2e:api                # flujo API request-only (E2E_API configurable)
+npm run test:e2e                    # alias de frontend/e2e
 ```
 
-El CI (`.github/workflows/ci.yml`) corre `backend-node` y `frontend` en cada push,
-menos el E2E (necesita el XAMPP local; correlo a mano antes de pushear cambios grandes).
-El job PHP fue retirado junto con la API v1.
+El CI (`.github/workflows/ci.yml`) corre `backend-node` (MariaDB 10.4, migraciones
+000–003, tests/lint/typecheck/openapi) y `frontend` (npm ci, Vitest, Biome,
+typecheck, build y chequeo de drift de `api:types`). El E2E necesita XAMPP/API
+local y se corre a mano antes de cambios grandes.

@@ -1,9 +1,9 @@
 // Replay E2E de flujos API, request-only (sin browser).
 // Corre con: node --test e2e/api-flows.test.mjs
-// Configurable: E2E_API (default PHP/XAMPP), E2E_DB (cleanup), MYSQL_BIN.
+// Configurable: E2E_API (default API Node vía Apache), E2E_DB (cleanup), MYSQL_BIN.
+import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
-import assert from 'node:assert/strict';
 
 const API = (process.env.E2E_API ?? 'http://localhost/sabores-latinoamerica/api/').replace(/\/+$/, '');
 const DB = process.env.E2E_DB ?? 'sabores_latinoamerica';
@@ -46,7 +46,15 @@ test('api flow: register -> uso -> admin 403 -> delete -> login 401', async () =
     let token = '';
 
     try {
-        const registered = await call('POST', 'auth/register', { body: { username: USER, password: PASS } });
+        const registered = await call('POST', 'auth/register', {
+            body: {
+                username: USER,
+                password: PASS,
+                accept_terms: true,
+                accept_privacy: true,
+                age_confirmed: true
+            }
+        });
 
         assert.equal(registered.status, 200, `register: ${registered.text}`);
         token = registered.body.access;
