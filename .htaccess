@@ -12,4 +12,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^legacy(?:/|$) - [F,L,NC]
+    # Defensa en profundidad si se restaura el DocumentRoot pre-F2:
+    RewriteRule ^(?:\.git|\.omo|\.codegraph|backend|db|frontend|node_modules)(?:/|$) - [F,L,NC]
 </IfModule>
+
+<FilesMatch "(^\.env|\.env$|\.env\.)">
+    Require all denied
+</FilesMatch>

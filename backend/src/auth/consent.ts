@@ -5,7 +5,7 @@
  * sin los tres booleanos, las columnas quedan NULL. Cuando llegan los tres
  * en `true`, se persisten versión, fecha y edad. `CONSENT_STRICT=1` los exige.
  */
-export const CONSENT_VERSION = '2026-10';
+export const CONSENT_VERSION = '2026-11';
 
 export const CONSENT_REQUIRED_MESSAGE = 'Para registrarte necesitás aceptar los términos y la política de privacidad, y confirmar que tenés edad suficiente.';
 

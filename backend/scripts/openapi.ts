@@ -87,6 +87,7 @@ export function buildOpenApi(): Json {
                     false,
                     {
                         '200': okResponse('Usuario creado.', { $ref: '#/components/schemas/AuthSuccess' }),
+                        '400': errorResponse('Consentimiento faltante con CONSENT_STRICT=1.'),
                         '409': errorResponse('El usuario ya existe.'),
                         '422': invalid,
                         '429': errorResponse('Rate limit de registro.')
@@ -320,13 +321,12 @@ export function buildOpenApi(): Json {
                 },
                 RegisterRequest: {
                     type: 'object',
-                    required: ['username', 'password'],
+                    required: ['username', 'password', 'accept_terms', 'accept_privacy', 'age_confirmed'],
                     properties: {
                         username: stringProperty(),
                         password: stringProperty(),
-                        consent_version: stringProperty(),
-                        accepted_terms: { type: 'boolean' },
-                        accepted_privacy: { type: 'boolean' },
+                        accept_terms: { type: 'boolean' },
+                        accept_privacy: { type: 'boolean' },
                         age_confirmed: { type: 'boolean' }
                     }
                 },

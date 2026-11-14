@@ -40,7 +40,7 @@ Capturas de trabajo (no versionadas por tamaño): `.playwright-mcp/f2-desktop-14
 frontend: npx vitest run              -> 11 files / 29 tests passed
 frontend: npx playwright test          -> 7 passed, 1 skipped (admin sin credenciales; default contra build/preview)
 frontend: admin con usuario temporal   -> 1 passed (4 solapas, guardado sin reload, dirty-guard)
-frontend: axe wcag22aa                 -> 0 violaciones en home (360/768/1440), auth, 6 legales y admin restringido
+frontend: axe wcag22a/aa              -> 0 violaciones en home (360/768/1440), auth, 6 legales y admin restringido
 frontend: scripts/check-contrast.mjs   -> 19/19 pares AA
 frontend: npm run build                -> exit 0
 cutover Apache                         -> home React 200, deep-link 200, /api 200, legacy 403
@@ -49,9 +49,9 @@ rollback F2                            -> v1 servido 200 y API 200; re-flip Reac
 
 ## 5. Gaps aceptados / pendientes
 
-- Los datos del titular en legales son placeholders visibles (`frontend/src/content/legal/owner.ts`).
+- Los legales ya tienen nombre, email y jurisdicción reales; falta domicilio legal completo y decidir si se publica el Gmail personal (`frontend/src/content/legal/owner.ts`).
 - No hay i18n; todo el copy está en español rioplatense.
 - La medición de performance es local y no reemplaza un Lighthouse de producción con red real.
 - El contador GSAP puede aparecer a mitad de animación en capturas; al terminar muestra el valor exacto de la DB.
-- El mapa móvil se probó con gestures emulados y teclado; falta una prueba con dispositivos físicos variados.
+- El mapa se probó con rueda/zoom y teclado; el pinch táctil está implementado pero no automatizado, y falta una prueba con dispositivos físicos variados.
 - La auditoría axe no sustituye una revisión con personas usuarias reales.

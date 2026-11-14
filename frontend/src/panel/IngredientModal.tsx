@@ -26,21 +26,25 @@ export function IngredientModalProvider({ children }: { children: ReactNode }) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<Element | null>(null);
+  const loadSeq = useRef(0);
   const navigate = useNavigate();
 
   const load = useCallback(async (id: number) => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError('');
     try {
       const result = await api.ingredient(id);
+      if (seq !== loadSeq.current) return;
       setData(result);
     } catch (loadError) {
+      if (seq !== loadSeq.current) return;
       setData(null);
       setError(
         loadError instanceof Error ? loadError.message : 'No se pudo cargar el ingrediente.',
       );
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, []);
 
@@ -55,6 +59,7 @@ export function IngredientModalProvider({ children }: { children: ReactNode }) {
   );
 
   const close = useCallback(() => {
+    loadSeq.current += 1;
     setIngredientId(null);
     setLoading(false);
     setError('');

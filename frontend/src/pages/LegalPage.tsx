@@ -19,6 +19,8 @@ export function LegalPage({ slug }: { slug: string }) {
         <dd>{OWNER.name}</dd>
         <dt>Correo</dt>
         <dd>{OWNER.email}</dd>
+        <dt>Domicilio legal</dt>
+        <dd>{OWNER.address}</dd>
         <dt>Jurisdicción</dt>
         <dd>{OWNER.jurisdiction}</dd>
         <dt>Actualización</dt>

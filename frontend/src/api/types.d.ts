@@ -872,6 +872,15 @@ export interface paths {
                         "application/json": components["schemas"]["AuthSuccess"];
                     };
                 };
+                /** @description Consentimiento faltante con CONSENT_STRICT=1. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
                 /** @description El usuario ya existe. */
                 409: {
                     headers: {
@@ -1440,10 +1449,9 @@ export interface components {
             youtube_id?: string | null;
         };
         RegisterRequest: {
-            accepted_privacy?: boolean;
-            accepted_terms?: boolean;
-            age_confirmed?: boolean;
-            consent_version?: string;
+            accept_privacy: boolean;
+            accept_terms: boolean;
+            age_confirmed: boolean;
             password: string;
             username: string;
         };

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
+import { OWNER } from '../content/legal/pages';
 import { LegalIndexPage, LegalPage } from './LegalPage';
 
 describe('páginas legales', () => {
@@ -13,7 +14,10 @@ describe('páginas legales', () => {
     expect(screen.getByRole('heading', { name: 'Política de privacidad' })).toBeInTheDocument();
     expect(screen.getByText(/Pendiente de revisión profesional/)).toBeInTheDocument();
     expect(screen.getByText(/hash bcrypt/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Titular pendiente de completar/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(OWNER.name).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(OWNER.email).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(OWNER.jurisdiction).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(OWNER.address).length).toBeGreaterThan(0);
   });
 
   it('cookies enumera las categorías reales y no promete analítica', () => {

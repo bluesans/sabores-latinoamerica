@@ -83,7 +83,7 @@ describe('parseConfig', () => {
                 corsOrigin: '',
                 cookieSecure: 'auto',
                 appDebug: '0',
-                consentStrict: false,
+                consentStrict: true,
                 port: 3001,
                 basePath: '/sabores-latinoamerica/api',
                 cookiePath: '/sabores-latinoamerica/api',

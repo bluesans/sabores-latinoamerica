@@ -23,6 +23,8 @@ function requireAdmin(): (request: FastifyRequest, reply: FastifyReply) => Promi
 
         if (request.authUser.role !== 'admin') {
             await reply.code(403).send({ ok: false, error: 'Solo administradores.' });
+
+            return;
         }
     };
 }

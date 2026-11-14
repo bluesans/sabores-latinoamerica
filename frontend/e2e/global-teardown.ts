@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync, rmSync } from 'node:fs';
 import { request } from '@playwright/test';
 
@@ -28,6 +29,18 @@ export default async function globalTeardown() {
     console.warn('Cleanup e2e:', error instanceof Error ? error.message : error);
   } finally {
     await api.dispose();
+    // La suite registra 3 usuarios por corrida; sin purgar los intentos, la
+    // segunda corrida dentro de 15 min choca con el rate limit (5/15).
+    try {
+      const mysql = process.env.MYSQL_BIN ?? 'C:\\xampp\\mysql\\bin\\mysql.exe';
+      const db = process.env.E2E_DB ?? 'sabores_latinoamerica';
+      const args = ['-u', process.env.DB_USER ?? 'root'];
+      if (process.env.DB_PASS) args.push(`-p${process.env.DB_PASS}`);
+      args.push(db, '-e', "DELETE FROM login_attempts WHERE username LIKE 'e2e%' OR username = ''");
+      execFileSync(mysql, args, { stdio: 'ignore' });
+    } catch (error) {
+      console.warn('Cleanup e2e rate-limit:', error instanceof Error ? error.message : error);
+    }
     rmSync('.e2e-state.json', { force: true });
     rmSync('.e2e-user.json', { force: true });
   }

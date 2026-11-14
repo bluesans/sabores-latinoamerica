@@ -1558,6 +1558,11 @@ html.modal-lock body {
   transform: translateY(-1px);
 }
 @media (max-width: 720px) {
+  .auth.on {
+    /* El banner de cookies es fixed: dejamos aire para que el formulario
+       pueda desplazarse por encima y no quede tapado. */
+    padding-bottom: 170px;
+  }
   .appbar {
     flex-wrap: wrap;
     padding: 0.7rem 0.9rem;

@@ -79,6 +79,7 @@ export function SearchBox() {
         aria-expanded={open}
         aria-controls="search-results"
         aria-autocomplete="list"
+        aria-activedescendant={active >= 0 ? `search-option-${active}` : undefined}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         onFocus={() => {
@@ -125,6 +126,7 @@ export function SearchBox() {
                   <button
                     className="s-res"
                     key={`c-${entry.item.id}`}
+                    id={`search-option-${index}`}
                     type="button"
                     role="option"
                     aria-selected={active === index}
@@ -142,6 +144,7 @@ export function SearchBox() {
                   <button
                     className="s-res"
                     key={`r-${entry.item.id}`}
+                    id={`search-option-${index}`}
                     type="button"
                     role="option"
                     aria-selected={active === index}
@@ -158,6 +161,7 @@ export function SearchBox() {
                 <button
                   className="s-res"
                   key={`i-${entry.item.id}`}
+                  id={`search-option-${index}`}
                   type="button"
                   role="option"
                   aria-selected={active === index}

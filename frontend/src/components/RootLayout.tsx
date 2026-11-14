@@ -54,7 +54,12 @@ export function RootLayout() {
   }
 
   if (status === 'guest' && needsAuth) {
-    return <AuthScreen />;
+    return (
+      <>
+        <AuthScreen />
+        <CookieBanner />
+      </>
+    );
   }
 
   return (

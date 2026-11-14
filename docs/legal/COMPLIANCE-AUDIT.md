@@ -2,7 +2,7 @@
 
 **Fecha**: 2026-11-14
 **Alcance**: backend Node/Fastify + frontend React + base de datos, inventario de datos, terceros, copy y accesibilidad.
-**Estado**: 20/20 ítems con evidencia. Este documento es factual y **no constituye asesoría legal**; debe revisarse con un profesional antes de publicar. Los datos del titular siguen como placeholders centralizados en `frontend/src/content/legal/owner.ts`.
+**Estado**: 20/20 ítems con evidencia **técnica**. Este documento es factual y **no constituye asesoría legal**; debe revisarse con un profesional antes de publicar. El titular cargó nombre, email y jurisdicción en `frontend/src/content/legal/owner.ts`; faltan domicilio legal completo, CUIT/razón social si aplica y la evaluación de RNBD/transferencia internacional.
 
 ## 1. Inventario de datos personales (ítem 7)
 
@@ -13,7 +13,7 @@
 | `login_attempts` | `ip`, `username` intentado, `action`, `attempted_at` | Rate limiting anti-abuso | Se purga >1 hora en cada chequeo; no se usa para perfilado |
 | `favorites` | `user_id`, `recipe_id`, `created_at` | Favoritos de la cuenta | Cascada al borrar usuario |
 
-No se recolectan emails, teléfonos, ubicación precisa ni datos de pago. No hay analytics, píxeles publicitarios ni SDKs de terceros. El frontend guarda en `localStorage` solo `sdl_consent` (versión, timestamp y categorías), sin identificadores personales.
+No se recolectan emails, teléfonos, ubicación precisa ni datos de pago. No hay analytics, píxeles publicitarios ni SDKs de terceros. El frontend guarda en `localStorage` `sdl_consent` (versión, timestamp y categorías) y `sdl_topo_50m_v1` (caché de geometría del mapa, sin PII).
 
 ## 2. Logs (ítem 7)
 
@@ -50,7 +50,7 @@ No se recolectan emails, teléfonos, ubicación precisa ni datos de pago. No hay
 | 13 | Alt text / nombres accesibles | **Completado** | SVG con `aria-label` por país, botones con nombre, `aria-hidden` en decorativos; axe wcag22aa 0 violaciones en home/auth/legal/admin |
 | 14 | Contraste AA | **Completado** | `frontend/scripts/check-contrast.mjs`: 19 pares, todos ≥4.5:1 texto normal y ≥3:1 grande/UI. Evidencia en la salida del script |
 | 15 | Navegación por teclado | **Completado** | Roving tabindex APG en el mapa, flechas/Home/End/Enter/Space/Escape, skip-link, focus al abrir/cerrar panel y modal, focus por ruta. e2e de teclado puro |
-| 16 | Datos de contacto | **Completado con placeholders** | `/contacto` y footer usan `OWNER` centralizado; **faltan los datos reales del titular** (marcados visiblemente) |
+| 16 | Datos de contacto | **Completado (local)** | `/contacto` y footer usan `OWNER`; los datos reales del titular (nombre, correo y domicilio) se cargan en `frontend/src/content/legal/owner.ts`, que **no se versiona por PII**. Revisar la conveniencia de publicar un correo personal |
 | 17 | Edad / menores | **Completado (UI + backend)** | Check «13 años o más» obligatorio en registro; `age_confirmed` persistido; texto de menores en términos. Revisión legal pendiente |
 | 18 | Unsubscribe | **Completado (N/A)** | El producto no envía emails ni newsletters; sin formulario de suscripción |
 | 19 | Licencias | **Completado** | `/licencias`: OFL, Natural Earth PD, world-atlas ISC, librerías MIT/Apache; fuentes locales |
@@ -75,7 +75,7 @@ No se recolectan emails, teléfonos, ubicación precisa ni datos de pago. No hay
 - El proyecto se declara educativo y sin fines de venta en footer y páginas legales.
 - No hay testimonios, reseñas, sellos de calidad ni certificaciones inventadas.
 - Los textos legales advierten «Pendiente de revisión profesional» y no prometen cumplimiento definitivo.
-- Los datos del titular son placeholders visibles; no se inventó nombre, CUIT, dirección ni email.
+- El titular cargó nombre, email y jurisdicción; **no se inventó** domicilio, CUIT ni razón social. Falta completar el domicilio legal y decidir si se publica el Gmail personal o un alias profesional.
 
 ## 7. Evidencia ejecutable
 
@@ -93,8 +93,8 @@ backend:  register sin checks         -> 400 con mensaje de consentimiento
 
 ## 8. Riesgos residuales y pendientes humanos
 
-- **Datos del titular**: `frontend/src/content/legal/owner.ts` contiene placeholders; completar antes de publicar.
-- **Revisión legal profesional**: los textos describen el sistema real, pero deben validarse contra la jurisdicción aplicable (base legal, plazos de respuesta, derechos).
+- **Datos del titular**: `frontend/src/content/legal/owner.ts` tiene nombre, email y jurisdicción reales; falta domicilio legal completo. Publicar un Gmail personal expone la casilla a spam/phishing y queda en el historial del repo público: evaluar alias profesional y `2FA`.
+- **Revisión legal profesional**: los textos describen el sistema real, pero deben validarse contra la jurisdicción aplicable (base legal, plazos 10/5 días, derechos, RNBD, transferencia internacional a Google/YouTube y edad mínima).
 - **YouTube**: se usa `youtube-nocookie.com` y click-to-load; el tratamiento posterior depende de YouTube y de la decisión de la persona.
 - **IP/User-Agent**: son datos personales usados para sesión/rate limit; retención 7 días/1 hora. No se usan para perfilado.
 - **Accesibilidad**: axe no detecta todo (p. ej. calidad de alt text o comprensión); se hizo QA de teclado y contraste, pero una auditoría con personas usuarias sigue recomendada.

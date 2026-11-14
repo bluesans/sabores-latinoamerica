@@ -49,10 +49,14 @@ async function fetchWithTimeout(url: string, options: RequestInit): Promise<Resp
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new ApiError('La conexión tardó demasiado.', 0);
     }
-    throw new ApiError('No se pudo conectar con la API. Revisá Apache y la base.', 0);
+    throw new ApiError('No se pudo conectar. Reintentá en un momento.', 0);
   } finally {
     clearTimeout(timer);
   }
+}
+
+interface LockManagerLike {
+  request<T>(name: string, callback: () => Promise<T>): Promise<T>;
 }
 
 class ApiClient {
@@ -88,6 +92,10 @@ class ApiClient {
       return this.request<T>(path, options, true);
     }
 
+    if (response.status === 401 && retried && !path.startsWith('/auth/')) {
+      window.dispatchEvent(new CustomEvent('sdl:auth-expired'));
+    }
+
     let data: unknown = {};
     try {
       data = await response.json();
@@ -107,11 +115,24 @@ class ApiClient {
 
   async refresh(): Promise<string> {
     if (!this.refreshPromise) {
-      this.refreshPromise = this.doRefresh().finally(() => {
+      this.refreshPromise = this.withCrossTabLock(() => this.doRefresh()).finally(() => {
         this.refreshPromise = null;
       });
     }
     return this.refreshPromise;
+  }
+
+  /**
+   * Serializa el refresh entre pestañas. Sin esto, dos pestañas restaurando a
+   * la vez presentan el mismo token y el reuse-detection revoca todas las
+   * sesiones. `navigator.locks` no existe en navegadores viejos: fallback local.
+   */
+  private async withCrossTabLock<T>(callback: () => Promise<T>): Promise<T> {
+    const locks = (navigator as Navigator & { locks?: LockManagerLike }).locks;
+    if (locks && typeof locks.request === 'function') {
+      return locks.request('sdl-refresh', callback);
+    }
+    return callback();
   }
 
   private async doRefresh(): Promise<string> {

@@ -17,6 +17,7 @@ const PAGE_SIZE = 12;
 export function CountryPanel({ countryId, focusRecipeId, opener, onClose }: CountryPanelProps) {
   const [page, setPage] = useState(1);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -63,6 +64,23 @@ export function CountryPanel({ countryId, focusRecipeId, opener, onClose }: Coun
       if (event.key === 'Escape') {
         event.preventDefault();
         onClose();
+        return;
+      }
+      if (event.key !== 'Tab' || !panelRef.current) return;
+      const focusables = [
+        ...panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ].filter((element) => !element.hasAttribute('disabled'));
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener('keydown', onKey);
@@ -87,10 +105,18 @@ export function CountryPanel({ countryId, focusRecipeId, opener, onClose }: Coun
       <button
         className="panel-backdrop show"
         type="button"
-        aria-label="Cerrar panel"
+        aria-hidden="true"
+        tabIndex={-1}
         onClick={onClose}
       />
-      <aside className="panel open" aria-label="Recetas del país" data-lenis-prevent>
+      <aside
+        className="panel open"
+        aria-label="Recetas del país"
+        role="dialog"
+        aria-modal="true"
+        ref={panelRef}
+        data-lenis-prevent
+      >
         <button
           className="panel-close"
           type="button"

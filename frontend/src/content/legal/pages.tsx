@@ -19,7 +19,8 @@ export const legalPages: Record<string, LegalPageContent> = {
           <p>
             {OWNER.site} es un proyecto educativo sin fines de venta. El responsable del tratamiento
             es <strong>{OWNER.name}</strong>, con contacto en <strong>{OWNER.email}</strong>.
-            Jurisdicción prevista: <strong>{OWNER.jurisdiction}</strong>.
+            Domicilio legal: <strong>{OWNER.address}</strong>. Jurisdicción prevista:{' '}
+            <strong>{OWNER.jurisdiction}</strong>.
           </p>
         </section>
         <section>
@@ -31,8 +32,8 @@ export const legalPages: Record<string, LegalPageContent> = {
             </li>
             <li>
               <strong>Sesiones:</strong> hash SHA-256 del token de refresco, fechas de
-              creación/expiración, dirección IP y user-agent del navegador. La cookie de sesión es
-              HttpOnly.
+              creación/expiración, dirección IP y, al renovar la sesión, user-agent del navegador.
+              La cookie de sesión es HttpOnly.
             </li>
             <li>
               <strong>Intentos de acceso:</strong> IP, nombre de usuario intentado, acción (login,
@@ -56,7 +57,7 @@ export const legalPages: Record<string, LegalPageContent> = {
           <h2>3. Para qué y con qué base</h2>
           <ul>
             <li>Crear y proteger tu cuenta, y mantener la sesión (ejecución del servicio).</li>
-            <li>Prevenir abuso y fuerza bruta (interés legítimo en la seguridad).</li>
+            <li>Prevenir abuso y fuerza bruta (seguridad del servicio).</li>
             <li>Guardar tus favoritos y preferencias (ejecución del servicio y consentimiento).</li>
             <li>Cargar videos de YouTube solo si aceptás terceros (consentimiento).</li>
           </ul>
@@ -72,18 +73,20 @@ export const legalPages: Record<string, LegalPageContent> = {
         <section>
           <h2>5. Tus derechos</h2>
           <p>
-            Podés solicitar acceso, rectificación, borrado, portabilidad u oposición escribiendo a{' '}
+            Podés solicitar acceso, rectificación o supresión escribiendo a{' '}
             <strong>{OWNER.email}</strong>. También podés eliminar la cuenta ahora mismo desde{' '}
-            <Link to="/">la aplicación</Link> (menú «Mi cuenta»). Responderemos en un plazo
-            razonable según la jurisdicción aplicable.
+            <Link to="/">la aplicación</Link> (menú «Mi cuenta»). Los plazos legales son de 10 días
+            corridos para acceso y 5 días hábiles para rectificación o supresión (Ley 25.326).
           </p>
         </section>
         <section>
           <h2>6. Terceros</h2>
           <p>
             El mapa usa geometrías Natural Earth servidas localmente. Los videos se alojan en
-            YouTube y se cargan en modo <code>youtube-nocookie.com</code> únicamente después de tu
-            consentimiento. Si rechazás terceros, no se hace ninguna petición a YouTube.
+            YouTube (Google LLC, Estados Unidos) y se cargan en modo{' '}
+            <code>youtube-nocookie.com</code> únicamente después de tu consentimiento. Al
+            reproducirlos, tu IP, user-agent y datos técnicos se transfieren a Google conforme a su
+            política. Si rechazás terceros, no se hace ninguna petición a YouTube.
           </p>
         </section>
         <section>
@@ -238,6 +241,14 @@ export const legalPages: Record<string, LegalPageContent> = {
               </tr>
               <tr>
                 <td>
+                  <code>sdl_topo_50m_v1</code>
+                </td>
+                <td>Funcional (localStorage)</td>
+                <td>Cachear la geometría del mapa para no descargarla de nuevo.</td>
+                <td>Hasta que borres los datos del sitio.</td>
+              </tr>
+              <tr>
+                <td>
                   <code>youtube-nocookie.com</code>
                 </td>
                 <td>Terceros (solo con consentimiento)</td>
@@ -298,6 +309,8 @@ export const legalPages: Record<string, LegalPageContent> = {
             <dd>{OWNER.name}</dd>
             <dt>Correo</dt>
             <dd>{OWNER.email}</dd>
+            <dt>Domicilio legal</dt>
+            <dd>{OWNER.address}</dd>
             <dt>Jurisdicción</dt>
             <dd>{OWNER.jurisdiction}</dd>
           </dl>

@@ -71,7 +71,7 @@ describe('panel de país', () => {
     const { onClose } = renderPanel();
     expect(await screen.findByRole('heading', { name: 'México' })).toBeInTheDocument();
     expect(screen.getByText('Tacos al Pastor')).toBeInTheDocument();
-    const panel = screen.getByRole('complementary', { name: 'Recetas del país' });
+    const panel = screen.getByRole('dialog', { name: 'Recetas del país' });
     const close = within(panel).getByRole('button', { name: 'Cerrar panel' });
     await waitFor(() => expect(close).toHaveFocus());
     await user.keyboard('{Escape}');

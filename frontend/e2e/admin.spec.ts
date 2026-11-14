@@ -21,6 +21,17 @@ test('admin: 4 solapas, guardado sin reload y dirty-guard', async ({ page }) => 
   await expectNoAxeViolations(page);
 
   await page.getByRole('tab', { name: 'Recetas' }).click();
+  await page.getByRole('tab', { name: 'Países' }).click();
+  await expect(page.getByLabel('Emoji de México')).toBeVisible();
+  await page.getByRole('tab', { name: 'Ingredientes' }).click();
+  await expect(page.getByLabel('Nombre de Cebolla', { exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Sesiones' }).click();
+  await expect(page.getByRole('tab', { name: 'Sesiones' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await page.getByRole('tab', { name: 'Recetas' }).click();
+
   await page.getByRole('button', { name: '＋ Nueva receta' }).click();
   await page.getByLabel('Nombre').fill('Receta QA Playwright');
   await page.getByLabel('Descripción').fill('Temporal, se elimina al final.');

@@ -441,17 +441,14 @@
       },
       "RegisterRequest": {
         "properties": {
-          "accepted_privacy": {
+          "accept_privacy": {
             "type": "boolean"
           },
-          "accepted_terms": {
+          "accept_terms": {
             "type": "boolean"
           },
           "age_confirmed": {
             "type": "boolean"
-          },
-          "consent_version": {
-            "type": "string"
           },
           "password": {
             "type": "string"
@@ -462,7 +459,10 @@
         },
         "required": [
           "username",
-          "password"
+          "password",
+          "accept_terms",
+          "accept_privacy",
+          "age_confirmed"
         ],
         "type": "object"
       },
@@ -1326,6 +1326,16 @@
               }
             },
             "description": "Usuario creado."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Consentimiento faltante con CONSENT_STRICT=1."
           },
           "409": {
             "content": {

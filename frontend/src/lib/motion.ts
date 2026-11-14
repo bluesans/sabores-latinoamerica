@@ -1,14 +1,8 @@
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
+import { gsap } from 'gsap';
 
-/** GSAP compartido: un solo registro para toda la app. */
-export { gsap, useGSAP };
+/** GSAP compartido: un solo punto de entrada para toda la app. */
+export { gsap };
 
 export function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-/** Ejecuta `callback` solo si la persona no pidió reducir movimiento. */
-export function motionIfAllowed(callback: () => void): void {
-  if (!prefersReducedMotion()) callback();
 }

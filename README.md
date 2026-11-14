@@ -33,6 +33,7 @@ npm start                # escucha en 127.0.0.1:3001 (loopback)
 - **Health**: `GET /sabores-latinoamerica/api/health` (200 con `db:true`).
 - **Admin inicial**: `npm run create-admin` (lee `ADMIN_USER`/`ADMIN_PASS` de `backend/.env`; `-- --force` rota la clave).
 - **Tests**: `npm test`, `npm run lint`, `npm run typecheck`, `npm run openapi:check`.
+- **Fixtures de paridad**: `npm run test:fixtures` exige una DB terminada en `_test`/`_parity`; si realmente querés apuntar a otra, usá `ALLOW_LIVE_FIXTURES=1` de forma explícita.
 - **Proxy**: `backend/.env` debe tener `TRUST_PROXY=127.0.0.1`; no usar `true`/`1`.
 - **Consentimiento**: `CONSENT_STRICT=1` exige los tres checks en el registro web (F2). Los usuarios legacy pueden tener las columnas de consentimiento en `NULL`.
 
@@ -102,20 +103,30 @@ Alias /sabores-latinoamerica/ "C:/xampp/htdocs/sabores-latinoamerica/frontend/di
     Require all granted
     RewriteEngine On
     RewriteRule ^legacy(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:\.git|\.omo|\.codegraph|backend|db|frontend|node_modules)(?:/|$) - [F,L,NC]
     FallbackResource /sabores-latinoamerica/index.html
 </Directory>
 ```
 
-**Rollback F2 de un paso**: restaurá
-`C:\xampp\apache\conf\httpd.conf.sabores-pre-f2.bak` (o comentá el bloque
-`Alias`/`Directory`), `httpd -k restart` y verificá que vuelve el v1
-(`authScreen` en el HTML). Para re-flipear, restaurá
-`httpd.conf.sabores-f2.bak`. El proxy `/api` sigue ganando sobre el Alias.
+**Rollback F2**: el v1 ya no vive en la raíz, así que restaurar solo
+`httpd.conf.sabores-pre-f2.bak` deja el sitio sin frontend. Procedimiento real:
 
-**Rollback F1**: comentá las dos líneas `ProxyPass` y reiniciá Apache; el PHP
-legacy no está servido por la regla `.htaccess`/Rewrite, así que el rollback real
-de F1 es restaurar el backup previo. El health debe dar 200 y
-`sessions.ip` guarda la IP que Apache envía en `X-Forwarded-For`.
+1. Copiá el v1 retirado a la raíz (o serví `legacy/frontend-v1` con un Alias temporal):
+   ```powershell
+   Copy-Item legacy\frontend-v1\index.html .
+   Copy-Item legacy\frontend-v1\css . -Recurse
+   Copy-Item legacy\frontend-v1\js . -Recurse
+   ```
+2. Restaurá `httpd.conf.sabores-pre-f2.bak` y reiniciá Apache.
+3. Verificá `authScreen` en el HTML y que `.env`, `.git`, `backend/` y `db/`
+   sigan dando **403** (reglas del `.htaccess`).
+4. Para re-flipear, restaurá `httpd.conf.sabores-f2.bak`, reiniciá y volvé a
+   construir/servir `frontend/dist`.
+
+**Rollback F1**: tras el retiro del PHP ya no existe rollback de un paso a la
+API vieja. Volver a PHP requeriría devolver `legacy/php-api` a `api/`,
+desbloquear `legacy/` y restaurar su `.env`; no se recomienda. El rollback
+disponible es F2→v1 manteniendo la API Node actual.
 
 ## Arquitectura
 
@@ -149,8 +160,9 @@ de F1 es restaurar el backup previo. El health debe dar 200 y
 - `backend/.env`, `frontend/.env` y `legacy/php-api/.env` no se versionan. No
   subas secretos ni credenciales.
 - Compliance: `docs/legal/COMPLIANCE-AUDIT.md` (20/20 ítems, evidencia y riesgos
-  residuales). Los datos del titular son placeholders en
-  `frontend/src/content/legal/owner.ts` y requieren revisión profesional.
+  residuales). El titular cargó nombre, email y jurisdicción en
+  `frontend/src/content/legal/owner.ts`; faltan domicilio legal completo, decisión
+  sobre publicar el correo personal y revisión profesional.
 
 ## Scripts y checks
 

@@ -131,7 +131,7 @@ const envSchema = z.object({
         .transform(value => (value === 'true' ? '1' : value))
         .pipe(z.enum(['auto', '1', '0'], { error: "debe ser 'auto', '1' o '0'" })),
     APP_DEBUG: z.enum(['0', '1'], { error: "debe ser '0' o '1'" }).default('0'),
-    CONSENT_STRICT: z.enum(['0', '1'], { error: "debe ser '0' o '1'" }).default('0'),
+    CONSENT_STRICT: z.enum(['0', '1'], { error: "debe ser '0' o '1'" }).default('1'),
     PORT: envInt().min(1, { error: 'fuera de rango (1-65535)' }).max(65535, { error: 'fuera de rango (1-65535)' }).default(3001),
     BASE_PATH: z
         .string({ error: 'se esperaba un string' })
@@ -154,7 +154,7 @@ const envSchema = z.object({
         .string({ error: 'se esperaba un string' })
         .min(1, { error: "no puede estar vacío; usá '0' para desactivarlo" })
         .default('0')
-        .transform(value => (value === '0' ? false : value))
+        .transform(value => (value === '0' || value === 'false' ? false : value === '1' || value === 'true' ? true : value))
 });
 
 /** Formatea cada issue como `KEY: causa` (los paths del schema son keys de primer nivel). */

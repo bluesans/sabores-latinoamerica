@@ -84,12 +84,16 @@ function checkPremises(envFile) {
 }
 
 function resolveDb(envFile) {
-    return {
+    const db = {
         host: process.env.DB_HOST ?? envFile.DB_HOST ?? '127.0.0.1',
         name: process.env.DB_NAME ?? envFile.DB_NAME ?? 'sabores_latinoamerica',
         user: process.env.DB_USER ?? envFile.DB_USER ?? 'root',
         pass: process.env.DB_PASS ?? envFile.DB_PASS ?? ''
     };
+    if (!/(?:_test|_parity)$/.test(db.name) && process.env.ALLOW_LIVE_FIXTURES !== '1') {
+        throw new Error(`capture.mjs se niega a escribir en "${db.name}": usá una DB *_test/_parity o ALLOW_LIVE_FIXTURES=1 explícito.`);
+    }
+    return db;
 }
 
 function mysql(db, sql) {

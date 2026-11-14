@@ -49,8 +49,8 @@ export function AuthScreen() {
       setError('El usuario debe tener 3–30 caracteres: letras, números o guión bajo.');
       return;
     }
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
+    if (password.length < 8 || new TextEncoder().encode(password).length > 72) {
+      setError('La contraseña debe tener entre 8 y 72 bytes.');
       return;
     }
     if (mode === 'register') {

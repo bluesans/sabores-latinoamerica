@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { OWNER } from '../src/content/legal/owner';
 import { expectNoAxeViolations } from './axe';
 import { loginViaApi } from './helpers';
 
@@ -65,7 +66,7 @@ test('teclado, búsqueda, favorito y video consent-gated', async ({ page }) => {
   await expect(countries.nth(2)).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/pais\/\d+/);
-  await expect(page.getByRole('complementary', { name: 'Recetas del país' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Recetas del país' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page).not.toHaveURL(/\/pais\//);
   await expect(countries.nth(2)).toBeFocused();
@@ -75,7 +76,7 @@ test('teclado, búsqueda, favorito y video consent-gated', async ({ page }) => {
   await expect(result).toBeVisible();
   await result.click();
   await expect(page).toHaveURL(/\/pais\/1\?receta=1/);
-  const panel = page.getByRole('complementary', { name: 'Recetas del país' });
+  const panel = page.getByRole('dialog', { name: 'Recetas del país' });
   await expect(panel.getByRole('heading', { name: 'Tacos al Pastor' })).toBeVisible();
   await panel.getByRole('button', { name: 'Guardar Tacos al Pastor en favoritos' }).click();
   await expect(page.getByRole('link', { name: /1 favoritos/ })).toBeVisible();
@@ -119,6 +120,9 @@ test('legales, 404, admin restringido y axe por página', async ({ page }) => {
     await expect(page.getByText(/Pendiente de revisión profesional/)).toBeVisible();
     await expectNoAxeViolations(page);
   }
+  await page.goto('/sabores-latinoamerica/privacidad');
+  await expect(page.getByText(OWNER.name).first()).toBeVisible();
+  await expect(page.getByText(OWNER.email).first()).toBeVisible();
 
   await page.goto('/sabores-latinoamerica/cookies');
   await expect(page.getByRole('table')).toContainText('sdl_refresh');
