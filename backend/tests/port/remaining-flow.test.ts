@@ -1,13 +1,12 @@
 /**
- * Port 1:1 de `api/tests/Integration/RemainingFlowTest.php`.
+ * Port 1:1 de `api/tests/Integration/RemainingFlowTest.php` (todo 17).
  *
- * Portados ahora: los 3 casos de /health (capa HTTP del todo 8, con DB
- * scratch o stub). Favoritos/recursos públicos quedan para 17/18 y el CLI
- * create-admin para 20.
+ * Portados: health (3), byCountry (2) e ingredient (2). Favoritos queda para
+ * el todo 18 y create-admin para el 20.
  */
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'mysql2/promise';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app.js';
 import { loadConfig } from '../../src/config.js';
 import { createTestPool, reloadTestSchema } from '../support/test-db.js';
@@ -15,55 +14,108 @@ import { createTestPool, reloadTestSchema } from '../support/test-db.js';
 const API = '/sabores-latinoamerica/api';
 
 let pool: Pool;
+let app: FastifyInstance;
+let access = '';
 
 beforeAll(async () => {
     const config = loadConfig();
 
     await reloadTestSchema(config);
     pool = createTestPool(config);
+    app = createApp({ config, db: pool });
+    await app.ready();
+
+    const registered = await app.inject({ method: 'POST', url: `${API}/auth/register`, payload: { username: 'remaining_user', password: 'Temporal123' } });
+
+    access = String(registered.json().access);
 }, 60000);
 
 afterAll(async () => {
+    await app.close();
     await pool.end();
 });
 
-const apps: FastifyInstance[] = [];
+function auth(): { authorization: string } {
+    return { authorization: `Bearer ${access}` };
+}
 
-afterEach(async () => {
-    await Promise.all(apps.splice(0).map(async app => app.close()));
-});
+function healthApp(db: { query(sql: string): Promise<unknown> }): FastifyInstance {
+    return createApp({ config: loadConfig(), db: db as unknown as Pool });
+}
 
 const PENDING: ReadonlyArray<readonly [string, string]> = [
     ['testFavoriteToggleAddThenIndexShowsJoinedRow', 'todo 18'],
     ['testFavoriteToggleOffRemovesRowAndIndexEmpties', 'todo 18'],
     ['testFavoriteToggleUnknownRecipeReturns404', 'todo 18'],
-    ['testByCountryReturnsCountryBlockAndRecipesWithIngredients', 'todo 17'],
-    ['testByCountryUnknownCountryReturns404', 'todo 17'],
-    ['testIngredientShowReturnsIngredientAndJoinedRecipes', 'todo 17'],
-    ['testIngredientShowUnknownIngredientReturns404', 'todo 17'],
     ['testCliCreatesAdminOnFreshSchema', 'todo 20'],
     ['testCliSecondRunWithoutForceKeepsHashUntouched', 'todo 20'],
     ['testCliForceRotatesPasswordHash', 'todo 20'],
     ['testCliRefusesToPromoteExistingUserRoleAccount', 'todo 20']
 ];
 
-function healthApp(db: { query(sql: string): Promise<unknown> }): FastifyInstance {
-    const app = createApp({ config: loadConfig(), db });
-    apps.push(app);
-
-    return app;
-}
-
 describe('RemainingFlowTest (PHP)', () => {
-    it('testHealthControllerAcceptsOptionalPdoInjection', async () => {
-        const response = await healthApp({ query: async () => [[{ '1': 1 }], []] }).inject({ method: 'GET', url: `${API}/health` });
+    it('testByCountryReturnsCountryBlockAndRecipesWithIngredients', async () => {
+        const response = await app.inject({ method: 'GET', url: `${API}/countries/4/recipes`, headers: auth() });
+        const body = response.json();
 
         expect(response.statusCode).toBe(200);
-        expect(response.json()).toMatchObject({ ok: true, api: true, db: true });
+        expect(body.country).toMatchObject({ id: 4, name: 'Perú' });
+        expect(body.country.emoji).not.toBe('');
+        expect(body.recipes.map((recipe: { id: number }) => recipe.id)).toEqual([10, 11, 12]);
+
+        const ceviche = body.recipes.find((recipe: { id: number }) => recipe.id === 10);
+
+        expect(ceviche).toBeDefined();
+        expect(ceviche.ingredients.map((ingredient: { id: number }) => ingredient.id)).toContain(56);
+
+        for (const recipe of body.recipes) {
+            expect(recipe.ingredients.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('testByCountryUnknownCountryReturns404', async () => {
+        const response = await app.inject({ method: 'GET', url: `${API}/countries/9999/recipes`, headers: auth() });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.json()).toEqual({ ok: false, error: 'País no encontrado.' });
+    });
+
+    it('testIngredientShowReturnsIngredientAndJoinedRecipes', async () => {
+        const response = await app.inject({ method: 'GET', url: `${API}/ingredients/1`, headers: auth() });
+        const body = response.json();
+
+        expect(response.statusCode).toBe(200);
+        expect(body.ingredient).toEqual({ id: 1, name: 'Cerdo' });
+        expect(body.recipes).toHaveLength(4);
+        expect(body.recipes.map((recipe: { recipe_id: number }) => recipe.recipe_id).sort((a: number, b: number) => a - b)).toEqual([1, 26, 44, 51]);
+
+        for (const recipe of body.recipes) {
+            expect(Object.keys(recipe).sort()).toEqual(['country_id', 'country_name', 'difficulty', 'emoji', 'recipe_id', 'recipe_name']);
+        }
+    });
+
+    it('testIngredientShowUnknownIngredientReturns404', async () => {
+        const response = await app.inject({ method: 'GET', url: `${API}/ingredients/99999`, headers: auth() });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.json()).toEqual({ ok: false, error: 'Ingrediente no encontrado.' });
+    });
+
+    it('testHealthControllerAcceptsOptionalPdoInjection', async () => {
+        const injected = healthApp({ query: async () => [[{ '1': 1 }], []] });
+
+        try {
+            const response = await injected.inject({ method: 'GET', url: `${API}/health` });
+
+            expect(response.statusCode).toBe(200);
+            expect(response.json()).toMatchObject({ ok: true, api: true, db: true });
+        } finally {
+            await injected.close();
+        }
     });
 
     it('testHealthOkWithInjectedTestDbPdo', async () => {
-        const response = await healthApp(pool).inject({ method: 'GET', url: `${API}/health` });
+        const response = await app.inject({ method: 'GET', url: `${API}/health` });
         const body = response.json();
 
         expect(response.statusCode).toBe(200);
@@ -79,11 +131,16 @@ describe('RemainingFlowTest (PHP)', () => {
                 throw new Error('simulated db outage');
             }
         };
-        const response = await healthApp(dead).inject({ method: 'GET', url: `${API}/health` });
-        const body = response.json();
+        const deadApp = healthApp(dead);
 
-        expect(response.statusCode).toBe(503);
-        expect(body).toMatchObject({ ok: false, api: true, db: false });
+        try {
+            const response = await deadApp.inject({ method: 'GET', url: `${API}/health` });
+
+            expect(response.statusCode).toBe(503);
+            expect(response.json()).toMatchObject({ ok: false, api: true, db: false });
+        } finally {
+            await deadApp.close();
+        }
     });
 
     for (const [name, closing] of PENDING) {

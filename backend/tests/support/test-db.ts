@@ -22,7 +22,7 @@ export function assertTestDatabaseName(dbName: string): void {
 }
 
 /** Pool contra una base scratch (host/user/pass salen de backend/.env). */
-export function createTestPoolFor(config: AppConfig, dbName: string): Pool {
+export function createTestPoolFor(config: AppConfig, dbName: string, connectionLimit = 10): Pool {
     assertTestDatabaseName(dbName);
 
     return mysql.createPool({
@@ -32,7 +32,7 @@ export function createTestPoolFor(config: AppConfig, dbName: string): Pool {
         database: dbName,
         charset: 'utf8mb4_general_ci',
         dateStrings: true,
-        connectionLimit: 10
+        connectionLimit
     });
 }
 

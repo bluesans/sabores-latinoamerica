@@ -27,6 +27,7 @@ import { applyCorsHeaders } from './http/cors.js';
 import { buildErrorPayload, httpRoutingError, resolveErrorStatus } from './http/error-envelope.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerHealthRoutes } from './routes/health.js';
+import { registerResourceRoutes } from './routes/resources.js';
 
 export type CreateAppOptions = Readonly<{
     config: AppConfig;
@@ -131,6 +132,7 @@ export function createApp(options: CreateAppOptions): FastifyInstance {
         async instance => {
             registerHealthRoutes(instance, db);
             registerAuthRoutes(instance, config, db);
+            registerResourceRoutes(instance, db);
         },
         { prefix: config.basePath }
     );
