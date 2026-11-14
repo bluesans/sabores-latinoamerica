@@ -3,6 +3,7 @@
 export const OWNER = {
   name: '[Titular pendiente de completar]',
   email: '[Correo de contacto pendiente]',
+  address: '[Domicilio legal pendiente]',
   jurisdiction: '[Jurisdicción pendiente]',
   site: 'Sabores de Latinoamérica',
   updated: 'Noviembre de 2026',
