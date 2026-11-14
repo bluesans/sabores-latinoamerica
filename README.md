@@ -5,6 +5,42 @@
 Atlas gastronómico interactivo (front vanilla JS + Vue 3 para el panel de admin,
 API REST en PHP con **Slim 4**, base de datos MySQL).
 
+## Backend Node (F1, sirviendo vía Apache)
+
+El backend de F1 vive en `backend/` (Node 24 + Fastify + MySQL) y es el que
+responde hoy en `http://localhost/sabores-latinoamerica/api` a través del
+`ProxyPass` de Apache. El PHP de `api/` queda como legado hasta el retiro.
+
+```bash
+cd backend
+npm ci
+cp .env.example .env     # completar DB_*, JWT_SECRET (mismo que api/.env), ADMIN_*
+npm run build
+npm start                # escucha en 127.0.0.1:3001 (loopback)
+```
+
+- **Parar**: `Ctrl+C` en la consola o terminar el proceso `node dist/server.js`.
+- **Health**: `GET /sabores-latinoamerica/api/health` (200 con `db:true`).
+- **Admin inicial**: `npm run create-admin` (lee `ADMIN_USER`/`ADMIN_PASS` de `backend/.env`; `-- --force` rota la clave).
+- **Tests**: `npm test`, `npm run lint`, `npm run typecheck`, `npm run openapi:check`.
+- **Requisito de proxy**: `backend/.env` debe tener `TRUST_PROXY=127.0.0.1`. No usar `true`/`1`: solo se confía en el loopback de Apache.
+
+### Cutover / rollback (F1)
+
+El snippet de Apache está en `C:\xampp\apache\conf\httpd.conf`:
+
+```apache
+ProxyPass /sabores-latinoamerica/api http://127.0.0.1:3001/sabores-latinoamerica/api
+ProxyPassReverse /sabores-latinoamerica/api http://127.0.0.1:3001/sabores-latinoamerica/api
+```
+
+**Rollback de un paso**: comentar esas dos líneas, reiniciar Apache
+(`httpd -k restart`) y verificar que el PHP vuelve a servir (un `DELETE
+/auth/account` sin token da `405` en PHP y `401` en Node). Para re-flipear,
+descomentar y reiniciar. Con el proxy activo, el `health` de Apache debe
+responder 200 y `sessions.ip` debe guardar la IP que Apache envía en
+`X-Forwarded-For` (en local el cliente es 127.0.0.1).
+
 ## Puesta en marcha (con XAMPP)
 
 1. Copiá la carpeta `sabores-latinoamerica/` dentro de `htdocs/`.
@@ -74,12 +110,17 @@ API REST en PHP con **Slim 4**, base de datos MySQL).
 ## Scripts y checks
 
 ```bash
-cd api && php vendor/bin/phpunit   # 120 tests (Unit + Integration, con MySQL)
-cd api && composer stan            # phpstan, 0 errores
-npm run test:js                    # 58 tests JS
-npm run lint                       # biome check
-npm run check                      # tsc --noEmit
-npm run test:e2e                   # smoke E2E contra XAMPP vivo (crea y borra un usuario e2e_smoke_*)
+cd backend && npm test              # suite Node (Vitest, requiere MySQL)
+cd backend && npm run lint
+cd backend && npm run typecheck
+cd backend && npm run openapi:check
+cd api && php vendor/bin/phpunit    # legado PHP (120 tests, hasta el retiro)
+cd api && composer stan             # legado PHP (hasta el retiro)
+npm run test:js                     # 58 tests JS v1
+npm run lint                        # biome check
+npm run check                       # tsc --noEmit
+npm run test:e2e                    # smoke UI contra XAMPP
+npm run test:e2e:api                # flujo API request-only (E2E_API configurable)
 ```
 
 El CI (`.github/workflows/ci.yml`) corre todo lo anterior en cada push,
