@@ -26,6 +26,7 @@ import type { AppConfig } from './config.js';
 import { applyCorsHeaders } from './http/cors.js';
 import { buildErrorPayload, httpRoutingError, resolveErrorStatus } from './http/error-envelope.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerFavoriteRoutes } from './routes/favorites.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerResourceRoutes } from './routes/resources.js';
 
@@ -133,6 +134,7 @@ export function createApp(options: CreateAppOptions): FastifyInstance {
             registerHealthRoutes(instance, db);
             registerAuthRoutes(instance, config, db);
             registerResourceRoutes(instance, db);
+            registerFavoriteRoutes(instance, db);
         },
         { prefix: config.basePath }
     );

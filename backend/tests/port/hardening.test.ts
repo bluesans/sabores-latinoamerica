@@ -54,11 +54,7 @@ function stubApp(overrides: Record<string, string> = {}): FastifyInstance {
     return createApp({ config, db: { execute: async () => [[], []], query: async () => [[{ '1': 1 }], []] } as unknown as Pool });
 }
 
-const PENDING: ReadonlyArray<readonly [string, string]> = [
-    ['testFavoriteToggleBadRecipeIdReturns400', 'todo 18'],
-    ['testFavoriteToggleWellFormedMissingStill404', 'todo 18'],
-    ['testRoutesConstrainPublicIdsButNotAdminGroup', 'todo 19 (parte admin)']
-];
+const PENDING: ReadonlyArray<readonly [string, string]> = [['testRoutesConstrainPublicIdsButNotAdminGroup', 'todo 19 (parte admin)']];
 
 describe('HardeningTest (PHP)', () => {
     it('testByCountryNonNumericIdReturns400 -> 405 HTTP (waiver de routing)', async () => {
@@ -163,6 +159,22 @@ describe('HardeningTest (PHP)', () => {
 
         expect(body.time).toMatch(/^\d{4}-\d{2}-\d{2}T/);
         expect(String(body.time).endsWith('+00:00')).toBe(true);
+    });
+
+    it('testFavoriteToggleBadRecipeIdReturns400', async () => {
+        for (const payload of [{}, { recipe_id: 0 }, { recipe_id: 'abc' }, { recipe_id: -1 }, { recipe_id: 1.5 }]) {
+            const response = await app.inject({ method: 'POST', url: `${API}/favorites`, headers: auth(), payload });
+
+            expect({ payload, status: response.statusCode }).toEqual({ payload, status: 400 });
+            expect(response.json()).toEqual({ ok: false, error: 'Identificador inválido.' });
+        }
+    });
+
+    it('testFavoriteToggleWellFormedMissingStill404', async () => {
+        const response = await app.inject({ method: 'POST', url: `${API}/favorites`, headers: auth(), payload: { recipe_id: 9999, add: 1 } });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.json()).toEqual({ ok: false, error: 'Receta inexistente.' });
     });
 
     it('testSearchLimitedResultsAreDeterministicallyOrdered', async () => {

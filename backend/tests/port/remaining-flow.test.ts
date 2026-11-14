@@ -6,7 +6,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'mysql2/promise';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app.js';
 import { loadConfig } from '../../src/config.js';
 import { createTestPool, reloadTestSchema } from '../support/test-db.js';
@@ -35,6 +35,10 @@ afterAll(async () => {
     await pool.end();
 });
 
+beforeEach(async () => {
+    await pool.execute("DELETE FROM favorites WHERE user_id = (SELECT id FROM users WHERE username = 'remaining_user')");
+});
+
 function auth(): { authorization: string } {
     return { authorization: `Bearer ${access}` };
 }
@@ -44,9 +48,6 @@ function healthApp(db: { query(sql: string): Promise<unknown> }): FastifyInstanc
 }
 
 const PENDING: ReadonlyArray<readonly [string, string]> = [
-    ['testFavoriteToggleAddThenIndexShowsJoinedRow', 'todo 18'],
-    ['testFavoriteToggleOffRemovesRowAndIndexEmpties', 'todo 18'],
-    ['testFavoriteToggleUnknownRecipeReturns404', 'todo 18'],
     ['testCliCreatesAdminOnFreshSchema', 'todo 20'],
     ['testCliSecondRunWithoutForceKeepsHashUntouched', 'todo 20'],
     ['testCliForceRotatesPasswordHash', 'todo 20'],
@@ -99,6 +100,47 @@ describe('RemainingFlowTest (PHP)', () => {
 
         expect(response.statusCode).toBe(404);
         expect(response.json()).toEqual({ ok: false, error: 'Ingrediente no encontrado.' });
+    });
+
+    it('testFavoriteToggleAddThenIndexShowsJoinedRow', async () => {
+        const added = await app.inject({ method: 'POST', url: `${API}/favorites`, headers: auth(), payload: { recipe_id: 1, add: 1 } });
+
+        expect(added.statusCode).toBe(200);
+        expect(added.json()).toEqual({ ok: true });
+
+        const index = await app.inject({ method: 'GET', url: `${API}/favorites`, headers: auth() });
+        const body = index.json();
+
+        expect(index.statusCode).toBe(200);
+        expect(body.favorites).toHaveLength(1);
+        expect(body.favorites[0]).toMatchObject({
+            id: 1,
+            name: 'Tacos al Pastor',
+            difficulty: 'medium',
+            time_minutes: 120,
+            country_id: 1,
+            country_name: 'México'
+        });
+    });
+
+    it('testFavoriteToggleOffRemovesRowAndIndexEmpties', async () => {
+        await app.inject({ method: 'POST', url: `${API}/favorites`, headers: auth(), payload: { recipe_id: 1, add: 1 } });
+
+        const removed = await app.inject({ method: 'POST', url: `${API}/favorites`, headers: auth(), payload: { recipe_id: 1 } });
+
+        expect(removed.statusCode).toBe(200);
+        expect(removed.json()).toEqual({ ok: true });
+
+        const index = await app.inject({ method: 'GET', url: `${API}/favorites`, headers: auth() });
+
+        expect(index.json().favorites).toEqual([]);
+    });
+
+    it('testFavoriteToggleUnknownRecipeReturns404', async () => {
+        const response = await app.inject({ method: 'POST', url: `${API}/favorites`, headers: auth(), payload: { recipe_id: 9999, add: 1 } });
+
+        expect(response.statusCode).toBe(404);
+        expect(response.json()).toEqual({ ok: false, error: 'Receta inexistente.' });
     });
 
     it('testHealthControllerAcceptsOptionalPdoInjection', async () => {
