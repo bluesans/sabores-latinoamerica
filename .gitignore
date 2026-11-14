@@ -14,3 +14,11 @@ node_modules/
 # Misc
 .DS_Store
 Thumbs.db
+
+# Frontend build/test artifacts
+/frontend/dist/
+/frontend/playwright-report/
+/frontend/test-results/
+/frontend/.env
+/frontend/.e2e-state.json
+/frontend/.e2e-user.json

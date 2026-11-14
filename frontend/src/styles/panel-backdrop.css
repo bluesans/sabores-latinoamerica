@@ -1,0 +1,15 @@
+.panel-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(4, 9, 7, 0.6);
+  border: 0;
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  .panel-backdrop {
+    display: block;
+  }
+}
